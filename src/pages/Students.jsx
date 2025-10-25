@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, Filter, Plus, Eye } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import AddStudentModal from '../components/AddStudentModal'
 import SuccessModal from '../components/SuccessModal'
+import studentsService from '../services/studentsService'
 
 const Students = () => {
   const navigate = useNavigate()
@@ -13,58 +14,107 @@ const Students = () => {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successData, setSuccessData] = useState({})
+  const [students, setStudents] = useState([])
+  const [summaryCards, setSummaryCards] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const students = [
-    { id: '1', name: 'Arjun Verma', class: '10A', grade: '10', score: 85 },
-    { id: '2', name: 'Priya Sharma', class: '9B', grade: '9', score: 92 },
-    { id: '3', name: 'Rohan Kapoor', class: '10A', grade: '10', score: 76 },
-    { id: '4', name: 'Anika Patel', class: '9C', grade: '9', score: 88 },
-    { id: '5', name: 'Vikram Singh', class: '10B', grade: '10', score: 65 }
-  ]
-
-  const summaryCards = [
-    { label: 'Total Students', value: '120' },
-    { label: 'Average Score', value: '78%' },
-    { label: 'Top Performer', value: 'Priya Sharma' }
-  ]
-
-  const handleAddStudent = (studentData) => {
-    // Here you would typically save to your backend/state management
-    console.log('Adding student:', studentData)
-    
-    // Show success modal
-    setSuccessData({
-      title: 'Student Added Successfully',
-      message: `${studentData.firstName} ${studentData.lastName} has been added to ${studentData.class}.`,
-      actions: [
-        {
-          label: 'Add Another Student',
-          icon: Plus,
-          primary: true,
-          onClick: () => {
-            setShowSuccessModal(false)
-            setShowAddModal(true)
-          }
-        },
-        {
-          label: 'Go to Class Roster',
-          icon: Eye,
-          primary: false,
-          onClick: () => {
-            setShowSuccessModal(false)
-            // Navigate to class roster
-          }
-        },
-        {
-          label: 'View Student Profile',
-          onClick: () => {
-            setShowSuccessModal(false)
-            // Navigate to student profile
-          }
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        setLoading(true)
+        const filters = {
+          search: searchTerm,
+          class: selectedClass,
+          grade: selectedGrade,
+          subject: selectedSubject
         }
-      ]
-    })
-    setShowSuccessModal(true)
+        
+        const [studentsData, statsData] = await Promise.all([
+          studentsService.getStudents(filters),
+          studentsService.getStudentStats()
+        ])
+        
+        setStudents(studentsData.students || [])
+        setSummaryCards([
+          { label: 'Total Students', value: statsData.totalStudents?.toString() || '0' },
+          { label: 'Average Score', value: `${statsData.averageScore || 0}%` },
+          { label: 'Top Performer', value: studentsData.summary?.topPerformer || 'N/A' }
+        ])
+      } catch (err) {
+        setError(err.message)
+        console.error('Error fetching students:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStudents()
+  }, [searchTerm, selectedClass, selectedGrade, selectedSubject])
+
+  const handleAddStudent = async (studentData) => {
+    try {
+      const newStudent = await studentsService.createStudent(studentData)
+      console.log('Student added:', newStudent)
+      
+      // Refresh the students list
+      const updatedStudents = await studentsService.getStudents()
+      setStudents(updatedStudents.students || [])
+      
+      // Show success modal
+      setSuccessData({
+        title: 'Student Added Successfully',
+        message: `${studentData.firstName} ${studentData.lastName} has been added to ${studentData.class}.`,
+        actions: [
+          {
+            label: 'Add Another Student',
+            icon: Plus,
+            primary: true,
+            onClick: () => {
+              setShowSuccessModal(false)
+              setShowAddModal(true)
+            }
+          },
+          {
+            label: 'Go to Class Roster',
+            icon: Eye,
+            primary: false,
+            onClick: () => {
+              setShowSuccessModal(false)
+              // Navigate to class roster
+            }
+          },
+          {
+            label: 'View Student Profile',
+            onClick: () => {
+              setShowSuccessModal(false)
+              // Navigate to student profile
+            }
+          }
+        ]
+      })
+      setShowSuccessModal(true)
+    } catch (error) {
+      console.error('Error adding student:', error)
+      // Handle error - could show error modal
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+        <h2 className="text-red-800 font-semibold">Error Loading Students</h2>
+        <p className="text-red-600 mt-2">{error}</p>
+      </div>
+    )
   }
 
   return (
@@ -189,7 +239,7 @@ const Students = () => {
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                    <div className="text-sm font-medium text-gray-900">{student.firstName} {student.lastName}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{student.class}</div>
@@ -202,10 +252,10 @@ const Students = () => {
                       <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                         <div 
                           className="bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-out" 
-                          style={{ width: `${student.score}%` }}
+                          style={{ width: `${student.averageScore}%` }}
                         ></div>
                       </div>
-                      <span className="text-sm text-gray-900">{student.score}%</span>
+                      <span className="text-sm text-gray-900">{student.averageScore}%</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

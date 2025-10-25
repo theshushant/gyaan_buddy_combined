@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, Plus, Eye } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import AddTeacherModal from '../components/AddTeacherModal'
 import SuccessModal from '../components/SuccessModal'
+import teachersService from '../services/teachersService'
 
 const Teachers = () => {
   const navigate = useNavigate()
@@ -12,49 +13,32 @@ const Teachers = () => {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successData, setSuccessData] = useState({})
+  const [teachers, setTeachers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const teachers = [
-    {
-      id: '1',
-      name: 'Anjali Sharma',
-      subject: 'Mathematics',
-      classes: ['9A', '10B'],
-      dashboardUsage: 75,
-      overallMastery: 82
-    },
-    {
-      id: '2',
-      name: 'Priya Verma',
-      subject: 'Science',
-      classes: ['11C', '12A'],
-      dashboardUsage: 90,
-      overallMastery: 78
-    },
-    {
-      id: '3',
-      name: 'Kiran Patel',
-      subject: 'English',
-      classes: ['10A', '11B'],
-      dashboardUsage: 60,
-      overallMastery: 85
-    },
-    {
-      id: '4',
-      name: 'Deepika Singh',
-      subject: 'History',
-      classes: ['9B', '12C'],
-      dashboardUsage: 85,
-      overallMastery: 70
-    },
-    {
-      id: '5',
-      name: 'Meera Kapoor',
-      subject: 'Geography',
-      classes: ['11A', '10C'],
-      dashboardUsage: 70,
-      overallMastery: 92
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        setLoading(true)
+        const filters = {
+          search: searchTerm,
+          subject: selectedSubject,
+          grade: selectedGrade
+        }
+        
+        const teachersData = await teachersService.getTeachers(filters)
+        setTeachers(teachersData.teachers || [])
+      } catch (err) {
+        setError(err.message)
+        console.error('Error fetching teachers:', err)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+
+    fetchTeachers()
+  }, [searchTerm, selectedSubject, selectedGrade])
 
   const getProgressBarColor = (percentage) => {
     if (percentage >= 80) return 'bg-green-500'
@@ -62,43 +46,69 @@ const Teachers = () => {
     return 'bg-red-500'
   }
 
-  const handleAddTeacher = (teacherData) => {
-    // Here you would typically save to your backend/state management
-    console.log('Adding teacher:', teacherData)
-    
-    // Show success modal
-    setSuccessData({
-      title: 'Teacher Added Successfully!',
-      message: `${teacherData.firstName} ${teacherData.lastName} has been added to the system and is ready to be assigned to classes.`,
-      actions: [
-        {
-          label: 'Add Another Teacher',
-          icon: Plus,
-          primary: true,
-          onClick: () => {
-            setShowSuccessModal(false)
-            setShowAddModal(true)
+  const handleAddTeacher = async (teacherData) => {
+    try {
+      const newTeacher = await teachersService.createTeacher(teacherData)
+      console.log('Teacher added:', newTeacher)
+      
+      // Refresh the teachers list
+      const updatedTeachers = await teachersService.getTeachers()
+      setTeachers(updatedTeachers.teachers || [])
+      
+      // Show success modal
+      setSuccessData({
+        title: 'Teacher Added Successfully!',
+        message: `${teacherData.firstName} ${teacherData.lastName} has been added to the system and is ready to be assigned to classes.`,
+        actions: [
+          {
+            label: 'Add Another Teacher',
+            icon: Plus,
+            primary: true,
+            onClick: () => {
+              setShowSuccessModal(false)
+              setShowAddModal(true)
+            }
+          },
+          {
+            label: 'Go to Teacher Management',
+            icon: Eye,
+            primary: false,
+            onClick: () => {
+              setShowSuccessModal(false)
+              // Navigate to teacher management
+            }
+          },
+          {
+            label: 'View Teacher Profile',
+            onClick: () => {
+              setShowSuccessModal(false)
+              // Navigate to teacher profile
+            }
           }
-        },
-        {
-          label: 'Go to Teacher Management',
-          icon: Eye,
-          primary: false,
-          onClick: () => {
-            setShowSuccessModal(false)
-            // Navigate to teacher management
-          }
-        },
-        {
-          label: 'View Teacher Profile',
-          onClick: () => {
-            setShowSuccessModal(false)
-            // Navigate to teacher profile
-          }
-        }
-      ]
-    })
-    setShowSuccessModal(true)
+        ]
+      })
+      setShowSuccessModal(true)
+    } catch (error) {
+      console.error('Error adding teacher:', error)
+      // Handle error - could show error modal
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+        <h2 className="text-red-800 font-semibold">Error Loading Teachers</h2>
+        <p className="text-red-600 mt-2">{error}</p>
+      </div>
+    )
   }
 
   return (
@@ -188,7 +198,7 @@ const Teachers = () => {
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{teacher.name}</div>
+                    <div className="text-sm font-medium text-gray-900">{teacher.firstName} {teacher.lastName}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{teacher.subject}</div>

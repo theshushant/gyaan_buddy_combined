@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { Provider, useSelector } from 'react-redux'
-import { store } from './store/store'
+import { useSelector } from 'react-redux'
 import Layout from './components/Layout'
 
 // Principal pages
@@ -13,6 +12,7 @@ import Settings from './pages/Settings'
 import StudentProfile from './pages/StudentProfile'
 import TeacherProfile from './pages/TeacherProfile'
 import AIInsights from './pages/AIInsights'
+import APILogicScreen from './pages/APILogicScreen'
 
 // Teacher pages
 import TeacherDashboard from './pages/TeacherDashboard'
@@ -66,6 +66,7 @@ const AppRoutes = () => {
       <Route path="/classes" element={<Classes />} />
       <Route path="/reports" element={<Reports />} />
       <Route path="/ai-insights" element={<AIInsights />} />
+      <Route path="/api-logic" element={<APILogicScreen />} />
       <Route path="/settings" element={<Settings />} />
     </Routes>
   )
@@ -73,13 +74,11 @@ const AppRoutes = () => {
 
 function App() {
   return (
-    <Provider store={store}>
-      <Router>
-        <Layout>
-          <AppRoutes />
-        </Layout>
-      </Router>
-    </Provider>
+    <Router>
+      <Layout>
+        <AppRoutes />
+      </Layout>
+    </Router>
   )
 }
 

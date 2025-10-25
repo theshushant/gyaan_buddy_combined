@@ -1,0 +1,167 @@
+// Mock questions data
+export default {
+  '/questions': {
+    questions: [
+      {
+        id: 1,
+        text: "Kya Bharat ki rajdhani Delhi hai?",
+        englishText: "(Is the capital of India Delhi?)",
+        type: "Single Choice",
+        difficulty: "Easy",
+        subject: "Geography",
+        grade: "10",
+        options: [
+          { id: 1, text: "Haan", isCorrect: true },
+          { id: 2, text: "Nahi", isCorrect: false },
+          { id: 3, text: "Pata nahi", isCorrect: false }
+        ],
+        explanation: "Delhi is indeed the capital of India.",
+        successRate: 85,
+        usageCount: 150,
+        createdAt: "2024-01-10T10:00:00Z",
+        updatedAt: "2024-01-10T10:00:00Z"
+      },
+      {
+        id: 2,
+        text: "Prakash sanshleshan ki prakriya samjhaayein.",
+        englishText: "(Explain the process of photosynthesis.)",
+        type: "Short Answer",
+        difficulty: "Medium",
+        subject: "Science",
+        grade: "9",
+        expectedAnswer: "Photosynthesis is the process by which plants convert sunlight into energy.",
+        explanation: "Photosynthesis involves chlorophyll capturing light energy to convert CO2 and water into glucose.",
+        successRate: 62,
+        usageCount: 89,
+        createdAt: "2024-01-11T14:30:00Z",
+        updatedAt: "2024-01-11T14:30:00Z"
+      },
+      {
+        id: 3,
+        text: "Inmein se kaunsi abhajya sankhyayein hain? (Sabhi lagu vikalp chunein)",
+        englishText: "(Which of the following are prime numbers? Select all that apply)",
+        type: "Multiple Choice",
+        difficulty: "Medium",
+        subject: "Mathematics",
+        grade: "10",
+        options: [
+          { id: 1, text: "2", isCorrect: true },
+          { id: 2, text: "4", isCorrect: false },
+          { id: 3, text: "7", isCorrect: true },
+          { id: 4, text: "9", isCorrect: false }
+        ],
+        explanation: "Prime numbers are numbers greater than 1 that have no positive divisors other than 1 and themselves.",
+        successRate: 72,
+        usageCount: 120,
+        createdAt: "2024-01-12T09:15:00Z",
+        updatedAt: "2024-01-12T09:15:00Z"
+      },
+      {
+        id: 4,
+        text: "Jalvayu parivartan ke karan aur prabhavon ka varnan karein.",
+        englishText: "(Describe the causes and effects of climate change.)",
+        type: "Short Answer",
+        difficulty: "Hard",
+        subject: "Science",
+        grade: "11",
+        expectedAnswer: "Climate change is caused by greenhouse gas emissions and leads to global warming.",
+        explanation: "Climate change affects weather patterns, sea levels, and ecosystems worldwide.",
+        successRate: 45,
+        usageCount: 67,
+        createdAt: "2024-01-13T16:45:00Z",
+        updatedAt: "2024-01-13T16:45:00Z"
+      },
+      {
+        id: 5,
+        text: "Mughal samrajya ke pahle samrat kaun the?",
+        englishText: "(Who was the first emperor of the Mughal Empire?)",
+        type: "Single Choice",
+        difficulty: "Easy",
+        subject: "History",
+        grade: "9",
+        options: [
+          { id: 1, text: "Babur", isCorrect: true },
+          { id: 2, text: "Akbar", isCorrect: false },
+          { id: 3, text: "Shah Jahan", isCorrect: false },
+          { id: 4, text: "Aurangzeb", isCorrect: false }
+        ],
+        explanation: "Babur was the founder and first emperor of the Mughal Empire in India.",
+        successRate: 92,
+        usageCount: 180,
+        createdAt: "2024-01-14T11:20:00Z",
+        updatedAt: "2024-01-14T11:20:00Z"
+      }
+    ],
+    pagination: {
+      currentPage: 1,
+      totalPages: 8,
+      totalItems: 150,
+      itemsPerPage: 5
+    },
+    filters: {
+      types: ["Single Choice", "Multiple Choice", "Short Answer", "Long Answer"],
+      difficulties: ["Easy", "Medium", "Hard"],
+      subjects: ["Mathematics", "Science", "English", "History", "Geography"],
+      grades: ["9", "10", "11", "12"]
+    }
+  },
+  
+  '/questions/ai/generated': {
+    questions: [
+      {
+        id: 101,
+        text: "Bharat mein kitne rajya hain?",
+        englishText: "(How many states are there in India?)",
+        type: "Single Choice",
+        difficulty: "Easy",
+        subject: "Geography",
+        grade: "9",
+        aiGenerated: true,
+        confidence: 0.95,
+        options: [
+          { id: 1, text: "28", isCorrect: true },
+          { id: 2, text: "25", isCorrect: false },
+          { id: 3, text: "30", isCorrect: false },
+          { id: 4, text: "32", isCorrect: false }
+        ],
+        explanation: "India has 28 states and 8 union territories.",
+        createdAt: "2024-01-15T10:00:00Z"
+      },
+      {
+        id: 102,
+        text: "Vrit ka kshetrafal kaise nikala jata hai?",
+        englishText: "(How is the area of a circle calculated?)",
+        type: "Short Answer",
+        difficulty: "Medium",
+        subject: "Mathematics",
+        grade: "10",
+        aiGenerated: true,
+        confidence: 0.88,
+        expectedAnswer: "Area = π × r²",
+        explanation: "The area of a circle is calculated using the formula π times radius squared.",
+        createdAt: "2024-01-15T10:05:00Z"
+      }
+    ]
+  },
+  
+  '/questions/stats': {
+    totalQuestions: 150,
+    aiGenerated: 45,
+    manuallyCreated: 105,
+    difficultyDistribution: {
+      easy: 60,
+      medium: 70,
+      hard: 20
+    },
+    subjectDistribution: {
+      mathematics: 40,
+      science: 35,
+      english: 25,
+      history: 30,
+      geography: 20
+    },
+    averageSuccessRate: 73,
+    mostUsedQuestion: "Mughal samrajya ke pahle samrat kaun the?",
+    leastUsedQuestion: "Jalvayu parivartan ke karan aur prabhavon ka varnan karein."
+  }
+};

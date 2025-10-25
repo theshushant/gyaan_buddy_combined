@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { TrendingUp, Users, BookOpen, Award } from 'lucide-react'
 import {
   Chart as ChartJS,
@@ -12,6 +13,7 @@ import {
   Legend,
 } from 'chart.js'
 import { Line, Bar, Pie } from 'react-chartjs-2'
+import dashboardService from '../services/dashboardService'
 
 ChartJS.register(
   CategoryScale,
@@ -26,88 +28,72 @@ ChartJS.register(
 )
 
 const Dashboard = () => {
-  // Debug: Log that Dashboard is loading
-  console.log('Dashboard component loading...')
+  const [dashboardData, setDashboardData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  // Chart data for School-Wide Progress Trends
-  const progressTrendsData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-    datasets: [
-      {
-        label: 'Overall',
-        data: [65, 68, 72, 75, 78, 80, 82, 85, 88, 90, 92, 95],
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        tension: 0.4,
-        fill: true,
-      },
-      {
-        label: 'Class 10',
-        data: [70, 73, 76, 79, 82, 85, 87, 90, 92, 94, 96, 98],
-        borderColor: 'rgb(34, 197, 94)',
-        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-        tension: 0.4,
-        fill: true,
-      },
-      {
-        label: 'Class 12',
-        data: [60, 63, 67, 70, 73, 76, 78, 81, 84, 87, 89, 92],
-        borderColor: 'rgb(249, 115, 22)',
-        backgroundColor: 'rgba(249, 115, 22, 0.1)',
-        tension: 0.4,
-        fill: true,
-      },
-    ],
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true)
+        const [metrics, progressTrends, subjectPerformance, classDistribution, alerts] = await Promise.all([
+          dashboardService.getDashboardMetrics('principal'),
+          dashboardService.getProgressTrends(),
+          dashboardService.getSubjectPerformance(),
+          dashboardService.getClassDistribution(),
+          dashboardService.getAlerts()
+        ])
+        
+        setDashboardData({
+          metrics,
+          progressTrends,
+          subjectPerformance,
+          classDistribution,
+          alerts
+        })
+      } catch (err) {
+        setError(err.message)
+        console.error('Error fetching dashboard data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
-  // Chart data for Subject Performance
-  const subjectPerformanceData = {
-    labels: ['Mathematics', 'Science', 'English', 'History', 'Geography'],
-    datasets: [
-      {
-        label: 'Average Score',
-        data: [85, 78, 92, 88, 75],
-        backgroundColor: [
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(34, 197, 94, 0.8)',
-          'rgba(249, 115, 22, 0.8)',
-          'rgba(168, 85, 247, 0.8)',
-          'rgba(236, 72, 153, 0.8)',
-        ],
-        borderColor: [
-          'rgb(59, 130, 246)',
-          'rgb(34, 197, 94)',
-          'rgb(249, 115, 22)',
-          'rgb(168, 85, 247)',
-          'rgb(236, 72, 153)',
-        ],
-        borderWidth: 2,
-      },
-    ],
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+        <h2 className="text-red-800 font-semibold">Error Loading Dashboard</h2>
+        <p className="text-red-600 mt-2">{error}</p>
+      </div>
+    )
   }
 
-  // Chart data for Class Distribution
-  const classDistributionData = {
-    labels: ['Class 9', 'Class 10', 'Class 11', 'Class 12'],
-    datasets: [
-      {
-        data: [120, 150, 140, 130],
-        backgroundColor: [
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(34, 197, 94, 0.8)',
-          'rgba(249, 115, 22, 0.8)',
-          'rgba(168, 85, 247, 0.8)',
-        ],
-        borderColor: [
-          'rgb(59, 130, 246)',
-          'rgb(34, 197, 94)',
-          'rgb(249, 115, 22)',
-          'rgb(168, 85, 247)',
-        ],
-        borderWidth: 2,
-      },
-    ],
+  if (!dashboardData) {
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+        <h2 className="text-gray-800 font-semibold">No Data Available</h2>
+        <p className="text-gray-600 mt-2">Unable to load dashboard data.</p>
+      </div>
+    )
   }
+
+  const { metrics, progressTrends, subjectPerformance, classDistribution, alerts } = dashboardData
+
+  // Use data from API
+  const progressTrendsData = progressTrends
+  const subjectPerformanceData = subjectPerformance
+  const classDistributionData = classDistribution
 
   const chartOptions = {
     responsive: true,
@@ -141,61 +127,10 @@ const Dashboard = () => {
     },
   }
 
-  const metrics = [
-    {
-      title: 'Overall Student Proficiency',
-      value: '78%',
-      change: '+5% vs last month',
-      changeType: 'positive',
-      icon: TrendingUp
-    },
-    {
-      title: 'Average Class Mastery',
-      value: '85%',
-      change: '+3% vs last month',
-      changeType: 'positive',
-      icon: BookOpen
-    },
-    {
-      title: 'Teacher Effectiveness',
-      value: '92%',
-      change: '+2% vs last month',
-      changeType: 'positive',
-      icon: Award
-    }
-  ]
-
-  const quickSummary = [
-    { label: 'Active Teachers', value: '25' },
-    { label: 'Active Students', value: '500' },
-    { label: 'Classes in Session', value: '32' }
-  ]
-
-  const alerts = [
-    {
-      type: 'alert',
-      message: 'Low score alert in Class 10-B Mathematics.',
-      detail: 'Teacher: Mr. Ramesh Kumar',
-      bgColor: 'bg-red-50',
-      borderColor: 'border-red-200',
-      textColor: 'text-red-800'
-    },
-    {
-      type: 'announcement',
-      message: 'Upcoming Test: Mathematics for Class 12 on July 25th.',
-      bgColor: 'bg-yellow-50',
-      borderColor: 'border-yellow-200',
-      textColor: 'text-yellow-800'
-    },
-    {
-      type: 'achievement',
-      message: 'Class 10-B passed with good results.',
-      detail: 'Congratulations to all students and teachers.',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200',
-      textColor: 'text-green-800'
-    }
-  ]
+  // Use data from API
+  const metricsData = metrics.metrics || []
+  const quickSummaryData = metrics.quickSummary || []
+  const alertsData = alerts.alerts || []
 
   return (
     <div className="space-y-6">
@@ -205,7 +140,7 @@ const Dashboard = () => {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {metrics.map((metric, index) => (
+        {metricsData.map((metric, index) => (
           <div 
             key={index} 
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-lg hover:scale-105 transition-all duration-300 ease-in-out"
@@ -220,7 +155,7 @@ const Dashboard = () => {
                 </p>
               </div>
               <div className="h-12 w-12 bg-blue-50 rounded-lg flex items-center justify-center hover:bg-blue-100 transition-colors duration-200">
-                <metric.icon className="h-6 w-6 text-blue-600" />
+                <TrendingUp className="h-6 w-6 text-blue-600" />
               </div>
             </div>
           </div>
@@ -287,7 +222,7 @@ const Dashboard = () => {
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 ease-in-out">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Summary</h2>
           <div className="space-y-3">
-            {quickSummary.map((item, index) => (
+            {quickSummaryData.map((item, index) => (
               <div 
                 key={index} 
                 className="flex justify-between items-center hover:bg-gray-50 p-2 rounded transition-colors duration-200"
@@ -307,7 +242,7 @@ const Dashboard = () => {
             <a href="#" className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200">More →</a>
           </div>
           <div className="space-y-3">
-            {alerts.map((alert, index) => (
+            {alertsData.map((alert, index) => (
               <div 
                 key={index} 
                 className={`p-3 rounded-lg border ${alert.bgColor} ${alert.borderColor} hover:scale-105 transition-transform duration-200`}

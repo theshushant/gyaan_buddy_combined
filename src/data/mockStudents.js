@@ -170,5 +170,37 @@ export default {
       history: 80,
       geography: 75
     }
+  },
+
+  // Dynamic endpoint handler for progress trends - returns different data based on pattern matching
+  '/students/1/progress-trends': {
+    math: { score: 88, change: 5, period: 'Last 3 Months' },
+    science: { score: 82, change: 3, period: 'Last 3 Months' },
+    english: { score: 85, change: 2, period: 'Last 3 Months' },
+    history: { score: 85, change: 4, period: 'Last 3 Months' }
+  },
+  '/students/2/progress-trends': {
+    math: { score: 95, change: 8, period: 'Last 3 Months' },
+    science: { score: 90, change: 6, period: 'Last 3 Months' },
+    english: { score: 92, change: 5, period: 'Last 3 Months' },
+    geography: { score: 91, change: 7, period: 'Last 3 Months' }
+  },
+  '/students/3/progress-trends': {
+    math: { score: 70, change: -2, period: 'Last 3 Months' },
+    science: { score: 78, change: 1, period: 'Last 3 Months' },
+    english: { score: 80, change: 0, period: 'Last 3 Months' },
+    history: { score: 76, change: -1, period: 'Last 3 Months' }
+  },
+  '/students/4/progress-trends': {
+    math: { score: 90, change: 6, period: 'Last 3 Months' },
+    science: { score: 85, change: 4, period: 'Last 3 Months' },
+    english: { score: 88, change: 3, period: 'Last 3 Months' },
+    geography: { score: 89, change: 5, period: 'Last 3 Months' }
+  },
+  '/students/5/progress-trends': {
+    math: { score: 60, change: -5, period: 'Last 3 Months' },
+    science: { score: 65, change: -3, period: 'Last 3 Months' },
+    english: { score: 70, change: -2, period: 'Last 3 Months' },
+    history: { score: 65, change: -4, period: 'Last 3 Months' }
   }
 };

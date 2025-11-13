@@ -1,14 +1,70 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
 import { User, Lock, Bell, Settings as SettingsIcon, Calendar, Database, Shield, Zap, Globe, Download, Upload } from 'lucide-react'
+import Modal from '../components/Modal'
+import authService from '../services/authService'
+import { fetchCurrentUser } from '../features/auth/authSlice'
 
 const Settings = () => {
+  const dispatch = useDispatch()
+  const { user, loading, error } = useSelector(state => state.auth)
+  
   const [activeSection, setActiveSection] = useState('account')
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [inAppAlerts, setInAppAlerts] = useState(true)
   const [smsNotifications, setSmsNotifications] = useState(false)
-  const [darkMode, setDarkMode] = useState(false)
   const [autoBackup, setAutoBackup] = useState(true)
   const [dataRetention, setDataRetention] = useState('2')
+  
+  // Password change modal state
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [profileError, setProfileError] = useState(null)
+
+  // Fetch user profile data on component mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      // If user data is not in Redux, fetch it
+      if (!user) {
+        setProfileLoading(true)
+        setProfileError(null)
+        try {
+          await dispatch(fetchCurrentUser()).unwrap()
+        } catch (err) {
+          setProfileError(err || 'Failed to load profile data')
+        } finally {
+          setProfileLoading(false)
+        }
+      }
+    }
+    fetchProfile()
+  }, [dispatch, user])
+  
+  // Get user profile data with fallbacks
+  const getUserDisplayName = () => {
+    if (!user) return 'Loading...'
+    return `${user.firstName || user.first_name || ''} ${user.lastName || user.last_name || ''}`.trim() || user.username || 'User'
+  }
+  
+  const getUserEmail = () => {
+    return user?.email || ''
+  }
+  
+  const getUserPhone = () => {
+    return user?.phoneNumber || user?.phone_number || ''
+  }
+  
+  const getUserRole = () => {
+    if (!user) return ''
+    const role = user.role || user.user_type || ''
+    // Capitalize first letter
+    return role.charAt(0).toUpperCase() + role.slice(1)
+  }
 
   const sections = [
     { id: 'account', label: 'Account', icon: User },
@@ -37,6 +93,53 @@ const Settings = () => {
     { name: 'Zoom', status: 'Connected', icon: Globe },
     { name: 'Slack', status: 'Not Connected', icon: Globe }
   ]
+
+  // Password change handlers
+  const handleOpenPasswordModal = () => {
+    setPassword('')
+    setConfirmPassword('')
+    setPasswordError('')
+    setIsPasswordModalOpen(true)
+  }
+
+  const handleClosePasswordModal = () => {
+    setIsPasswordModalOpen(false)
+    setPassword('')
+    setConfirmPassword('')
+    setPasswordError('')
+  }
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault()
+    setPasswordError('')
+
+    // Validation
+    if (!password || !confirmPassword) {
+      setPasswordError('Please fill in all fields')
+      return
+    }
+
+    if (password.length < 8) {
+      setPasswordError('Password must be at least 8 characters long')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setPasswordError('Passwords do not match')
+      return
+    }
+
+    setIsChangingPassword(true)
+    try {
+      await authService.changePassword({ new_password: password })
+      alert('Password changed successfully!')
+      handleClosePasswordModal()
+    } catch (error) {
+      setPasswordError(error.message || 'Failed to change password. Please try again.')
+    } finally {
+      setIsChangingPassword(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -103,7 +206,10 @@ const Settings = () => {
                         <p className="text-sm text-gray-600">Change your password and manage security settings</p>
                       </div>
                     </div>
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:scale-105 transition-all duration-200">
+                    <button 
+                      onClick={handleOpenPasswordModal}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:scale-105 transition-all duration-200"
+                    >
                       Change Password
                     </button>
                   </div>
@@ -111,43 +217,103 @@ const Settings = () => {
                   {/* Account Info */}
                   <div className="p-4 border border-gray-200 rounded-lg">
                     <h3 className="font-medium text-gray-900 mb-4">Account Information</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                        <input
-                          type="text"
-                          value="Principal Name"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          readOnly
-                        />
+                    
+                    {/* Loading State */}
+                    {(loading.fetchUser || profileLoading) && (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input
-                          type="email"
-                          value="principal@school.edu"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          readOnly
-                        />
+                    )}
+                    
+                    {/* Error State */}
+                    {(error.fetchUser || profileError) && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                        <p className="text-red-600 text-sm">
+                          {error.fetchUser || profileError || 'Failed to load profile data'}
+                        </p>
+                        <button
+                          onClick={async () => {
+                            setProfileLoading(true)
+                            setProfileError(null)
+                            try {
+                              await dispatch(fetchCurrentUser()).unwrap()
+                            } catch (err) {
+                              setProfileError(err || 'Failed to load profile data')
+                            } finally {
+                              setProfileLoading(false)
+                            }
+                          }}
+                          className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+                        >
+                          Retry
+                        </button>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                        <input
-                          type="tel"
-                          value="+91 98765 43210"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
+                    )}
+                    
+                    {/* Profile Data */}
+                    {!(loading.fetchUser || profileLoading) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                          <input
+                            type="text"
+                            value={getUserDisplayName()}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            readOnly
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                          <input
+                            type="email"
+                            value={getUserEmail()}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            readOnly
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                          <input
+                            type="tel"
+                            value={getUserPhone()}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Not set"
+                            readOnly
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                          <input
+                            type="text"
+                            value={getUserRole()}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            readOnly
+                          />
+                        </div>
+                        {user?.username && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                            <input
+                              type="text"
+                              value={user.username}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              readOnly
+                            />
+                          </div>
+                        )}
+                        {user?.employeeId || user?.employee_id ? (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
+                            <input
+                              type="text"
+                              value={user.employeeId || user.employee_id}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              readOnly
+                            />
+                          </div>
+                        ) : null}
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                        <input
-                          type="text"
-                          value="Principal"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          readOnly
-                        />
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -223,27 +389,10 @@ const Settings = () => {
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">General Preferences</h2>
                 
                 <div className="space-y-6">
-                  {/* Theme */}
-                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                    <div>
-                      <h3 className="font-medium text-gray-900">Dark Mode</h3>
-                      <p className="text-sm text-gray-600">Switch to dark mode for better viewing in low light.</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={darkMode}
-                        onChange={(e) => setDarkMode(e.target.checked)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
-                  </div>
-
                   {/* Language */}
-                  <div className="p-4 border border-gray-200 rounded-lg">
+                  <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <h3 className="font-medium text-gray-900 mb-2">Language</h3>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                       <option value="en">English</option>
                       <option value="hi">Hindi</option>
                       <option value="mr">Marathi</option>
@@ -251,9 +400,9 @@ const Settings = () => {
                   </div>
 
                   {/* Timezone */}
-                  <div className="p-4 border border-gray-200 rounded-lg">
+                  <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <h3 className="font-medium text-gray-900 mb-2">Timezone</h3>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                       <option value="IST">India Standard Time (IST)</option>
                       <option value="UTC">UTC</option>
                     </select>
@@ -469,6 +618,70 @@ const Settings = () => {
           )}
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      <Modal
+        isOpen={isPasswordModalOpen}
+        onClose={handleClosePasswordModal}
+        title="Change Password"
+        size="md"
+      >
+        <form onSubmit={handlePasswordChange} className="space-y-4">
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              New Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter new password"
+              minLength={8}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Confirm new password"
+              minLength={8}
+            />
+          </div>
+
+          {passwordError && (
+            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+              {passwordError}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={handleClosePasswordModal}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              disabled={isChangingPassword}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              disabled={isChangingPassword}
+            >
+              {isChangingPassword ? 'Changing...' : 'Change Password'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

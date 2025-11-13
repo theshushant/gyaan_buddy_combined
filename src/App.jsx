@@ -1,6 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
+import { useEffect } from 'react'
 import Layout from './components/Layout'
+import ProtectedRoute from './components/ProtectedRoute'
+import Login from './pages/Login'
+import { fetchCurrentUser } from './features/auth/authSlice'
 
 // Principal pages
 import Dashboard from './pages/Dashboard'
@@ -13,6 +17,7 @@ import StudentProfile from './pages/StudentProfile'
 import TeacherProfile from './pages/TeacherProfile'
 import AIInsights from './pages/AIInsights'
 import APILogicScreen from './pages/APILogicScreen'
+import ClassRoster from './pages/ClassRoster'
 
 // Teacher pages
 import TeacherDashboard from './pages/TeacherDashboard'
@@ -34,11 +39,14 @@ import AISuggestions from './pages/AISuggestions'
 const AppRoutes = () => {
   const { role } = useSelector(state => state.auth)
 
+  // Teacher routes - show TeacherDashboard
   if (role === 'teacher') {
     return (
       <Routes>
         <Route path="/" element={<TeacherDashboard />} />
+        <Route path="/profile" element={<TeacherProfile />} />
         <Route path="/students" element={<MyStudents />} />
+        <Route path="/students/:id" element={<StudentProfile />} />
         <Route path="/modules" element={<ModulesAssignments />} />
         <Route path="/modules/:id" element={<ModuleDetail />} />
         <Route path="/tests" element={<TestsQuizzes />} />
@@ -56,6 +64,7 @@ const AppRoutes = () => {
     )
   }
 
+  // Principal routes - show Dashboard (default for principal and other roles)
   return (
     <Routes>
       <Route path="/" element={<Dashboard />} />
@@ -64,6 +73,7 @@ const AppRoutes = () => {
       <Route path="/teachers" element={<Teachers />} />
       <Route path="/teachers/:id" element={<TeacherProfile />} />
       <Route path="/classes" element={<Classes />} />
+      <Route path="/classes/:id/roster" element={<ClassRoster />} />
       <Route path="/reports" element={<Reports />} />
       <Route path="/ai-insights" element={<AIInsights />} />
       <Route path="/api-logic" element={<APILogicScreen />} />
@@ -73,11 +83,41 @@ const AppRoutes = () => {
 }
 
 function App() {
+  const dispatch = useDispatch()
+  const { isAuthenticated, loading } = useSelector(state => state.auth)
+
+  // Check if user is already logged in on app start
+  useEffect(() => {
+    const token = localStorage.getItem('authToken')
+    if (token && !isAuthenticated && !loading.fetchUser) {
+      dispatch(fetchCurrentUser())
+    }
+  }, [dispatch, isAuthenticated, loading.fetchUser])
+
+  // Show loading state while checking authentication
+  if (loading.fetchUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
   return (
     <Router>
-      <Layout>
-        <AppRoutes />
-      </Layout>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={<Login />} />
+        
+        {/* Protected Routes */}
+        <Route path="/*" element={
+          <ProtectedRoute>
+            <Layout>
+              <AppRoutes />
+            </Layout>
+          </ProtectedRoute>
+        } />
+      </Routes>
     </Router>
   )
 }

@@ -13,7 +13,9 @@ class ReportsService {
       if (filters.studentId) queryParams.append('studentId', filters.studentId);
 
       const endpoint = `/reports/student-performance${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      const response = await apiService.get(endpoint);
+      // Extract data from backend response structure {success, message, data}
+      return response.data || response;
     } catch (error) {
       throw new Error(`Failed to fetch student performance reports: ${error.message}`);
     }
@@ -29,7 +31,9 @@ class ReportsService {
       if (filters.dateRange) queryParams.append('dateRange', filters.dateRange);
 
       const endpoint = `/reports/progress-over-time${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      const response = await apiService.get(endpoint);
+      // Extract data from backend response structure {success, message, data}
+      return response.data || response;
     } catch (error) {
       throw new Error(`Failed to fetch progress over time reports: ${error.message}`);
     }
@@ -46,7 +50,9 @@ class ReportsService {
       if (filters.type) queryParams.append('type', filters.type);
 
       const endpoint = `/reports/quiz-assignment-summaries${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      const response = await apiService.get(endpoint);
+      // Extract data from backend response structure {success, message, data}
+      return response.data || response;
     } catch (error) {
       throw new Error(`Failed to fetch quiz/assignment summaries: ${error.message}`);
     }
@@ -62,7 +68,9 @@ class ReportsService {
       if (filters.dateRange) queryParams.append('dateRange', filters.dateRange);
 
       const endpoint = `/reports/ai-insights${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      const response = await apiService.get(endpoint);
+      // Extract data from backend response structure {success, message, data}
+      return response.data || response;
     } catch (error) {
       throw new Error(`Failed to fetch AI insights reports: ${error.message}`);
     }
@@ -79,7 +87,9 @@ class ReportsService {
       if (filters.metric) queryParams.append('metric', filters.metric);
 
       const endpoint = `/reports/analytics${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      const response = await apiService.get(endpoint);
+      // Extract data from backend response structure {success, message, data}
+      return response.data || response;
     } catch (error) {
       throw new Error(`Failed to fetch analytics data: ${error.message}`);
     }
@@ -88,10 +98,8 @@ class ReportsService {
   // Generate custom report
   async generateCustomReport(reportConfig) {
     try {
-      return await apiService.requestWithMock('/reports/generate', {
-        method: 'POST',
-        body: reportConfig,
-      });
+      const response = await apiService.post('/reports/generate', reportConfig);
+      return response.data || response;
     } catch (error) {
       throw new Error(`Failed to generate custom report: ${error.message}`);
     }
@@ -100,7 +108,8 @@ class ReportsService {
   // Export report
   async exportReport(reportId, format = 'pdf') {
     try {
-      return await apiService.requestWithMock(`/reports/${reportId}/export?format=${format}`);
+      const response = await apiService.get(`/reports/${reportId}/export?format=${format}`);
+      return response.data || response;
     } catch (error) {
       throw new Error(`Failed to export report: ${error.message}`);
     }
@@ -109,7 +118,8 @@ class ReportsService {
   // Get report templates
   async getReportTemplates() {
     try {
-      return await apiService.requestWithMock('/reports/templates');
+      const response = await apiService.get('/reports/templates');
+      return response.data || response;
     } catch (error) {
       throw new Error(`Failed to fetch report templates: ${error.message}`);
     }
@@ -118,10 +128,8 @@ class ReportsService {
   // Save report configuration
   async saveReportConfiguration(config) {
     try {
-      return await apiService.requestWithMock('/reports/configurations', {
-        method: 'POST',
-        body: config,
-      });
+      const response = await apiService.post('/reports/configurations', config);
+      return response.data || response;
     } catch (error) {
       throw new Error(`Failed to save report configuration: ${error.message}`);
     }

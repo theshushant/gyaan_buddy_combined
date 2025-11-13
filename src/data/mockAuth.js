@@ -5,6 +5,7 @@ export default {
     token: 'mock-jwt-token-12345',
     user: {
       id: '1',
+      username: 'principal',
       email: 'principal@school.com',
       firstName: 'Dr. Rajesh',
       lastName: 'Kumar',
@@ -26,6 +27,7 @@ export default {
   
   '/auth/me': {
     id: '1',
+    username: 'principal',
     email: 'principal@school.com',
     firstName: 'Dr. Rajesh',
     lastName: 'Kumar',

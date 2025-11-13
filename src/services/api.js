@@ -1,8 +1,12 @@
 // Base API configuration and service layer
+import { store } from '../store/store';
+import { logoutUser } from '../features/auth/authSlice';
+
 class ApiService {
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-    this.timeout = 10000; // 10 seconds
+    this.baseURL = import.meta.env.VITE_API_URL || import.meta.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+    this.timeout = import.meta.env.VITE_API_TIMEOUT || import.meta.env.REACT_APP_API_TIMEOUT || 15000; // Increased to 15 seconds for slower connections
+    this.isLoggingOut = false; // Flag to prevent multiple logout attempts
   }
 
   // Get auth token from localStorage
@@ -20,13 +24,63 @@ class ApiService {
     localStorage.removeItem('authToken');
   }
 
-  // Create headers for API requests
-  getHeaders(includeAuth = true) {
-    const headers = {
-      'Content-Type': 'application/json',
-    };
+  // Handle API failure by logging out user and redirecting to login
+  async handleApiFailure(error, endpoint) {
+    // Don't logout for public endpoints
+    const publicEndpoints = ['/auth/login/', '/auth/login', '/auth/register/', '/auth/register', '/auth/logout/'];
+    const isPublicEndpoint = publicEndpoints.some(publicPath => endpoint.includes(publicPath));
+    
+    // Don't logout if already logging out or if it's a public endpoint
+    if (this.isLoggingOut || isPublicEndpoint) {
+      return;
+    }
 
-    if (includeAuth) {
+    // Don't logout if already on login page
+    const currentPath = window.location.pathname;
+    if (currentPath === '/login') {
+      return;
+    }
+
+    // Set flag to prevent multiple logout attempts
+    this.isLoggingOut = true;
+
+    try {
+      // Clear auth token
+      this.removeAuthToken();
+      
+      // Dispatch logout action to clear Redux state
+      store.dispatch(logoutUser());
+      
+      // Redirect to login page
+      window.location.href = '/login';
+    } catch (logoutError) {
+      console.error('Error during logout:', logoutError);
+      // Even if logout fails, still redirect to login
+      window.location.href = '/login';
+    } finally {
+      // Reset flag after a delay to allow for future logouts if needed
+      setTimeout(() => {
+        this.isLoggingOut = false;
+      }, 1000);
+    }
+  }
+
+  // Create headers for API requests
+  getHeaders(includeAuth = true, endpoint = '', isFormData = false) {
+    const headers = {};
+
+    // Only set Content-Type for non-FormData requests
+    // For FormData, let the browser set it with the boundary
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    // Don't include auth for public endpoints
+    const publicEndpoints = ['/auth/login/', '/auth/login', '/auth/register/', '/auth/register'];
+    const isPublicEndpoint = publicEndpoints.some(publicPath => endpoint.includes(publicPath));
+    
+    // Only include auth if explicitly requested AND not a public endpoint
+    if (includeAuth && !isPublicEndpoint) {
       const token = this.getAuthToken();
       if (token) {
         headers.Authorization = `Bearer ${token}`;
@@ -39,16 +93,40 @@ class ApiService {
   // Generic request method
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+    
+    // Check if body is FormData
+    const isFormData = options.body instanceof FormData || options.isFormData === true;
+    
+    // Build config object with explicit method handling
     const config = {
-      method: 'GET',
-      headers: this.getHeaders(),
-      ...options,
+      method: options.method || 'GET',
+      headers: this.getHeaders(true, endpoint, isFormData),
     };
 
+    // Add other options (excluding method and isFormData to avoid conflicts)
+    const { method, body, isFormData: _, ...otherOptions } = options;
+    Object.assign(config, otherOptions);
+
     // Add body for POST/PUT/PATCH requests
-    if (options.body && typeof options.body === 'object') {
-      config.body = JSON.stringify(options.body);
+    if (body) {
+      if (isFormData || body instanceof FormData) {
+        // For FormData, send as-is (browser will set Content-Type with boundary)
+        config.body = body;
+      } else if (typeof body === 'object') {
+        // For regular objects, stringify as JSON
+        config.body = JSON.stringify(body);
+      } else {
+        // For other types, send as-is
+        config.body = body;
+      }
     }
+
+    // Debug logging
+    console.log(`API Request: ${config.method} ${url}`, {
+      method: config.method,
+      headers: config.headers,
+      body: config.body
+    });
 
     try {
       const controller = new AbortController();
@@ -62,18 +140,95 @@ class ApiService {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
+        // Handle API failures - logout user and redirect to login to prevent infinite retries
+        // Don't handle errors for public endpoints (login, register)
+        const publicEndpoints = ['/auth/login/', '/auth/login', '/auth/register/', '/auth/register'];
+        const isPublicEndpoint = publicEndpoints.some(publicPath => endpoint.includes(publicPath));
+        
+        // Don't logout on validation errors (400, 404, 422) - these are user input errors
+        const validationErrorCodes = [400, 404, 422];
+        const isValidationError = validationErrorCodes.includes(response.status);
+        
+        // For non-public endpoints, logout on any error except validation errors
+        if (!isPublicEndpoint && !isValidationError) {
+          // Handle the logout asynchronously to avoid blocking error throwing
+          this.handleApiFailure(new Error(`HTTP error! status: ${response.status}`), endpoint);
+        }
+        
+        // Get error message from response
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        const errorMessage = errorData.message || errorData.detail || `HTTP error! status: ${response.status}`;
+        
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
-      return data;
+      // Handle responses that may have no content (e.g., 204 No Content for DELETE)
+      const contentType = response.headers.get('content-type');
+      const contentLength = response.headers.get('content-length');
+      
+      // Check if response has content
+      if (response.status === 204 || contentLength === '0' || !contentType?.includes('application/json')) {
+        // For successful DELETE requests with no content, return a success object
+        return { success: true, message: 'Operation completed successfully' };
+      }
+
+      // Try to parse JSON, but handle empty responses gracefully
+      const text = await response.text();
+      if (!text || text.trim().length === 0) {
+        return { success: true, message: 'Operation completed successfully' };
+      }
+
+      try {
+        const data = JSON.parse(text);
+        return data;
+      } catch (parseError) {
+        // If JSON parsing fails, return the text as a message
+        return { success: true, message: text || 'Operation completed successfully' };
+      }
     } catch (error) {
+      // Don't logout for public endpoints or if already logging out
+      const publicEndpoints = ['/auth/login/', '/auth/login', '/auth/register/', '/auth/register'];
+      const isPublicEndpoint = publicEndpoints.some(publicPath => endpoint.includes(publicPath));
+      
       if (error.name === 'AbortError') {
+        // Timeout errors - logout user if not a public endpoint
+        if (!isPublicEndpoint && !this.isLoggingOut) {
+          this.handleApiFailure(error, endpoint);
+        }
         throw new Error('Request timeout');
       }
+      
+      // Handle connection errors - logout user if not a public endpoint
+      if (
+        error.message.includes('Failed to fetch') || 
+        error.message.includes('ERR_CONNECTION_REFUSED') ||
+        error.message.includes('ERR_CONNECTION_RESET') ||
+        error.message.includes('NetworkError') ||
+        error.name === 'TypeError'
+      ) {
+        console.warn(`Backend not available at ${url}. Make sure the backend server is running.`);
+        
+        // Logout user on connection errors (except for public endpoints)
+        if (!isPublicEndpoint && !this.isLoggingOut) {
+          this.handleApiFailure(error, endpoint);
+        }
+        
+        throw new Error('Cannot connect to server. Please ensure the backend is running.');
+      }
+      
+      // For any other errors, logout if not a public endpoint
+      if (!isPublicEndpoint && !this.isLoggingOut && !error.message.includes('Session expired')) {
+        this.handleApiFailure(error, endpoint);
+      }
+      
       throw error;
     }
+  }
+
+  // Test method to verify POST requests work correctly
+  async testPost(endpoint, data) {
+    console.log('Testing POST method...');
+    return this.post(endpoint, data);
   }
 
   // HTTP Methods
@@ -82,11 +237,15 @@ class ApiService {
   }
 
   async post(endpoint, data, options = {}) {
-    return this.request(endpoint, { ...options, method: 'POST', body: data });
+    // Check if data is FormData
+    const isFormData = data instanceof FormData || options.isFormData === true;
+    return this.request(endpoint, { ...options, method: 'POST', body: data, isFormData });
   }
 
   async put(endpoint, data, options = {}) {
-    return this.request(endpoint, { ...options, method: 'PUT', body: data });
+    // Check if data is FormData
+    const isFormData = data instanceof FormData || options.isFormData === true;
+    return this.request(endpoint, { ...options, method: 'PUT', body: data, isFormData });
   }
 
   async patch(endpoint, data, options = {}) {
@@ -102,8 +261,8 @@ class ApiService {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
     
-    // Remove query parameters to match mock data keys
-    const baseEndpoint = endpoint.split('?')[0];
+    // Remove query parameters and trailing slash to match mock data keys
+    const baseEndpoint = endpoint.split('?')[0].replace(/\/$/, '');
     
     // Import mock data based on endpoint
     const mockDataMap = {
@@ -166,6 +325,11 @@ class ApiService {
       const mockModule = await mockDataLoader();
       const mockData = mockModule.default || mockModule;
       
+      // Return endpoint-specific data if it exists
+      if (mockData[baseEndpoint]) {
+        return mockData[baseEndpoint];
+      }
+      
       // For dashboard endpoints, return the specific data for that endpoint
       if (baseEndpoint.startsWith('/dashboard/') && mockData[baseEndpoint]) {
         return mockData[baseEndpoint];
@@ -204,7 +368,8 @@ class ApiService {
 
   // Check if we're in development mode and should use mock data
   shouldUseMockData() {
-    return import.meta.env.DEV; // Always use mock data in development
+    const useMockData = import.meta.env.VITE_USE_MOCK_DATA || import.meta.env.REACT_APP_USE_MOCK_DATA;
+    return useMockData === 'true'; // Only use mock data if explicitly set to true
   }
 
   // Enhanced request method that can use mock data

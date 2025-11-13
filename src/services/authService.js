@@ -5,17 +5,39 @@ class AuthService {
   // Login user
   async login(credentials) {
     try {
-      const response = await apiService.requestWithMock('/auth/login', {
-        method: 'POST',
-        body: credentials,
-      });
+      console.log('AuthService: Calling login API with credentials:', credentials);
+      console.log('AuthService: About to call apiService.post...');
+      
+      // Clear any existing token before attempting login
+      apiService.removeAuthToken();
+      
+      const response = await apiService.post('/auth/login/', credentials);
+      console.log('AuthService: Login API response:', response);
 
-      if (response.token) {
-        apiService.setAuthToken(response.token);
+      // Handle different response structures
+      if (response.success || response.data) {
+        const userData = response.data?.user || response.user;
+        const tokenData = response.data?.tokens || response.tokens || response.data?.token || response.token;
+        
+        // Store the access token
+        if (tokenData) {
+          const accessToken = tokenData.access || tokenData;
+          if (accessToken) {
+            apiService.setAuthToken(accessToken);
+          }
+        }
+        
+        // Return the user data and tokens
+        return {
+          success: true,
+          user: userData,
+          tokens: tokenData
+        };
+      } else {
+        throw new Error(response.message || 'Login failed');
       }
-
-      return response;
     } catch (error) {
+      console.error('AuthService: Login error:', error);
       throw new Error(`Login failed: ${error.message}`);
     }
   }
@@ -23,9 +45,7 @@ class AuthService {
   // Logout user
   async logout() {
     try {
-      await apiService.requestWithMock('/auth/logout', {
-        method: 'POST',
-      });
+      await apiService.post('/auth/logout/');
     } catch (error) {
       console.warn('Logout request failed:', error.message);
     } finally {
@@ -36,8 +56,17 @@ class AuthService {
   // Get current user profile
   async getCurrentUser() {
     try {
-      return await apiService.requestWithMock('/auth/me');
+      // Always use the real API endpoint
+      const response = await apiService.get('/auth/me/');
+      
+      // Handle different response structures
+      // Backend might return the user object directly, or wrapped in { data: { user } }
+      const userData = response.data?.user || response.user || response.data || response;
+      
+      // If response has user field, return it; otherwise return the whole response
+      return userData;
     } catch (error) {
+      console.error('AuthService: getCurrentUser error:', error);
       throw new Error(`Failed to get user profile: ${error.message}`);
     }
   }
@@ -45,10 +74,7 @@ class AuthService {
   // Update user profile
   async updateProfile(profileData) {
     try {
-      return await apiService.requestWithMock('/auth/profile', {
-        method: 'PUT',
-        body: profileData,
-      });
+      return await apiService.put('/auth/profile', profileData);
     } catch (error) {
       throw new Error(`Failed to update profile: ${error.message}`);
     }
@@ -57,10 +83,7 @@ class AuthService {
   // Change password
   async changePassword(passwordData) {
     try {
-      return await apiService.requestWithMock('/auth/change-password', {
-        method: 'POST',
-        body: passwordData,
-      });
+      return await apiService.post('/auth/change-password', passwordData);
     } catch (error) {
       throw new Error(`Failed to change password: ${error.message}`);
     }

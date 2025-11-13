@@ -13,7 +13,7 @@ class AIService {
       if (filters.subject) queryParams.append('subject', filters.subject);
 
       const endpoint = `/ai/suggestions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch AI suggestions: ${error.message}`);
     }
@@ -29,7 +29,7 @@ class AIService {
       if (filters.dateRange) queryParams.append('dateRange', filters.dateRange);
 
       const endpoint = `/ai/insights${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch AI insights: ${error.message}`);
     }
@@ -38,7 +38,7 @@ class AIService {
   // Generate AI content
   async generateAIContent(requestData) {
     try {
-      return await apiService.requestWithMock('/ai/generate', {
+      return await apiService.get('/ai/generate', {
         method: 'POST',
         body: requestData,
       });
@@ -50,7 +50,7 @@ class AIService {
   // Get AI generated questions
   async getAIGeneratedQuestions(requestData) {
     try {
-      return await apiService.requestWithMock('/ai/questions/generate', {
+      return await apiService.get('/ai/questions/generate', {
         method: 'POST',
         body: requestData,
       });
@@ -68,7 +68,7 @@ class AIService {
       if (filters.dateRange) queryParams.append('dateRange', filters.dateRange);
 
       const endpoint = `/ai/analyze/student/${studentId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to analyze student performance: ${error.message}`);
     }
@@ -84,7 +84,7 @@ class AIService {
       if (filters.studentId) queryParams.append('studentId', filters.studentId);
 
       const endpoint = `/ai/recommendations/${type}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch AI recommendations: ${error.message}`);
     }
@@ -99,7 +99,7 @@ class AIService {
       if (filters.subject) queryParams.append('subject', filters.subject);
 
       const endpoint = `/ai/heatmap${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch AI heatmap data: ${error.message}`);
     }
@@ -115,7 +115,7 @@ class AIService {
       if (filters.studentId) queryParams.append('studentId', filters.studentId);
 
       const endpoint = `/ai/remedial-activities${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch remedial activities: ${error.message}`);
     }

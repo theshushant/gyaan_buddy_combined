@@ -15,7 +15,7 @@ class QuestionsService {
       if (filters.limit) queryParams.append('limit', filters.limit);
 
       const endpoint = `/questions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch questions: ${error.message}`);
     }
@@ -24,7 +24,7 @@ class QuestionsService {
   // Get question by ID
   async getQuestionById(questionId) {
     try {
-      return await apiService.requestWithMock(`/questions/${questionId}`);
+      return await apiService.get(`/questions/${questionId}`);
     } catch (error) {
       throw new Error(`Failed to fetch question: ${error.message}`);
     }
@@ -33,10 +33,9 @@ class QuestionsService {
   // Create new question
   async createQuestion(questionData) {
     try {
-      return await apiService.requestWithMock('/questions', {
-        method: 'POST',
-        body: questionData,
-      });
+      // Check if questionData is FormData (for image uploads)
+      const isFormData = questionData instanceof FormData;
+      return await apiService.post('/questions/', questionData, { isFormData });
     } catch (error) {
       throw new Error(`Failed to create question: ${error.message}`);
     }
@@ -45,10 +44,9 @@ class QuestionsService {
   // Update question
   async updateQuestion(questionId, questionData) {
     try {
-      return await apiService.requestWithMock(`/questions/${questionId}`, {
-        method: 'PUT',
-        body: questionData,
-      });
+      // Check if questionData is FormData (for image uploads)
+      const isFormData = questionData instanceof FormData;
+      return await apiService.put(`/questions/${questionId}/`, questionData, { isFormData });
     } catch (error) {
       throw new Error(`Failed to update question: ${error.message}`);
     }
@@ -57,7 +55,7 @@ class QuestionsService {
   // Delete question
   async deleteQuestion(questionId) {
     try {
-      return await apiService.requestWithMock(`/questions/${questionId}`, {
+      return await apiService.get(`/questions/${questionId}`, {
         method: 'DELETE',
       });
     } catch (error) {
@@ -68,7 +66,7 @@ class QuestionsService {
   // Generate AI questions
   async generateAIQuestions(requestData) {
     try {
-      return await apiService.requestWithMock('/questions/ai/generate', {
+      return await apiService.get('/questions/ai/generate', {
         method: 'POST',
         body: requestData,
       });
@@ -88,7 +86,7 @@ class QuestionsService {
       if (filters.type) queryParams.append('type', filters.type);
 
       const endpoint = `/questions/ai/generated${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch AI generated questions: ${error.message}`);
     }
@@ -97,7 +95,7 @@ class QuestionsService {
   // Save AI generated questions
   async saveAIGeneratedQuestions(questions) {
     try {
-      return await apiService.requestWithMock('/questions/ai/save', {
+      return await apiService.get('/questions/ai/save', {
         method: 'POST',
         body: { questions },
       });
@@ -109,7 +107,7 @@ class QuestionsService {
   // Get question statistics
   async getQuestionStats() {
     try {
-      return await apiService.requestWithMock('/questions/stats');
+      return await apiService.get('/questions/stats');
     } catch (error) {
       throw new Error(`Failed to fetch question statistics: ${error.message}`);
     }
@@ -125,9 +123,18 @@ class QuestionsService {
       if (filters.type) queryParams.append('type', filters.type);
 
       const endpoint = `/questions/subject/${subject}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch questions by subject: ${error.message}`);
+    }
+  }
+
+  // Create options for a question
+  async createQuestionOptions(questionId, options) {
+    try {
+      return await apiService.post(`/questions/${questionId}/options/`, { options });
+    } catch (error) {
+      throw new Error(`Failed to create question options: ${error.message}`);
     }
   }
 }

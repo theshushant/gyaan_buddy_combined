@@ -57,7 +57,7 @@ else
     echo "⚠️  Mock data is disabled (will use real API)"
 fi
 
-if grep -q "REACT_APP_API_URL=http://localhost:3001/api" .env; then
+if grep -q "REACT_APP_API_URL=http://localhost:8000/api" .env; then
     echo "✅ API URL is set to localhost (development)"
 else
     echo "⚠️  API URL is set to production or custom endpoint"

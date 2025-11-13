@@ -5,7 +5,7 @@ class DashboardService {
   // Get dashboard metrics
   async getDashboardMetrics(role = 'principal') {
     try {
-      return await apiService.requestWithMock(`/dashboard/metrics?role=${role}`);
+      return await apiService.get(`/dashboard/metrics?role=${role}`);
     } catch (error) {
       throw new Error(`Failed to fetch dashboard metrics: ${error.message}`);
     }
@@ -21,7 +21,7 @@ class DashboardService {
       if (filters.dateRange) queryParams.append('dateRange', filters.dateRange);
 
       const endpoint = `/dashboard/progress-trends${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch progress trends: ${error.message}`);
     }
@@ -36,7 +36,7 @@ class DashboardService {
       if (filters.dateRange) queryParams.append('dateRange', filters.dateRange);
 
       const endpoint = `/dashboard/subject-performance${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch subject performance: ${error.message}`);
     }
@@ -45,16 +45,16 @@ class DashboardService {
   // Get class distribution data
   async getClassDistribution() {
     try {
-      return await apiService.requestWithMock('/dashboard/class-distribution');
+      return await apiService.get('/dashboard/class-distribution');
     } catch (error) {
       throw new Error(`Failed to fetch class distribution: ${error.message}`);
     }
   }
 
-  // Get quick summary data
+  // Get quick summary data (using metrics endpoint)
   async getQuickSummary() {
     try {
-      return await apiService.requestWithMock('/dashboard/quick-summary');
+      return await apiService.get('/dashboard/metrics');
     } catch (error) {
       throw new Error(`Failed to fetch quick summary: ${error.message}`);
     }
@@ -70,31 +70,31 @@ class DashboardService {
       if (filters.limit) queryParams.append('limit', filters.limit);
 
       const endpoint = `/dashboard/alerts${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch alerts: ${error.message}`);
     }
   }
 
-  // Get teacher dashboard data
+  // Get teacher dashboard data (using metrics endpoint)
   async getTeacherDashboard(teacherId) {
     try {
-      return await apiService.requestWithMock(`/dashboard/teacher/${teacherId}`);
+      return await apiService.get(`/dashboard/metrics?role=teacher`);
     } catch (error) {
       throw new Error(`Failed to fetch teacher dashboard: ${error.message}`);
     }
   }
 
-  // Get student dashboard data
+  // Get student dashboard data (using metrics endpoint)
   async getStudentDashboard(studentId) {
     try {
-      return await apiService.requestWithMock(`/dashboard/student/${studentId}`);
+      return await apiService.get(`/dashboard/metrics?role=student`);
     } catch (error) {
       throw new Error(`Failed to fetch student dashboard: ${error.message}`);
     }
   }
 
-  // Get recent activities
+  // Get recent activities (using alerts endpoint)
   async getRecentActivities(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -102,8 +102,8 @@ class DashboardService {
       if (filters.type) queryParams.append('type', filters.type);
       if (filters.limit) queryParams.append('limit', filters.limit);
 
-      const endpoint = `/dashboard/recent-activities${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      return await apiService.requestWithMock(endpoint);
+      const endpoint = `/dashboard/alerts${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch recent activities: ${error.message}`);
     }

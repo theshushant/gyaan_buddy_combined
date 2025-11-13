@@ -1,61 +1,309 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Edit, User, Mail, BookOpen, Clock, TrendingUp, Award, Users, Calendar, MapPin, GraduationCap } from 'lucide-react'
+import { useDispatch, useSelector } from 'react-redux'
+import { ArrowLeft, Edit, User, BookOpen, Clock, TrendingUp } from 'lucide-react'
+import { fetchTeacherById, fetchTeacherClasses, fetchTeacherPerformance, updateTeacher } from '../features/teachers/teachersSlice'
+import teachersService from '../services/teachersService'
+import AddTeacherModal from '../components/AddTeacherModal'
+import SuccessModal from '../components/SuccessModal'
 
 const TeacherProfile = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const { user, role } = useSelector(state => state.auth)
+  const { currentTeacher, classes, performance, loading, error } = useSelector(state => state.teachers)
+  const [activityInsights, setActivityInsights] = useState({ dashboardUsage: '0 hours/week', contentCreation: '0 items/month' })
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successData, setSuccessData] = useState({})
   
-  // Mock teacher data - in real app, this would come from API
-  const teacherData = {
-    id: id || '1',
-    firstName: 'Priya',
-    lastName: 'Sharma',
-    email: 'p.sharma@school.edu',
-    employeeId: '12345',
-    subjects: ['Mathematics', 'Physics'],
-    classes: [
-      { class: 'Class 10', subject: 'Mathematics', role: 'Subject Teacher' },
-      { class: 'Class 11', subject: 'Physics', role: 'Subject Teacher' },
-      { class: 'Class 12', subject: 'Chemistry', role: 'Subject Teacher' },
-      { class: 'Class 9', subject: 'Science', role: 'Class Teacher' }
-    ],
-    activityInsights: {
-      dashboardUsage: '15 hours/week',
-      contentCreation: '20 items/month'
-    },
+  // Determine teacher ID - use current user's ID if viewing own profile or no ID param
+  const teacherId = id === 'me' || !id ? user?.id : id
+  const isOwnProfile = role === 'teacher' && (id === 'me' || !id || id === user?.id?.toString())
+  
+  useEffect(() => {
+    if (teacherId) {
+      dispatch(fetchTeacherById(teacherId))
+      // dispatch(fetchTeacherClasses(teacherId))
+      dispatch(fetchTeacherPerformance(teacherId))
+      
+      // Fetch dashboard usage separately
+      teachersService.getTeacherDashboardUsage(teacherId)
+        .then(response => {
+          // Handle response format - could be direct data or wrapped in data property
+          const data = response.data || response
+          if (data) {
+            setActivityInsights({
+              dashboardUsage: data.dashboardUsage || data.dashboard_usage || `${data.hours_per_week || 0} hours/week`,
+              contentCreation: data.contentCreation || data.content_creation || `${data.items_per_month || 0} items/month`
+            })
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching dashboard usage:', err)
+          // Keep default values on error
+        })
+    }
+  }, [dispatch, teacherId])
+  
+  // Use fetched teacher data or fallback to current user data
+  const teacherData = currentTeacher || (isOwnProfile && user ? {
+    id: user.id,
+    firstName: user.firstName || user.first_name || '',
+    lastName: user.lastName || user.last_name || '',
+    email: user.email || '',
+    employeeId: user.employeeId || user.employee_id || '',
+    subjects: user.subjects || [],
+    classes: [],
+  } : null)
+  
+  if (loading.currentTeacher) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+  
+  if (error.currentTeacher) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+        <h2 className="text-red-800 font-semibold">Error Loading Teacher Profile</h2>
+        <p className="text-red-600 mt-2">{error.currentTeacher}</p>
+      </div>
+    )
+  }
+  
+  if (!teacherData) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600">No teacher data found.</p>
+      </div>
+    )
+  }
+  
+  // Get performance data from Redux state
+  const performanceData = performance[teacherId] || {}
+  const performanceDataResponse = performanceData.data || performanceData
+  
+  // Process classes data - handle different API response formats
+  let processedClasses = []
+  const classesData = classes[teacherId]
+  
+  if (Array.isArray(classesData)) {
+    processedClasses = classesData.map(cls => {
+      // Handle API response format - could be direct class object or wrapped
+      const classData = cls.data || cls
+      // Handle subject as object or string
+      const subjectObj = classData.subject || classData.subject_name
+      const subjectName = typeof subjectObj === 'object' 
+        ? (subjectObj.name || subjectObj.subject_name || '')
+        : (subjectObj || '')
+      
+      // Determine role based on is_class_teacher flag
+      const isClassTeacher = classData.is_class_teacher !== undefined 
+        ? classData.is_class_teacher 
+        : classData.role === 'Class Teacher' || classData.role === 'class_teacher'
+      
+      return {
+        class: classData.name || classData.class_name || classData.class || '',
+        subject: subjectName,
+        role: isClassTeacher ? 'Class Teacher' : 'Subject Teacher'
+      }
+    }).filter(cls => cls.class) // Filter out entries without class name
+  } else if (classesData && classesData.data && Array.isArray(classesData.data)) {
+    // Handle nested data structure
+    processedClasses = classesData.data.map(cls => ({
+      class: cls.name || cls.class_name || cls.class || '',
+      subject: cls.subject?.name || cls.subject_name || cls.subject || '',
+      role: cls.is_class_teacher ? 'Class Teacher' : 'Subject Teacher'
+    })).filter(cls => cls.class)
+  } else if (teacherData.classes || teacherData.class_list) {
+    // Fallback to teacher data classes
+    processedClasses = teacherData.classes || teacherData.class_list || []
+  }
+  
+  // Transform fetched data to match expected format
+  const transformedData = {
+    id: teacherData.id,
+    firstName: teacherData.firstName || teacherData.first_name || '',
+    lastName: teacherData.lastName || teacherData.last_name || '',
+    email: teacherData.email || '',
+    employeeId: teacherData.employeeId || teacherData.employee_id || '',
+    profilePicture: teacherData.profilePicture || teacherData.profile_picture || null,
+    classes: processedClasses,
+    class_assignment: teacherData.teacher_assignments || teacherData.teacher_assignments || [],
+    activityInsights: activityInsights,
     studentPerformance: {
-      averageScore: 75,
-      improvement: 5,
-      period: 'vs. last semester'
-    },
-    profileImage: null
+      averageScore: performanceDataResponse.average_score || performanceDataResponse.averageClassScore || teacherData.average_class_score || teacherData.averageClassScore || 0,
+      improvement: performanceDataResponse.improvement || performanceDataResponse.improvement_percentage || performanceDataResponse.improvementPercentage || 0,
+      period: 'vs. last semester',
+      classBreakdown: performanceDataResponse.class_breakdown || performanceDataResponse.classBreakdown || []
+    }
+  }
+  
+  // Extract class names for performance breakdown
+  const classNames = transformedData.classes.length > 0 
+    ? transformedData.classes.map(c => c.class).filter(Boolean)
+    : transformedData.studentPerformance.classBreakdown.map(c => c.class || c.class_name).filter(Boolean) || ['Class 10', 'Class 11', 'Class 12', 'Class 9']
+
+  // Transform teacher data for edit modal
+  // Need to convert classes format to assignments format expected by modal
+  const transformTeacherForEdit = () => {
+    if (!teacherData) return null
+
+    // Use raw classesData from Redux which should have IDs
+    const assignments = []
+    const rawClassesData = classes[teacherId]
+    
+    if (Array.isArray(rawClassesData)) {
+      // Group by class_id to collect all subjects for each class
+      const classSubjectMap = {}
+      
+      rawClassesData.forEach(cls => {
+        const classData = cls.data || cls
+        const classId = classData.id || classData.class_id || classData.class?.id
+        const className = classData.name || classData.class_name || classData.class?.name
+        
+        if (!classId && !className) return // Skip if no class identifier
+        
+        const subjectObj = classData.subject || classData.subject_name || classData.subject_id
+        let subjectId = null
+        
+        // Extract subject ID
+        if (typeof subjectObj === 'object' && subjectObj) {
+          subjectId = subjectObj.id || subjectObj.subject_id
+        } else if (typeof subjectObj === 'string' || typeof subjectObj === 'number') {
+          // If it's a string/number, it might be an ID or name
+          subjectId = subjectObj
+        }
+        
+        // Use class ID or name as key
+        const key = classId || className
+        
+        if (!classSubjectMap[key]) {
+          classSubjectMap[key] = {
+            class: classId || className,
+            subjects: [],
+            isClassTeacher: classData.is_class_teacher !== undefined 
+              ? classData.is_class_teacher 
+              : classData.role === 'Class Teacher' || classData.role === 'class_teacher'
+          }
+        }
+        
+        // Add subject if it exists and isn't already in the list
+        if (subjectId && !classSubjectMap[key].subjects.includes(subjectId)) {
+          classSubjectMap[key].subjects.push(subjectId)
+        }
+      })
+      
+      // Convert map to array
+      assignments.push(...Object.values(classSubjectMap))
+    } else if (rawClassesData && rawClassesData.data && Array.isArray(rawClassesData.data)) {
+      // Handle nested data structure
+      const classSubjectMap = {}
+      
+      rawClassesData.data.forEach(cls => {
+        const classId = cls.id || cls.class_id || cls.class?.id
+        const className = cls.name || cls.class_name || cls.class?.name
+        
+        if (!classId && !className) return
+        
+        const subjectObj = cls.subject || cls.subject_id || cls.subject_name
+        let subjectId = null
+        
+        if (typeof subjectObj === 'object' && subjectObj) {
+          subjectId = subjectObj.id || subjectObj.subject_id
+        } else if (subjectObj) {
+          subjectId = subjectObj
+        }
+        
+        const key = classId || className
+        
+        if (!classSubjectMap[key]) {
+          classSubjectMap[key] = {
+            class: classId || className,
+            subjects: [],
+            isClassTeacher: cls.is_class_teacher || false
+          }
+        }
+        
+        if (subjectId && !classSubjectMap[key].subjects.includes(subjectId)) {
+          classSubjectMap[key].subjects.push(subjectId)
+        }
+      })
+      
+      assignments.push(...Object.values(classSubjectMap))
+    }
+
+    // Determine if teacher is a class teacher
+    const isClassTeacher = assignments.some(assignment => assignment.isClassTeacher) ||
+      processedClasses.some(cls => cls.role === 'Class Teacher')
+
+    return {
+      id: teacherData.id,
+      firstName: teacherData.firstName || teacherData.first_name || '',
+      lastName: teacherData.lastName || teacherData.last_name || '',
+      email: teacherData.email || '',
+      employeeId: teacherData.employeeId || teacherData.employee_id || '',
+      isClassTeacher: isClassTeacher,
+      assignments: assignments.filter(a => a.subjects.length > 0 || a.class) // Only include assignments with class or subjects
+    }
+  }
+
+  const handleUpdateTeacher = async (teacherData) => {
+    try {
+      await dispatch(updateTeacher({ teacherId: teacherId, teacherData })).unwrap()
+      setShowEditModal(false)
+      setSuccessData({
+        title: 'Profile Updated Successfully',
+        message: `${teacherData.firstName} ${teacherData.lastName}'s profile has been updated.`
+      })
+      setShowSuccessModal(true)
+      // Refresh teacher data
+      dispatch(fetchTeacherById(teacherId))
+      // dispatch(fetchTeacherClasses(teacherId)) 
+    } catch (error) {
+      console.error('Error updating teacher:', error)
+      // You might want to show an error message here
+    }
+  }
+
+  const handleEditClick = () => {
+    setShowEditModal(true)
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumbs */}
+        <div className="mb-4">
+          <nav className="text-sm text-gray-600">
+            <span className="hover:text-gray-900 cursor-pointer" onClick={() => navigate('/teachers')}>Teachers</span>
+            <span className="mx-2">/</span>
+            <span className="text-gray-900 font-medium">Teacher Profile</span>
+          </nav>
+        </div>
+
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate('/teachers')}
-                className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Teachers
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">{teacherData.firstName} {teacherData.lastName}</h1>
-                <p className="text-gray-600">View and manage teacher details and performance.</p>
-              </div>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{transformedData.firstName} {transformedData.lastName}</h1>
+              <p className="text-gray-600">View and manage teacher details and performance.</p>
             </div>
             <div className="flex space-x-3">
-              <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+              <button 
+                onClick={() => navigate('/teachers')}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
                 Back
               </button>
-              <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              <button 
+                onClick={handleEditClick}
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Profile
               </button>
@@ -63,175 +311,140 @@ const TeacherProfile = () => {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Teacher Profile Card */}
+        {/* Main Content - 2x2 Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Teacher Information Card - Top Left */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex flex-col items-center text-center">
-              <div className="h-32 w-32 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center mb-6">
-                <User className="h-16 w-16 text-white" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">Teacher Information</h3>
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+              {/* Profile Image */}
+              <div className="flex-shrink-0">
+                {transformedData.profilePicture ? (
+                  <img 
+                    src={transformedData.profilePicture} 
+                    alt={`${transformedData.firstName} ${transformedData.lastName}`}
+                    className="h-32 w-32 rounded-full object-cover border-4 border-gray-100"
+                  />
+                ) : (
+                  <div className="h-32 w-32 bg-gradient-to-br from-pink-200 to-pink-400 rounded-full flex items-center justify-center border-4 border-gray-100">
+                    <User className="h-16 w-16 text-white" />
+                  </div>
+                )}
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">{teacherData.firstName} {teacherData.lastName}</h3>
-              <p className="text-gray-600 mb-1">{teacherData.email}</p>
-              <p className="text-gray-600 mb-4">Employee ID: {teacherData.employeeId}</p>
               
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 gap-3 w-full mt-4">
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <p className="text-lg font-bold text-blue-600">{teacherData.studentPerformance.averageScore}%</p>
-                  <p className="text-xs text-gray-600">Avg Score</p>
+              {/* Teacher Details */}
+              <div className="flex-1 space-y-3 text-center sm:text-left">
+                <div>
+                  <h4 className="text-2xl font-bold text-gray-900 mb-1">
+                    {transformedData.firstName} {transformedData.lastName}
+                  </h4>
                 </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <p className="text-lg font-bold text-green-600">+{teacherData.studentPerformance.improvement}%</p>
-                  <p className="text-xs text-gray-600">Improvement</p>
+                
+                <div className="space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <span className="text-sm font-medium text-gray-500 sm:w-24">Email:</span>
+                    <span className="text-gray-900">{transformedData.email || 'N/A'}</span>
+                  </div>
+                  
+                  {transformedData.employeeId && (
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <span className="text-sm font-medium text-gray-500 sm:w-24">Employee ID:</span>
+                      <span className="text-gray-900 font-semibold">{transformedData.employeeId}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Classes & Subjects */}
+          {/* Classes & Subjects Card - Top Right */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-6">Classes & Subjects</h3>
             <div className="space-y-4">
-              {teacherData.classes.map((assignment, index) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              {transformedData.class_assignment && transformedData.class_assignment.length > 0 ? transformedData.class_assignment.map((assignment, index) => (
+                <div key={index} className="flex items-center justify-between py-3 border-b border-gray-200 last:border-0">
                   <div>
-                    <p className="font-medium text-gray-900">{assignment.class} - {assignment.subject}</p>
+                    <p className="font-medium text-gray-900">
+                      {assignment.class.name}{assignment.subject.name ? ` - ${assignment.subject.name}` : ''}
+                    </p>
                   </div>
                   <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                    assignment.role === 'Class Teacher' 
+                    assignment.isClassTeacher 
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {assignment.role}
+                    {assignment.isClassTeacher ? 'Class Teacher' : 'Subject Teacher'}
                   </span>
                 </div>
-              ))}
+              )) : (
+                <p className="text-gray-500 text-sm">No classes assigned yet.</p>
+              )}
             </div>
           </div>
 
-          {/* Activity Insights */}
+          {/* Activity Insights Card - Bottom Left */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-6">Activity Insights</h3>
             <div className="space-y-6">
-              <div className="flex items-center">
-                <Clock className="h-6 w-6 text-gray-400 mr-4" />
-                <div>
-                  <p className="text-sm text-gray-600">Dashboard Usage</p>
-                  <p className="font-medium text-gray-900">{teacherData.activityInsights.dashboardUsage}</p>
-                </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Dashboard Usage</p>
+                <p className="text-lg font-medium text-gray-900">{transformedData.activityInsights.dashboardUsage}</p>
               </div>
-              <div className="flex items-center">
-                <BookOpen className="h-6 w-6 text-gray-400 mr-4" />
-                <div>
-                  <p className="text-sm text-gray-600">Content Creation</p>
-                  <p className="font-medium text-gray-900">{teacherData.activityInsights.contentCreation}</p>
-                </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Content Creation</p>
+                <p className="text-lg font-medium text-gray-900">{transformedData.activityInsights.contentCreation}</p>
               </div>
             </div>
           </div>
 
-          {/* Student Performance */}
+          {/* Student Performance Card - Bottom Right */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-6">Student Performance</h3>
             <div className="text-center">
               <p className="text-sm text-gray-600 mb-2">Average Student Score</p>
-              <p className="text-3xl font-bold text-gray-900 mb-2">{teacherData.studentPerformance.averageScore}%</p>
-              <div className="flex items-center justify-center mb-4">
-                <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
-                <span className="text-sm text-green-600">
-                  +{teacherData.studentPerformance.improvement}% {teacherData.studentPerformance.period}
-                </span>
-              </div>
-              <div className="pt-4 border-t border-gray-200">
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Class 10</span>
-                  <span>Class 11</span>
-                  <span>Class 12</span>
-                  <span>Class 9</span>
+              <p className="text-4xl font-bold text-gray-900 mb-2">{transformedData.studentPerformance.averageScore}%</p>
+              {transformedData.studentPerformance.improvement > 0 && (
+                <div className="flex items-center justify-center mb-6">
+                  <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
+                  <span className="text-sm text-green-600">
+                    +{transformedData.studentPerformance.improvement}% {transformedData.studentPerformance.period}
+                  </span>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Additional Information */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          {/* Teaching Schedule */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Teaching Schedule</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900">Monday - Mathematics</p>
-                  <p className="text-sm text-gray-600">Class 10A, 10B</p>
+              )}
+              {classNames.length > 0 && (
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="flex justify-end gap-4 text-sm text-gray-600">
+                    {classNames.slice(0, 4).map((className, idx) => (
+                      <span key={idx}>{className}</span>
+                    ))}
+                  </div>
                 </div>
-                <span className="text-sm text-gray-600">9:00 AM - 12:00 PM</span>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900">Tuesday - Physics</p>
-                  <p className="text-sm text-gray-600">Class 11A, 11B</p>
-                </div>
-                <span className="text-sm text-gray-600">10:00 AM - 1:00 PM</span>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900">Wednesday - Chemistry</p>
-                  <p className="text-sm text-gray-600">Class 12A, 12B</p>
-                </div>
-                <span className="text-sm text-gray-600">11:00 AM - 2:00 PM</span>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900">Thursday - Science</p>
-                  <p className="text-sm text-gray-600">Class 9A, 9B</p>
-                </div>
-                <span className="text-sm text-gray-600">8:00 AM - 11:00 AM</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Activities */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Recent Activities</h3>
-            <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <div className="h-3 w-3 bg-blue-600 rounded-full mt-2"></div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Created new assignment</p>
-                  <p className="text-xs text-gray-600">Mathematics - Class 10A</p>
-                  <p className="text-xs text-gray-500">2 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="h-3 w-3 bg-green-600 rounded-full mt-2"></div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Graded test papers</p>
-                  <p className="text-xs text-gray-600">Physics - Class 11B</p>
-                  <p className="text-xs text-gray-500">4 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="h-3 w-3 bg-yellow-600 rounded-full mt-2"></div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Updated student progress</p>
-                  <p className="text-xs text-gray-600">Chemistry - Class 12A</p>
-                  <p className="text-xs text-gray-500">1 day ago</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="h-3 w-3 bg-purple-600 rounded-full mt-2"></div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Attended faculty meeting</p>
-                  <p className="text-xs text-gray-600">General</p>
-                  <p className="text-xs text-gray-500">2 days ago</p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Edit Teacher Modal */}
+      {showEditModal && (
+        <AddTeacherModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSubmit={handleUpdateTeacher}
+          teacher={transformTeacherForEdit()}
+          title="Edit Teacher Profile"
+        />
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <SuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          title={successData.title}
+          message={successData.message}
+        />
+      )}
     </div>
   )
 }

@@ -1,14 +1,25 @@
-import { Check, Plus, ArrowRight, User } from 'lucide-react'
+import { Check, Plus, ArrowRight, User, X } from 'lucide-react'
 
 const SuccessModal = ({ isOpen, onClose, type, title, message, detail, actions }) => {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-transparent">
       <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose}></div>
+        <div className="fixed inset-0 bg-gray-900/5 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
         
         <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md">
+          {/* Close Icon */}
+          <div className="absolute top-4 right-4">
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Close"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
           <div className="p-6">
             {/* Success Icon */}
             <div className="flex items-center justify-center mb-4">
@@ -47,6 +58,16 @@ const SuccessModal = ({ isOpen, onClose, type, title, message, detail, actions }
                   className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                 >
                   {actions[2].label}
+                </button>
+              )}
+
+              {/* Default OK button when no actions are provided */}
+              {(!actions || actions.length === 0) && (
+                <button
+                  onClick={onClose}
+                  className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  OK
                 </button>
               )}
             </div>

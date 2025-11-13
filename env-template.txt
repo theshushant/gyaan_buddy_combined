@@ -1,0 +1,114 @@
+# Gyaan Buddy Environment Configuration Template
+# Copy this file to .env and update the values as needed
+
+# ===========================================
+# API Configuration
+# ===========================================
+REACT_APP_API_URL=http://localhost:3001/api
+REACT_APP_USE_MOCK_DATA=true
+
+# ===========================================
+# Environment Settings
+# ===========================================
+NODE_ENV=development
+
+# ===========================================
+# Authentication Configuration
+# ===========================================
+REACT_APP_JWT_SECRET=gyaan-buddy-jwt-secret-key-2024
+REACT_APP_TOKEN_EXPIRY=24h
+
+# ===========================================
+# AI Services Configuration
+# ===========================================
+# Uncomment and add your API keys when implementing AI features
+# REACT_APP_OPENAI_API_KEY=your-openai-api-key-here
+# REACT_APP_AI_SERVICE_URL=http://localhost:3002/api
+# REACT_APP_AI_MODEL=gpt-3.5-turbo
+
+# ===========================================
+# Database Configuration (for future implementation)
+# ===========================================
+# REACT_APP_DATABASE_URL=postgresql://username:password@localhost:5432/gyaanbuddy
+# REACT_APP_DB_HOST=localhost
+# REACT_APP_DB_PORT=5432
+# REACT_APP_DB_NAME=gyaanbuddy
+# REACT_APP_DB_USER=gyaanbuddy_user
+# REACT_APP_DB_PASSWORD=your-db-password
+
+# ===========================================
+# File Upload Configuration
+# ===========================================
+REACT_APP_MAX_FILE_SIZE=10485760
+REACT_APP_ALLOWED_FILE_TYPES=jpg,jpeg,png,pdf,doc,docx,xlsx
+REACT_APP_UPLOAD_URL=http://localhost:3001/api/upload
+
+# ===========================================
+# Feature Flags
+# ===========================================
+REACT_APP_ENABLE_AI_FEATURES=true
+REACT_APP_ENABLE_REAL_TIME_NOTIFICATIONS=false
+REACT_APP_ENABLE_OFFLINE_MODE=false
+REACT_APP_ENABLE_ANALYTICS=false
+REACT_APP_ENABLE_DEBUG_MODE=true
+
+# ===========================================
+# Analytics Configuration (Optional)
+# ===========================================
+# REACT_APP_GOOGLE_ANALYTICS_ID=GA-XXXXXXXXX
+# REACT_APP_MIXPANEL_TOKEN=your-mixpanel-token
+
+# ===========================================
+# School Configuration
+# ===========================================
+REACT_APP_SCHOOL_NAME=Delhi Public School
+REACT_APP_SCHOOL_ADDRESS=New Delhi, India
+REACT_APP_SCHOOL_PHONE=+91-11-12345678
+REACT_APP_SCHOOL_EMAIL=info@dps.edu.in
+
+# ===========================================
+# API Timeout Configuration
+# ===========================================
+REACT_APP_API_TIMEOUT=10000
+REACT_APP_REQUEST_RETRY_COUNT=3
+REACT_APP_REQUEST_RETRY_DELAY=1000
+
+# ===========================================
+# Pagination Configuration
+# ===========================================
+REACT_APP_DEFAULT_PAGE_SIZE=10
+REACT_APP_MAX_PAGE_SIZE=100
+
+# ===========================================
+# Cache Configuration
+# ===========================================
+REACT_APP_CACHE_DURATION=300000
+REACT_APP_ENABLE_CACHE=true
+
+# ===========================================
+# Development Tools
+# ===========================================
+REACT_APP_ENABLE_REDUX_DEVTOOLS=true
+REACT_APP_ENABLE_CONSOLE_LOGS=true
+REACT_APP_MOCK_API_DELAY=500
+
+# ===========================================
+# Security Configuration
+# ===========================================
+REACT_APP_ENABLE_CSRF_PROTECTION=false
+REACT_APP_ENABLE_XSS_PROTECTION=true
+REACT_APP_CONTENT_SECURITY_POLICY=default-src 'self'
+
+# ===========================================
+# Performance Configuration
+# ===========================================
+REACT_APP_ENABLE_LAZY_LOADING=true
+REACT_APP_ENABLE_CODE_SPLITTING=true
+REACT_APP_BUNDLE_ANALYZER=false
+
+# ===========================================
+# Testing Configuration
+# ===========================================
+REACT_APP_TEST_MODE=false
+REACT_APP_TEST_API_URL=http://localhost:3001/api/test
+REACT_APP_ENABLE_TEST_DATA=false

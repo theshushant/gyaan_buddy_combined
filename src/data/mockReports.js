@@ -1,0 +1,177 @@
+// Mock reports data
+export default {
+  '/reports/student-performance': {
+    students: [
+      { name: 'Aarav Sharma', class: '10A', score: 85, attendance: 92, assignments: '10/12' },
+      { name: 'Diya Patel', class: '10B', score: 92, attendance: 98, assignments: '12/12' },
+      { name: 'Rohan Verma', class: '10A', score: 78, attendance: 88, assignments: '9/12' },
+      { name: 'Siya Kapoor', class: '10C', score: 88, attendance: 95, assignments: '11/12' },
+      { name: 'Arjun Singh', class: '10B', score: 95, attendance: 100, assignments: '12/12' }
+    ],
+    classPerformance: [
+      { class: 'Class 10A', score: 82 },
+      { class: 'Class 10B', score: 94 },
+      { class: 'Class 10C', score: 88 }
+    ],
+    studentPerformanceData: {
+      labels: ['Arjun Verma', 'Priya Sharma', 'Rohan Kapoor', 'Anika Patel', 'Vikram Singh'],
+      datasets: [
+        {
+          label: 'Mathematics',
+          data: [85, 92, 76, 88, 65],
+          backgroundColor: 'rgba(59, 130, 246, 0.8)',
+        },
+        {
+          label: 'Science',
+          data: [78, 89, 82, 91, 70],
+          backgroundColor: 'rgba(16, 185, 129, 0.8)',
+        },
+        {
+          label: 'English',
+          data: [88, 85, 79, 87, 75],
+          backgroundColor: 'rgba(245, 158, 11, 0.8)',
+        },
+      ],
+    }
+  },
+  
+  '/reports/progress-over-time': {
+    mathProgressData: {
+      labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
+      datasets: [
+        {
+          label: 'Class 10A',
+          data: [75, 78, 82, 85, 88, 90],
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.4,
+          fill: true,
+        },
+        {
+          label: 'Class 10B',
+          data: [70, 73, 77, 80, 83, 86],
+          borderColor: 'rgb(34, 197, 94)',
+          backgroundColor: 'rgba(34, 197, 94, 0.1)',
+          tension: 0.4,
+          fill: true,
+        },
+      ],
+    },
+    scienceProgressData: {
+      labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
+      datasets: [
+        {
+          label: 'Class 10A',
+          data: [72, 75, 78, 81, 84, 87],
+          borderColor: 'rgb(16, 185, 129)',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          tension: 0.4,
+          fill: true,
+        },
+        {
+          label: 'Class 10B',
+          data: [68, 71, 74, 77, 80, 83],
+          borderColor: 'rgb(245, 158, 11)',
+          backgroundColor: 'rgba(245, 158, 11, 0.1)',
+          tension: 0.4,
+          fill: true,
+        },
+      ],
+    }
+  },
+  
+  '/reports/quiz-assignment-summaries': {
+    quizzes: [
+      {
+        id: 1,
+        title: 'Mathematics Quiz - Algebra',
+        class: '10A',
+        subject: 'Mathematics',
+        date: '2024-01-15',
+        totalStudents: 30,
+        averageScore: 85,
+        highestScore: 98,
+        lowestScore: 65,
+        completionRate: 100
+      },
+      {
+        id: 2,
+        title: 'Science Test - Physics',
+        class: '10B',
+        subject: 'Science',
+        date: '2024-01-14',
+        totalStudents: 28,
+        averageScore: 78,
+        highestScore: 95,
+        lowestScore: 55,
+        completionRate: 96
+      }
+    ],
+    assignments: [
+      {
+        id: 1,
+        title: 'History Essay - Mughal Empire',
+        class: '10A',
+        subject: 'History',
+        dueDate: '2024-01-20',
+        totalStudents: 30,
+        submitted: 28,
+        pending: 2,
+        averageScore: 82
+      }
+    ]
+  },
+  
+  '/reports/ai-insights': {
+    insights: [
+      {
+        icon: 'TrendingUp',
+        title: 'Mathematics Performance Trending Up',
+        description: 'Class 10A shows 15% improvement in algebra concepts over the last month.',
+        impact: 'High',
+        confidence: 0.92,
+        recommendation: 'Continue current teaching methods and consider advanced topics.'
+      },
+      {
+        icon: 'AlertTriangle',
+        title: 'Science Concept Gap Identified',
+        description: 'Physics concepts in Class 10B need reinforcement based on recent test performance.',
+        impact: 'Medium',
+        confidence: 0.85,
+        recommendation: 'Schedule additional practice sessions for physics concepts.'
+      },
+      {
+        icon: 'Users',
+        title: 'Student Engagement Optimization',
+        description: 'Interactive learning methods show 25% higher engagement in English classes.',
+        impact: 'High',
+        confidence: 0.88,
+        recommendation: 'Implement interactive methods across all subjects.'
+      }
+    ]
+  },
+  
+  '/reports/analytics': {
+    overallStats: {
+      totalStudents: 500,
+      totalTeachers: 25,
+      averageScore: 78,
+      attendanceRate: 92,
+      assignmentCompletionRate: 88
+    },
+    trends: {
+      scoreImprovement: '+5%',
+      attendanceImprovement: '+2%',
+      engagementImprovement: '+8%'
+    },
+    topPerformers: [
+      { name: 'Priya Sharma', class: '10A', score: 95 },
+      { name: 'Arjun Singh', class: '10B', score: 92 },
+      { name: 'Anika Patel', class: '9C', score: 90 }
+    ],
+    areasForImprovement: [
+      { subject: 'Mathematics', class: '10B', improvement: '12%' },
+      { subject: 'Science', class: '9A', improvement: '8%' }
+    ]
+  }
+};

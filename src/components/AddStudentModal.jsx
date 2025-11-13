@@ -1,24 +1,183 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { X, Calendar } from 'lucide-react'
+import classesService from '../services/classesService'
+import subjectsService from '../services/subjectsService'
 
-const AddStudentModal = ({ isOpen, onClose, onSave }) => {
+const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = null, student = null, title = 'Add New Student' }) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     rollNumber: '',
     dateOfBirth: '',
     gender: '',
-    class: '',
+    classId: '', // Store class ID instead of name
     parentName: '',
     parentContact: '',
-    subjects: []
+    subjectIds: [] // Store subject IDs instead of names
   })
 
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
+  const [classes, setClasses] = useState([]) // Array of class objects with id and name
+  const [subjects, setSubjects] = useState([]) // Array of subject objects with id and name
+  const [loadingClasses, setLoadingClasses] = useState(false)
+  const [loadingSubjects, setLoadingSubjects] = useState(false)
 
-  const subjects = ['Mathematics', 'Science', 'English', 'History', 'Geography']
-  const classes = ['Class 9 - Section A', 'Class 9 - Section B', 'Class 10 - Section A', 'Class 10 - Section B', 'Class 11 - Section A', 'Class 11 - Section B', 'Class 12 - Section A', 'Class 12 - Section B']
+  const fetchClasses = useCallback(async () => {
+    setLoadingClasses(true)
+    try {
+      const response = await classesService.getClasses()
+      // Extract data array from response
+      const classesData = response.data || response || []
+      // Store full class objects (with id and name)
+      const classesList = classesData.map(cls => ({
+        id: cls.id || cls.uuid,
+        name: cls.name || cls
+      })).filter(cls => cls.id && cls.name) // Filter out invalid entries
+      setClasses(classesList)
+    } catch (error) {
+      console.error('Failed to fetch classes:', error)
+      // Fallback to empty array on error
+      setClasses([])
+    } finally {
+      setLoadingClasses(false)
+    }
+  }, [])
+
+  const fetchSubjects = useCallback(async () => {
+    setLoadingSubjects(true)
+    try {
+      const response = await subjectsService.getSubjects()
+      // Extract data array from response
+      const subjectsData = response.data || response || []
+      // Store full subject objects (with id and name)
+      const subjectsList = subjectsData.map(subject => ({
+        id: subject.id || subject.uuid,
+        name: subject.name || subject
+      })).filter(subject => subject.id && subject.name) // Filter out invalid entries
+      setSubjects(subjectsList)
+    } catch (error) {
+      console.error('Failed to fetch subjects:', error)
+      // Fallback to empty array on error
+      setSubjects([])
+    } finally {
+      setLoadingSubjects(false)
+    }
+  }, [])
+
+  // Fetch classes and subjects from API when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchClasses()
+      fetchSubjects()
+    }
+  }, [isOpen, fetchClasses, fetchSubjects])
+
+  // Pre-fill form when editing a student
+  useEffect(() => {
+    if (isOpen && student) {
+      // Format date of birth (handle both YYYY-MM-DD and danger date formats)
+      let dateOfBirth = ''
+      if (student.date_of_birth || student.dateOfBirth) {
+        const dob = student.date_of_birth || student.dateOfBirth
+        // If it's already in YYYY-MM-DD format, use it directly
+        if (dob.includes('T')) {
+          dateOfBirth = dob.split('T')[0]
+        } else if (dob.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          dateOfBirth = dob
+        } else {
+          // Try to parse and format
+          try {
+            const date = new Date(dob)
+            dateOfBirth = date.toISOString().split('T')[0]
+          } catch (e) {
+            dateOfBirth = ''
+          }
+        }
+      }
+
+      // Get class ID - handle both nested class object and direct class_id
+      let classId = ''
+      if (student.class_id || student.classId) {
+        classId = student.class_id || student.classId
+      } else if (student.class_instance) {
+        // Handle class_instance UUID from backend
+        classId = student.class_instance
+      } else if (student.class && typeof student.class === 'object' && student.class.id) {
+        classId = student.class.id
+      } else if (student.profile?.class_instance?.id) {
+        // Handle nested profile structure from backend
+        classId = student.profile.class_instance.id
+      } else if (student.class && typeof student.class === 'string') {
+        // If class is a string, we'll try to find it in the classes list
+        const foundClass = classes.find(c => c.name === student.class)
+        if (foundClass) {
+          classId = foundClass.id
+        }
+      }
+
+      // Get subject IDs - handle both array of objects and array of IDs
+      let subjectIds = []
+      if (student.subject_ids || student.subjectIds) {
+        const subjectIdsArray = student.subject_ids || student.subjectIds
+        subjectIds = subjectIdsArray.map(subj => {
+          if (typeof subj === 'object' && (subj.id || subj.uuid)) {
+            return subj.id || subj.uuid
+          }
+          return subj
+        })
+      } else if (student.subjects && Array.isArray(student.subjects)) {
+        subjectIds = student.subjects.map(subj => {
+          if (typeof subj === 'object' && (subj.id || subj.uuid)) {
+            return subj.id || subj.uuid
+          }
+          // If subject is just a string (name), we need to find it in the subjects list
+          if (typeof subj === 'string') {
+            const foundSubject = subjects.find(s => s.name === subj || s.id === subj)
+            return foundSubject ? foundSubject.id : null
+          }
+          return subj
+        }).filter(id => id !== null) // Remove null values
+      }
+
+      // Get parent contact - prioritize email, then phone_number
+      let parentContact = ''
+      if (student.email) {
+        parentContact = student.email
+      } else if (student.phone_number || student.phoneNumber) {
+        parentContact = student.phone_number || student.phoneNumber
+      } else if (student.parent_contact || student.parentContact) {
+        parentContact = student.parent_contact || student.parentContact
+      }
+
+      setFormData({
+        firstName: student.first_name || student.firstName || '',
+        lastName: student.last_name || student.lastName || '',
+        rollNumber: student.roll_number?.toString() || student.rollNumber?.toString() || '',
+        dateOfBirth: dateOfBirth,
+        gender: student.gender || '',
+        classId: classId.toString() || '',
+        parentName: student.parent_name || student.parentName || '',
+        parentContact: parentContact,
+        subjectIds: subjectIds
+      })
+    } else if (isOpen && !student) {
+      // Reset form when opening for add mode
+      setFormData({
+        firstName: '',
+        lastName: '',
+        rollNumber: '',
+        dateOfBirth: '',
+        gender: '',
+        classId: '',
+        parentName: '',
+        parentContact: '',
+        subjectIds: []
+      })
+      setErrors({})
+      setTouched({})
+    }
+  }, [isOpen, student, classes])
 
   // Validation functions
   const validateField = (name, value) => {
@@ -66,7 +225,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave }) => {
         }
         break
         
-      case 'class':
+      case 'classId':
         if (!value) {
           error = 'Class is required'
         }
@@ -80,7 +239,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave }) => {
         }
         break
         
-      case 'subjects':
+      case 'subjectIds':
         if (!value || value.length === 0) {
           error = 'At least one subject must be selected'
         }
@@ -135,46 +294,90 @@ const AddStudentModal = ({ isOpen, onClose, onSave }) => {
     setTouched(allTouched)
     
     if (validateForm()) {
-      onSave(formData)
-      onClose()
+      // Prepare data with all required fields properly mapped
+      const submitData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        rollNumber: formData.rollNumber,
+        dateOfBirth: formData.dateOfBirth,
+        gender: formData.gender,
+        classId: formData.classId,
+        class_id: formData.classId,
+        parentName: formData.parentName,
+        parentContact: formData.parentContact,
+        subjectIds: formData.subjectIds,
+        subject_ids: formData.subjectIds
+      }
+      onSave(submitData)
+      // Don't close modal here - let parent handle it after successful API call
     }
   }
 
-  const handleSubjectChange = (subject) => {
-    const newSubjects = formData.subjects.includes(subject)
-      ? formData.subjects.filter(s => s !== subject)
-      : [...formData.subjects, subject]
+  const handleClose = () => {
+    // Reset form on close (only if not editing to avoid clearing data prematurely)
+    if (!student) {
+      setFormData({
+        firstName: '',
+        lastName: '',
+        rollNumber: '',
+        dateOfBirth: '',
+        gender: '',
+        classId: '',
+        parentName: '',
+        parentContact: '',
+        subjectIds: []
+      })
+      setErrors({})
+      setTouched({})
+    }
+    onClose()
+  }
+
+  const handleSubjectChange = (subjectId) => {
+    const newSubjectIds = formData.subjectIds.includes(subjectId)
+      ? formData.subjectIds.filter(id => id !== subjectId)
+      : [...formData.subjectIds, subjectId]
     
-    setFormData(prev => ({ ...prev, subjects: newSubjects }))
+    setFormData(prev => ({ ...prev, subjectIds: newSubjectIds }))
     
     // Trigger validation for subjects
-    setTouched(prev => ({ ...prev, subjects: true }))
-    const error = validateField('subjects', newSubjects)
+    setTouched(prev => ({ ...prev, subjectIds: true }))
+    const error = validateField('subjectIds', newSubjectIds)
     if (error) {
-      setErrors(prev => ({ ...prev, subjects: error }))
+      setErrors(prev => ({ ...prev, subjectIds: error }))
     } else {
-      setErrors(prev => ({ ...prev, subjects: '' }))
+      setErrors(prev => ({ ...prev, subjectIds: '' }))
     }
   }
 
   return (
-    <div className={`fixed inset-0 z-50 overflow-y-auto ${isOpen ? 'block' : 'hidden'}`}>
+    <div className={`fixed inset-0 z-50 overflow-y-auto bg-transparent ${isOpen ? 'block' : 'hidden'}`}>
       <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose}></div>
+        <div className="fixed inset-0 bg-gray-900/5 backdrop-blur-sm transition-opacity" onClick={handleClose}></div>
         
         <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h3 className="text-xl font-bold text-gray-900">Add New Student to Class</h3>
+            <h3 className="text-xl font-bold text-gray-900">{title}</h3>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
+              disabled={loading}
             >
               <X className="h-6 w-6" />
             </button>
           </div>
           
           <form onSubmit={handleSubmit} className="p-6">
-            <p className="text-sm text-gray-600 mb-6">Fill in the details below to add a new student.</p>
+            <p className="text-sm text-gray-600 mb-6">
+              {student ? 'Update the student details below.' : 'Fill in the details below to add a new student.'}
+            </p>
+            
+            {/* Error message */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            )}
             
             {/* Two Column Layout */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -271,25 +474,33 @@ const AddStudentModal = ({ isOpen, onClose, onSave }) => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Subjects</label>
                   <div className={`border rounded-lg p-3 bg-gray-50 min-h-[120px] ${
-                    touched.subjects && errors.subjects ? 'border-red-500' : 'border-gray-300'
+                    touched.subjectIds && errors.subjectIds ? 'border-red-500' : 'border-gray-300'
                   }`}>
-                    <div className="space-y-2">
-                      {subjects.map(subject => (
-                        <label key={subject} className="flex items-center space-x-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={formData.subjects.includes(subject)}
-                            onChange={() => handleSubjectChange(subject)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="text-sm text-gray-700">{subject}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">Hold Ctrl/Cmd to select multiple subjects.</p>
+                    {loadingSubjects ? (
+                      <div className="text-center text-sm text-gray-500 py-4">Loading subjects...</div>
+                    ) : subjects.length === 0 ? (
+                      <div className="text-center text-sm text-gray-500 py-4">No subjects available</div>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          {subjects.map(subject => (
+                            <label key={subject.id} className="flex items-center space-x-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.subjectIds.includes(subject.id)}
+                                onChange={() => handleSubjectChange(subject.id)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700">{subject.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">Hold Ctrl/Cmd to select multiple subjects.</p>
+                      </>
+                    )}
                   </div>
-                  {touched.subjects && errors.subjects && (
-                    <p className="mt-1 text-sm text-red-600">{errors.subjects}</p>
+                  {touched.subjectIds && errors.subjectIds && (
+                    <p className="mt-1 text-sm text-red-600">{errors.subjectIds}</p>
                   )}
                 </div>
               </div>
@@ -335,20 +546,21 @@ const AddStudentModal = ({ isOpen, onClose, onSave }) => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Class</label>
                   <select
-                    value={formData.class}
-                    onChange={(e) => handleFieldChange('class', e.target.value)}
-                    onBlur={() => handleFieldBlur('class')}
+                    value={formData.classId}
+                    onChange={(e) => handleFieldChange('classId', e.target.value)}
+                    onBlur={() => handleFieldBlur('classId')}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
-                      touched.class && errors.class ? 'border-red-500' : 'border-gray-300'
+                      touched.classId && errors.classId ? 'border-red-500' : 'border-gray-300'
                     }`}
+                    disabled={loadingClasses}
                   >
-                    <option value="">Select Class</option>
+                    <option value="">{loadingClasses ? 'Loading classes...' : 'Select Class'}</option>
                     {classes.map(cls => (
-                      <option key={cls} value={cls}>{cls}</option>
+                      <option key={cls.id} value={cls.id}>{cls.name}</option>
                     ))}
                   </select>
-                  {touched.class && errors.class && (
-                    <p className="mt-1 text-sm text-red-600">{errors.class}</p>
+                  {touched.classId && errors.classId && (
+                    <p className="mt-1 text-sm text-red-600">{errors.classId}</p>
                   )}
                 </div>
               </div>
@@ -358,16 +570,18 @@ const AddStudentModal = ({ isOpen, onClose, onSave }) => {
             <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
               <button
                 type="button"
-                onClick={onClose}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                onClick={handleClose}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading}
               >
-                Add Student
+                {loading ? (student ? 'Updating...' : 'Adding...') : (student ? 'Update Student' : 'Add Student')}
               </button>
             </div>
           </form>

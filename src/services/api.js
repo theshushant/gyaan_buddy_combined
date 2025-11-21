@@ -25,13 +25,13 @@ class ApiService {
   }
 
   // Handle API failure by logging out user and redirecting to login
+  // Only navigates to login for /auth/me endpoint errors
   async handleApiFailure(error, endpoint) {
-    // Don't logout for public endpoints
-    const publicEndpoints = ['/auth/login/', '/auth/login', '/auth/register/', '/auth/register', '/auth/logout/'];
-    const isPublicEndpoint = publicEndpoints.some(publicPath => endpoint.includes(publicPath));
+    // Only handle logout/navigation for /auth/me endpoint
+    const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
     
-    // Don't logout if already logging out or if it's a public endpoint
-    if (this.isLoggingOut || isPublicEndpoint) {
+    // Don't logout if already logging out or if it's not the /me endpoint
+    if (this.isLoggingOut || !isMeEndpoint) {
       return;
     }
 
@@ -145,21 +145,42 @@ class ApiService {
         const publicEndpoints = ['/auth/login/', '/auth/login', '/auth/register/', '/auth/register'];
         const isPublicEndpoint = publicEndpoints.some(publicPath => endpoint.includes(publicPath));
         
-        // Don't logout on validation errors (400, 404, 422) - these are user input errors
-        const validationErrorCodes = [400, 404, 422];
-        const isValidationError = validationErrorCodes.includes(response.status);
+        // Get error message from response first to check if it's a validation error
+        const errorData = await response.json().catch(() => ({}));
         
-        // For non-public endpoints, logout on any error except validation errors
-        if (!isPublicEndpoint && !isValidationError) {
+        // Check if this is a validation error by examining the error structure
+        // Validation errors typically have: errors object, non_field_errors, or field-specific errors
+        const hasValidationErrors = errorData.errors || 
+                                   errorData.non_field_errors || 
+                                   (typeof errorData === 'object' && Object.keys(errorData).some(key => 
+                                     Array.isArray(errorData[key]) || typeof errorData[key] === 'object'
+                                   ));
+        
+        // Only logout/navigate for /auth/me endpoint errors (including validation errors)
+        // For all other endpoints, don't navigate to login
+        const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
+        if (isMeEndpoint) {
           // Handle the logout asynchronously to avoid blocking error throwing
+          // Navigate to login for all errors from /auth/me, including validation errors
           this.handleApiFailure(new Error(`HTTP error! status: ${response.status}`), endpoint);
         }
         
-        // Get error message from response
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.message || errorData.detail || `HTTP error! status: ${response.status}`;
+        // Extract error message from response
+        const errorMessage = errorData.message || 
+                            errorData.detail || 
+                            (errorData.non_field_errors && Array.isArray(errorData.non_field_errors) 
+                              ? errorData.non_field_errors.join(', ') 
+                              : null) ||
+                            (errorData.errors && typeof errorData.errors === 'string' 
+                              ? errorData.errors 
+                              : null) ||
+                            `HTTP error! status: ${response.status}`;
         
-        throw new Error(errorMessage);
+        // Create error with message and attach full error data for validation error handling
+        const error = new Error(errorMessage);
+        error.responseData = errorData; // Attach full error response
+        error.status = response.status;
+        throw error;
       }
 
       // Handle responses that may have no content (e.g., 204 No Content for DELETE)
@@ -191,14 +212,15 @@ class ApiService {
       const isPublicEndpoint = publicEndpoints.some(publicPath => endpoint.includes(publicPath));
       
       if (error.name === 'AbortError') {
-        // Timeout errors - logout user if not a public endpoint
-        if (!isPublicEndpoint && !this.isLoggingOut) {
+        // Timeout errors - only logout/navigate for /auth/me endpoint
+        const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
+        if (isMeEndpoint && !this.isLoggingOut) {
           this.handleApiFailure(error, endpoint);
         }
         throw new Error('Request timeout');
       }
       
-      // Handle connection errors - logout user if not a public endpoint
+      // Handle connection errors - only logout/navigate for /auth/me endpoint
       if (
         error.message.includes('Failed to fetch') || 
         error.message.includes('ERR_CONNECTION_REFUSED') ||
@@ -208,16 +230,18 @@ class ApiService {
       ) {
         console.warn(`Backend not available at ${url}. Make sure the backend server is running.`);
         
-        // Logout user on connection errors (except for public endpoints)
-        if (!isPublicEndpoint && !this.isLoggingOut) {
+        // Only logout/navigate for /auth/me endpoint errors
+        const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
+        if (isMeEndpoint && !this.isLoggingOut) {
           this.handleApiFailure(error, endpoint);
         }
         
         throw new Error('Cannot connect to server. Please ensure the backend is running.');
       }
       
-      // For any other errors, logout if not a public endpoint
-      if (!isPublicEndpoint && !this.isLoggingOut && !error.message.includes('Session expired')) {
+      // For any other errors, only logout/navigate for /auth/me endpoint
+      const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
+      if (isMeEndpoint && !this.isLoggingOut && !error.message.includes('Session expired')) {
         this.handleApiFailure(error, endpoint);
       }
       

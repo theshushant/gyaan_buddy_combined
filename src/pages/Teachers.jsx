@@ -185,8 +185,28 @@ const Teachers = () => {
   
   // Get teacher's primary subject
   const getTeacherSubject = (teacher) => {
-    if (teacher.subjects){
-      return teacher.subjects[0].name
+    // Check if teacher has subjects array and it's not empty
+    if (Array.isArray(teacher.subjects) && teacher.subjects.length > 0) {
+      const firstSubject = teacher.subjects[0]
+      // Handle both object and string formats
+      if (typeof firstSubject === 'object' && firstSubject !== null) {
+        return firstSubject.name || firstSubject.subject_name || 'N/A'
+      } else if (typeof firstSubject === 'string') {
+        // If it's a string (subject name), return it
+        return firstSubject
+      } else if (typeof firstSubject === 'number') {
+        // If it's a number (subject ID), try to find it in subjects array
+        const subject = subjects.find(s => s.id === firstSubject)
+        return subject?.name || subject?.subject_name || 'N/A'
+      }
+    }
+    // Fallback: check if teacher has a direct subject field
+    if (teacher.subject) {
+      if (typeof teacher.subject === 'string') {
+        return teacher.subject
+      } else if (typeof teacher.subject === 'object' && teacher.subject !== null) {
+        return teacher.subject.name || teacher.subject.subject_name || 'N/A'
+      }
     }
     return 'N/A'
   }

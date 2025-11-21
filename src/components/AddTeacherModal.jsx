@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, Plus, Trash2 } from 'lucide-react'
 import classesService from '../services/classesService'
 import subjectsService from '../services/subjectsService'
+import CreateClassSubjectModal from './CreateClassSubjectModal'
 
 const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = 'Add New Teacher' }) => {
   const [formData, setFormData] = useState({
@@ -25,6 +26,8 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
   const [loadingClasses, setLoadingClasses] = useState(false)
   const [loadingSubjects, setLoadingSubjects] = useState(false)
   const [passwordError, setPasswordError] = useState('')
+  const [showCreateClassSubjectModal, setShowCreateClassSubjectModal] = useState(false)
+  const [createClassSubjectType, setCreateClassSubjectType] = useState('class')
 
   // Pre-fill form when editing a teacher
   useEffect(() => {
@@ -68,7 +71,40 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
   // Normalize assignments when editing - map names to IDs after classes and subjects are loaded
   useEffect(() => {
     if (isOpen && teacher && classes.length > 0 && subjects.length > 0) {
-      const rawAssignments = teacher.assignments || teacher.classes || []
+      // First, try to get assignments from teacher_assignments (backend format)
+      let rawAssignments = teacher.assignments || teacher.classes || []
+      
+      // If no assignments but we have teacher_assignments, convert them
+      if (rawAssignments.length === 0 && teacher.teacher_assignments && teacher.teacher_assignments.length > 0) {
+        const classSubjectMap = {}
+        teacher.teacher_assignments.forEach(ta => {
+          const classId = ta.class?.id || ta.class_id || ta.class
+          const subjectId = ta.subject?.id || ta.subject_id || ta.subject
+          
+          if (classId && subjectId) {
+            const key = classId
+            if (!classSubjectMap[key]) {
+              classSubjectMap[key] = {
+                class: classId,
+                subjects: []
+              }
+            }
+            if (!classSubjectMap[key].subjects.includes(subjectId)) {
+              classSubjectMap[key].subjects.push(subjectId)
+            }
+          }
+        })
+        rawAssignments = Object.values(classSubjectMap)
+      }
+      
+      // If still no assignments but we have class_id and subject_ids, create an assignment
+      if (rawAssignments.length === 0 && teacher.class_id && teacher.subject_ids && teacher.subject_ids.length > 0) {
+        rawAssignments = [{
+          class: teacher.class_id,
+          subjects: teacher.subject_ids
+        }]
+      }
+      
       if (rawAssignments.length === 0) return
 
       const normalizedAssignments = rawAssignments.map(assignment => {
@@ -190,6 +226,30 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
     }
   }
 
+  const handleCreateClassSubjectSuccess = (type, createdId) => {
+    // Refresh the appropriate list after creation
+    if (type === 'class') {
+      fetchClasses().then(() => {
+        // Auto-select the newly created class
+        if (createdId) {
+          setNewAssignment(prev => ({ ...prev, class: createdId }))
+        }
+      })
+    } else {
+      fetchSubjects().then(() => {
+        // Auto-select the newly created subject
+        if (createdId) {
+          setNewAssignment(prev => ({
+            ...prev,
+            subjects: prev.subjects.includes(createdId)
+              ? prev.subjects
+              : [...prev.subjects, createdId]
+          }))
+        }
+      })
+    }
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
     
@@ -215,6 +275,50 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
       delete submitData.password
       delete submitData.confirmPassword
     }
+    
+    // Ensure assignments are always included in the payload
+    // Use formData.assignments if they exist, otherwise try to preserve from original teacher data
+    if (submitData.assignments && submitData.assignments.length > 0) {
+      // Assignments exist in formData, ensure they're properly formatted
+      submitData.assignments = submitData.assignments.map(assignment => ({
+        class: assignment.class,
+        subjects: Array.isArray(assignment.subjects) ? assignment.subjects : []
+      }))
+    } else if (teacher) {
+    // If assignments are empty but we're editing, try to preserve from original teacher data
+      if (teacher.assignments && teacher.assignments.length > 0) {
+        submitData.assignments = teacher.assignments
+      } else if (teacher.teacher_assignments && teacher.teacher_assignments.length > 0) {
+        // Convert teacher_assignments format to assignments format
+        const classSubjectMap = {}
+        teacher.teacher_assignments.forEach(ta => {
+          const classId = ta.class?.id || ta.class_id || ta.class
+          const subjectId = ta.subject?.id || ta.subject_id || ta.subject
+          
+          if (classId && subjectId) {
+            const key = classId
+            if (!classSubjectMap[key]) {
+              classSubjectMap[key] = {
+                class: classId,
+                subjects: []
+              }
+            }
+            if (!classSubjectMap[key].subjects.includes(subjectId)) {
+              classSubjectMap[key].subjects.push(subjectId)
+            }
+          }
+        })
+        submitData.assignments = Object.values(classSubjectMap)
+      } else {
+        // Ensure assignments is always an array, even if empty
+        submitData.assignments = []
+      }
+    } else {
+      // For new teachers, ensure assignments is always an array
+      submitData.assignments = submitData.assignments || []
+    }
+    
+    console.log('AddTeacherModal: Submitting data with assignments:', submitData.assignments)
     
     saveHandler(submitData)
     onClose()
@@ -378,7 +482,19 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Class</label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700">Class</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCreateClassSubjectType('class')
+                          setShowCreateClassSubjectModal(true)
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-800 underline"
+                      >
+                        Create Class
+                      </button>
+                    </div>
                     <select
                       value={newAssignment.class}
                       onChange={(e) => setNewAssignment(prev => ({ ...prev, class: e.target.value }))}
@@ -393,7 +509,19 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Subject(s)</label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700">Subject(s)</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCreateClassSubjectType('subject')
+                          setShowCreateClassSubjectModal(true)
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-800 underline"
+                      >
+                        Create Subject
+                      </button>
+                    </div>
                     <div className="border border-gray-300 rounded-lg p-2 max-h-32 overflow-y-auto">
                       {loadingSubjects ? (
                         <div className="text-center text-sm text-gray-500 py-4">Loading subjects...</div>
@@ -479,6 +607,16 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
           </form>
         </div>
       </div>
+
+      {/* Create Class/Subject Modal */}
+      {showCreateClassSubjectModal && (
+        <CreateClassSubjectModal
+          isOpen={showCreateClassSubjectModal}
+          onClose={() => setShowCreateClassSubjectModal(false)}
+          onSuccess={handleCreateClassSubjectSuccess}
+          initialType={createClassSubjectType}
+        />
+      )}
     </div>
   )
 }

@@ -82,7 +82,15 @@ class ModulesService {
       
       return await apiService.post('/modules/', payload, { isFormData: hasFile });
     } catch (error) {
-      throw new Error(`Failed to create module: ${error.message}`);
+      // Preserve error structure for validation error handling
+      const newError = new Error(`Failed to create module: ${error.message}`);
+      if (error.responseData) {
+        newError.responseData = error.responseData;
+      }
+      if (error.status) {
+        newError.status = error.status;
+      }
+      throw newError;
     }
   }
 
@@ -119,7 +127,15 @@ class ModulesService {
       
       return await apiService.put(`/modules/${moduleId}/`, payload, { isFormData: hasFile });
     } catch (error) {
-      throw new Error(`Failed to update module: ${error.message}`);
+      // Preserve error structure for validation error handling
+      const newError = new Error(`Failed to update module: ${error.message}`);
+      if (error.responseData) {
+        newError.responseData = error.responseData;
+      }
+      if (error.status) {
+        newError.status = error.status;
+      }
+      throw newError;
     }
   }
 

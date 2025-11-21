@@ -27,6 +27,7 @@ const CreateModuleModal = ({
   const [touched, setTouched] = useState({})
   const [logoFile, setLogoFile] = useState(null)
   const [logoPreview, setLogoPreview] = useState(null)
+  const [validationErrors, setValidationErrors] = useState(null)
 
   // Fetch subjects when modal opens
   useEffect(() => {
@@ -34,6 +35,53 @@ const CreateModuleModal = ({
       fetchSubjects()
     }
   }, [isOpen])
+
+  // Parse validation errors from error prop
+  useEffect(() => {
+    if (error) {
+      let parsedErrors = null
+      
+      // Check if error is an object with validation error structure
+      if (typeof error === 'object' && error !== null) {
+        // Check for errors.errors structure (nested errors object)
+        if (error.errors && typeof error.errors === 'object') {
+          parsedErrors = error.errors
+        } else if (error.non_field_errors || Object.keys(error).some(key => Array.isArray(error[key]))) {
+          // Direct error object structure (errors object itself)
+          parsedErrors = error
+        }
+      }
+      
+      setValidationErrors(parsedErrors)
+      
+      // If there are field-specific errors, update the form errors state
+      if (parsedErrors) {
+        const fieldErrors = {}
+        Object.keys(parsedErrors).forEach(key => {
+          if (key !== 'non_field_errors' && Array.isArray(parsedErrors[key]) && parsedErrors[key].length > 0) {
+            // Map common field names from API to form field names
+            const fieldMap = {
+              'module': 'subject', // module field might map to subject
+            }
+            const fieldName = fieldMap[key] || key
+            fieldErrors[fieldName] = parsedErrors[key][0] // Take first error message
+          }
+        })
+        
+        if (Object.keys(fieldErrors).length > 0) {
+          setErrors(prev => ({ ...prev, ...fieldErrors }))
+          // Mark fields as touched to show errors
+          const touchedFields = {}
+          Object.keys(fieldErrors).forEach(field => {
+            touchedFields[field] = true
+          })
+          setTouched(prev => ({ ...prev, ...touchedFields }))
+        }
+      }
+    } else {
+      setValidationErrors(null)
+    }
+  }, [error])
 
   // Prefill form when moduleData is provided (edit mode) or selectedSubject is provided
   useEffect(() => {
@@ -69,6 +117,7 @@ const CreateModuleModal = ({
         setLogoFile(null)
         setErrors({})
         setTouched({})
+        setValidationErrors(null)
       } else if (selectedSubject) {
         setFormData({
           name: '',
@@ -82,6 +131,7 @@ const CreateModuleModal = ({
         setLogoPreview(null)
         setErrors({})
         setTouched({})
+        setValidationErrors(null)
       } else {
         setFormData({
           name: '',
@@ -95,6 +145,7 @@ const CreateModuleModal = ({
         setLogoPreview(null)
         setErrors({})
         setTouched({})
+        setValidationErrors(null)
       }
     }
   }, [moduleData, selectedSubject, isOpen])
@@ -129,6 +180,7 @@ const CreateModuleModal = ({
     setLogoPreview(null)
     setErrors({})
     setTouched({})
+    setValidationErrors(null)
     onClose()
   }, [loading, onClose])
 
@@ -328,9 +380,24 @@ const CreateModuleModal = ({
             {error && (
               <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-lg flex items-start space-x-3 animate-slide-down">
                 <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-red-800">Error</p>
-                  <p className="text-sm text-red-700 mt-1">{error}</p>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-800">
+                    {typeof error === 'object' && error.message ? error.message : 'Validation Error'}
+                  </p>
+                  <div className="text-sm text-red-700 mt-1">
+                    {/* Display non_field_errors if present */}
+                    {validationErrors && validationErrors.non_field_errors && Array.isArray(validationErrors.non_field_errors) && (
+                      <ul className="list-disc list-inside space-y-1">
+                        {validationErrors.non_field_errors.map((errMsg, index) => (
+                          <li key={index}>{errMsg}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {/* Display general error message if no validation errors */}
+                    {(!validationErrors || !validationErrors.non_field_errors) && (
+                      <p>{typeof error === 'object' && error.message ? error.message : String(error)}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

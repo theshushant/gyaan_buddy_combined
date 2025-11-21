@@ -57,6 +57,11 @@ class StudentsService {
         payload.date_of_birth = studentData.dateOfBirth || studentData.date_of_birth;
       }
       
+      // Add gender if provided
+      if (studentData.gender !== undefined && studentData.gender !== '') {
+        payload.gender = studentData.gender;
+      }
+      
       // Add parent_name if provided
       if (studentData.parentName || studentData.parent_name) {
         payload.parent_name = studentData.parentName || studentData.parent_name;
@@ -130,6 +135,11 @@ class StudentsService {
         payload.date_of_birth = studentData.dateOfBirth || studentData.date_of_birth;
       }
       
+      // Add gender if provided
+      if (studentData.gender !== undefined && studentData.gender !== '') {
+        payload.gender = studentData.gender;
+      }
+      
       // Add parent_name if provided
       if (studentData.parentName !== undefined || studentData.parent_name !== undefined) {
         payload.parent_name = studentData.parentName || studentData.parent_name;
@@ -140,10 +150,10 @@ class StudentsService {
         payload.class_id = studentData.class_id || studentData.classId;
       }
       
-      // Add subject_ids if provided
+      // Add subject_ids if provided (allow empty array to clear subjects)
       if (studentData.subject_ids !== undefined || studentData.subjectIds !== undefined) {
         const subjectIds = studentData.subject_ids || studentData.subjectIds;
-        if (Array.isArray(subjectIds) && subjectIds.length > 0) {
+        if (Array.isArray(subjectIds)) {
           payload.subject_ids = subjectIds;
         }
       }

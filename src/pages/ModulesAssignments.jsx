@@ -200,7 +200,8 @@ const ModulesAssignments = () => {
       await fetchAllModulesData();
     } catch (err) {
       console.error('Error saving module:', err);
-      setCreateError(err.message || `Failed to ${editingModule ? 'update' : 'create'} module. Please try again.`);
+      // Pass the full error object to preserve validation error structure
+      setCreateError(err.responseData || err.message || `Failed to ${editingModule ? 'update' : 'create'} module. Please try again.`);
     } finally {
       setCreatingModule(false);
     }
@@ -622,7 +623,8 @@ const ModulesAssignments = () => {
                           <Edit className="h-4 w-4" />
                           <span className="text-sm font-medium">Edit</span>
                         </button>
-                        <div className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg">
+                        {/* Mark Due toggle hidden for now */}
+                        {/* <div className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg">
                           <span className="text-sm text-gray-600">Mark Due</span>
                           <button
                             onClick={(e) => {
@@ -639,7 +641,7 @@ const ModulesAssignments = () => {
                               }`}
                             />
                           </button>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   </div>

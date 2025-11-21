@@ -85,7 +85,7 @@ const TestsQuizzes = () => {
   const fetchMissions = useCallback(async () => {
     setLoadingMissions(true);
     try {
-      const response = await testsService.getAllMissions();
+      const response = await testsService.getMissions();
       // Extract data array from response
       const missionsData = response.data || response || [];
       setMissions(missionsData);
@@ -247,34 +247,52 @@ const TestsQuizzes = () => {
         }, 1500);
       } else {
         // Create one mission per selected class
+        // Build description with date and time info
+        const descriptionText = formData.testTime 
+          ? `Test scheduled for ${formData.testDate} at ${formData.testTime}`
+          : `Test scheduled for ${formData.testDate}`;
+        
         const missionPromises = selectedClasses.map(classId => {
+          // Payload matching MissionCreateSerializer fields exactly
           const missionPayload = {
-            title: formData.title,
-            description: `Test scheduled for ${formData.testDate}${formData.testTime ? ` at ${formData.testTime}` : ''}`,
+            title: formData.title.trim(),
+            description: descriptionText,
             mission_date: missionDate,
             duration: parseInt(formData.duration),
-            subject: selectedSubject,
+            subject: selectedSubject || null, // Can be null per model
             class_group: classId,
             exp_multiplier: '1.00',
             base_exp: 10,
             is_active: true
           };
+          
+          console.log('Creating mission with payload:', missionPayload);
           return testsService.createMission(missionPayload);
         });
 
         const createdMissionsData = await Promise.all(missionPromises);
         
         // Extract mission data from responses
-        const missions = createdMissionsData.map(res => res.data || res);
+        const missions = createdMissionsData.map(res => {
+          const missionData = res.data || res;
+          console.log('Mission created successfully:', missionData);
+          return missionData;
+        });
         setCreatedMissions(missions);
         
         // If only one mission was created, automatically select it
         if (missions.length === 1) {
           setSelectedMission(missions[0]);
           setShowQuestionForm(true);
+        } else if (missions.length > 1) {
+          // If multiple missions created, show success and let user select
+          setSelectedMission(missions[0]);
+          setShowQuestionForm(true);
         }
         
         setSuccess(true);
+        setError(null);
+        
         // Reset form
         setFormData({
           title: '',
@@ -289,8 +307,43 @@ const TestsQuizzes = () => {
         // Don't redirect, stay on create tab to add questions
       }
     } catch (error) {
-      console.error(`Failed to ${isEditMode ? 'update' : 'create'} test:`, error);
-      setError(error.message || `Failed to ${isEditMode ? 'update' : 'create'} test. Please try again.`);
+      console.error(`Failed to ${isEditMode ? 'update' : 'create'} mission:`, error);
+      
+      // Extract detailed error message from API response
+      let errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} mission. Please try again.`;
+      
+      // Check for responseData (from apiService error structure)
+      if (error.responseData) {
+        const apiError = error.responseData;
+        if (apiError.message) {
+          errorMessage = apiError.message;
+        } else if (apiError.errors) {
+          // Handle validation errors
+          const errorMessages = Object.entries(apiError.errors)
+            .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+            .join('; ');
+          errorMessage = `Validation errors: ${errorMessages}`;
+        } else if (apiError.detail) {
+          errorMessage = apiError.detail;
+        } else if (typeof apiError === 'string') {
+          errorMessage = apiError;
+        }
+      } else if (error.response?.data) {
+        // Fallback for other error structures
+        const apiError = error.response.data;
+        if (apiError.message) {
+          errorMessage = apiError.message;
+        } else if (apiError.detail) {
+          errorMessage = apiError.detail;
+        } else if (typeof apiError === 'string') {
+          errorMessage = apiError;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
+      setSuccess(false);
     } finally {
       setSubmitting(false);
     }
@@ -459,179 +512,252 @@ const TestsQuizzes = () => {
       )}
 
       {activeTab === 'create' && !showQuestionForm && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              {isEditMode ? 'Edit Test' : 'Create New Test'}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          {/* Header Section */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 text-white">
+            <h2 className="text-3xl font-bold mb-2">
+              {isEditMode ? '✏️ Edit Test' : '➕ Create New Test'}
             </h2>
-            <p className="text-gray-600">
-              {isEditMode ? 'Update the details for this test.' : 'Enter the basic details for your new test.'}
+            <p className="text-blue-100">
+              {isEditMode ? 'Update the details for this test mission.' : 'Fill in the details below to create a new test mission for your students.'}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-                {isEditMode ? 'Test updated successfully!' : 'Test created successfully! Redirecting...'}
-              </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Test Title</label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                placeholder="e.g., 'Modern Physics - Chapter 1 Test'"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
+          {/* Form Section */}
+          <div className="p-8">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Error/Success Messages */}
+              {error && (
+                <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-start space-x-3 animate-slide-down">
+                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-red-800">Error</p>
+                    <p className="text-sm text-red-700 mt-1">{error}</p>
+                  </div>
+                </div>
+              )}
+              {success && (
+                <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 flex items-start space-x-3 animate-slide-down">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-green-800">Success!</p>
+                    <p className="text-sm text-green-700 mt-1">
+                      {isEditMode ? 'Test updated successfully!' : 'Test created successfully! You can now add questions.'}
+                    </p>
+                  </div>
+                </div>
+              )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
-              <select 
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                disabled={loadingSubjects}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option value="">{loadingSubjects ? 'Loading subjects...' : 'Select Subject'}</option>
-                {subjects.map((subject) => (
-                  <option key={subject.id} value={subject.id}>
-                    {subject.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Class(es) to Assign</label>
-              <div className="border border-gray-300 rounded-lg p-4 max-h-40 overflow-y-auto">
-                {loadingClasses ? (
-                  <div className="text-center text-gray-500 py-4">Loading classes...</div>
-                ) : classes.length === 0 ? (
-                  <div className="text-center text-gray-500 py-4">No classes available</div>
-                ) : (
-                  classes.map((cls) => (
-                    <label key={cls.id} className="flex items-center space-x-2 mb-2">
-                      <input 
-                        type="checkbox" 
-                        checked={selectedClasses.includes(cls.id)}
-                        onChange={() => handleClassToggle(cls.id)}
-                        disabled={isEditMode}
-                        className="rounded" 
-                      />
-                      <span>{cls.name}</span>
+              {/* Basic Information Section */}
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                  <span className="text-blue-600">📋</span>
+                  <span>Basic Information</span>
+                </h3>
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Test Title <span className="text-red-500">*</span>
                     </label>
-                  ))
-                )}
+                    <input
+                      type="text"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleInputChange}
+                      placeholder="e.g., 'Modern Physics - Chapter 1 Test'"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Subject <span className="text-red-500">*</span>
+                    </label>
+                    <select 
+                      value={selectedSubject}
+                      onChange={(e) => setSelectedSubject(e.target.value)}
+                      disabled={loadingSubjects}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    >
+                      <option value="">{loadingSubjects ? 'Loading subjects...' : 'Select Subject'}</option>
+                      {subjects.map((subject) => (
+                        <option key={subject.id} value={subject.id}>
+                          {subject.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
-              <p className="text-sm text-gray-500 mt-2">
-                {isEditMode ? 'Class cannot be changed when editing a test.' : 'Select multiple classes to assign this test.'}
-              </p>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Test Date</label>
-                <input
-                  type="date"
-                  name="testDate"
-                  value={formData.testDate}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
+              {/* Assignment Section */}
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                  <span className="text-green-600">👥</span>
+                  <span>Class Assignment</span>
+                </h3>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Select Class(es) <span className="text-red-500">*</span>
+                  </label>
+                  <div className="border-2 border-gray-200 rounded-xl p-4 max-h-48 overflow-y-auto bg-white">
+                    {loadingClasses ? (
+                      <div className="text-center text-gray-500 py-4 flex items-center justify-center space-x-2">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span>Loading classes...</span>
+                      </div>
+                    ) : classes.length === 0 ? (
+                      <div className="text-center text-gray-500 py-4">No classes available</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {classes.map((cls) => (
+                          <label 
+                            key={cls.id} 
+                            className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                              selectedClasses.includes(cls.id)
+                                ? 'bg-blue-50 border-2 border-blue-500'
+                                : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                            }`}
+                          >
+                            <input 
+                              type="checkbox" 
+                              checked={selectedClasses.includes(cls.id)}
+                              onChange={() => handleClassToggle(cls.id)}
+                              disabled={isEditMode}
+                              className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer" 
+                            />
+                            <span className={`font-medium ${selectedClasses.includes(cls.id) ? 'text-blue-800' : 'text-gray-700'}`}>
+                              {cls.name}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500 mt-3 flex items-center space-x-1">
+                    <span>💡</span>
+                    <span>{isEditMode ? 'Class cannot be changed when editing a test.' : 'You can select multiple classes to assign this test to.'}</span>
+                  </p>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Test Time</label>
-                <input
-                  type="time"
-                  name="testTime"
-                  value={formData.testTime}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+
+              {/* Schedule Section */}
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                  <span className="text-purple-600">📅</span>
+                  <span>Schedule & Duration</span>
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Test Date <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      name="testDate"
+                      value={formData.testDate}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Test Time
+                    </label>
+                    <input
+                      type="time"
+                      name="testTime"
+                      value={formData.testTime}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                    />
+                  </div>
+                </div>
+                <div className="mt-5">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Duration (in minutes) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="duration"
+                    value={formData.duration}
+                    onChange={handleInputChange}
+                    placeholder="e.g., 60"
+                    min="1"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                    required
+                  />
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Duration (in minutes)</label>
-              <input
-                type="number"
-                name="duration"
-                value={formData.duration}
-                onChange={handleInputChange}
-                placeholder="e.g., 60"
-                min="1"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
+              {/* Notification Section */}
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                  <span className="text-orange-600">🔔</span>
+                  <span>Notifications</span>
+                </h3>
+                <div className="flex items-center space-x-3 p-4 bg-white rounded-lg border-2 border-gray-200">
+                  <input 
+                    type="checkbox" 
+                    id="notification" 
+                    name="notification"
+                    checked={formData.notification}
+                    onChange={handleInputChange}
+                    className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer" 
+                  />
+                  <label htmlFor="notification" className="text-sm font-medium text-gray-700 cursor-pointer flex-1">
+                    Send 30-minute prior auto-notification to students
+                  </label>
+                </div>
+              </div>
 
-            <div className="flex items-center space-x-2">
-              <input 
-                type="checkbox" 
-                id="notification" 
-                name="notification"
-                checked={formData.notification}
-                onChange={handleInputChange}
-                className="rounded" 
-              />
-              <label htmlFor="notification" className="text-sm text-gray-700">
-                30-minute prior auto-notification to students
-              </label>
-            </div>
-
-            <div className="flex justify-end space-x-4">
-              <button
-                type="button"
-                onClick={() => {
-                  if (isEditMode) {
-                    handleCancelEdit();
-                  } else {
-                    setFormData({
-                      title: '',
-                      testDate: '',
-                      testTime: '',
-                      duration: '',
-                      notification: false
-                    });
-                    setSelectedSubject('');
-                    setSelectedClasses([]);
-                    setError(null);
-                  }
-                }}
-                disabled={submitting}
-                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting ? (
-                  <>
-                    <span>{isEditMode ? 'Updating...' : 'Creating...'}</span>
-                    <span className="animate-spin">⏳</span>
-                  </>
-                ) : (
-                  <>
-                    <span>{isEditMode ? 'Update Test' : 'Create Test'}</span>
-                    <span>→</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isEditMode) {
+                      handleCancelEdit();
+                    } else {
+                      setFormData({
+                        title: '',
+                        testDate: '',
+                        testTime: '',
+                        duration: '',
+                        notification: false
+                      });
+                      setSelectedSubject('');
+                      setSelectedClasses([]);
+                      setError(null);
+                    }
+                  }}
+                  disabled={submitting}
+                  className="px-8 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>{isEditMode ? 'Updating...' : 'Creating Mission...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{isEditMode ? 'Update Test' : 'Create Mission'}</span>
+                      <span className="text-xl">→</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

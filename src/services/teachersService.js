@@ -110,7 +110,7 @@ class TeachersService {
           };
         }).filter(assignment => assignment.class_id && assignment.subject_ids.length > 0);
         
-        // Also include first assignment's class_id for backward compatibility (if needed)
+        // Extract class_id and subject_ids from first assignment for direct payload fields
         const firstAssignment = teacherData.assignments[0];
         if (firstAssignment && firstAssignment.class) {
           let classId = null;
@@ -122,6 +122,21 @@ class TeachersService {
           if (classId) {
             payload.class_id = classId;
           }
+          
+          // Extract subject_ids from first assignment
+          const subjectIds = [];
+          if (firstAssignment.subjects && Array.isArray(firstAssignment.subjects)) {
+            firstAssignment.subjects.forEach(subjectId => {
+              let id = subjectId;
+              if (typeof subjectId === 'object' && subjectId !== null && subjectId.id) {
+                id = subjectId.id;
+              }
+              if (id) {
+                subjectIds.push(id);
+              }
+            });
+          }
+          payload.subject_ids = subjectIds;
         }
       } else if (teacherData.class_id || teacherData.classId) {
         // Handle direct class_id and subject_ids if provided (backward compatibility)
@@ -136,6 +151,7 @@ class TeachersService {
       } else {
         // Ensure assignments is always an array, even if empty
         payload.assignments = [];
+        payload.subject_ids = [];
       }
       
       // Ensure class_id is provided when is_class_teacher is true
@@ -197,40 +213,18 @@ class TeachersService {
       }
       
       // Handle class and subject assignments
-      // Send assignments array with class and subject IDs to backend
-      // First, try to get assignments from teacherData.assignments
-      let assignments = teacherData.assignments;
+      // Only include assignments if explicitly provided and non-empty
+      // If not provided, ignore assignments to preserve existing ones
+      const hasExplicitAssignments = teacherData.assignments !== undefined;
+      const hasExplicitClassId = teacherData.class_id !== undefined || teacherData.classId !== undefined;
+      const hasExplicitSubjectIds = teacherData.subject_ids !== undefined || teacherData.subjectIds !== undefined;
       
-      // If no assignments, try to extract from teacher_assignments (backend format)
-      if ((!assignments || assignments.length === 0) && teacherData.teacher_assignments && teacherData.teacher_assignments.length > 0) {
-        // Convert teacher_assignments format to assignments format
-        const classSubjectMap = {};
-        teacherData.teacher_assignments.forEach(ta => {
-          const classId = ta.class?.id || ta.class_id || ta.class;
-          const subjectId = ta.subject?.id || ta.subject_id || ta.subject;
-          
-          if (classId && subjectId) {
-            const key = classId;
-            if (!classSubjectMap[key]) {
-              classSubjectMap[key] = {
-                class: classId,
-                subjects: []
-              };
-            }
-            if (!classSubjectMap[key].subjects.includes(subjectId)) {
-              classSubjectMap[key].subjects.push(subjectId);
-            }
-          }
-        });
-        assignments = Object.values(classSubjectMap);
-      }
-      
-      // Process assignments if they exist
-      if (assignments && assignments.length > 0) {
-        console.log('TeachersService: Processing assignments:', assignments);
+      // Only process assignments if explicitly provided
+      if (hasExplicitAssignments && teacherData.assignments && teacherData.assignments.length > 0) {
+        console.log('TeachersService: Processing explicit assignments:', teacherData.assignments);
         
         // Format assignments array with class_id and subject_ids for each assignment
-        payload.assignments = assignments.map(assignment => {
+        payload.assignments = teacherData.assignments.map(assignment => {
           let classId = null;
           
           // Extract class_id - handle both string ID and object with id property
@@ -266,8 +260,8 @@ class TeachersService {
         
         console.log('TeachersService: Formatted assignments for payload:', payload.assignments);
         
-        // Also include first assignment's class_id for backward compatibility (if needed)
-        const firstAssignment = assignments[0];
+        // Extract class_id and subject_ids from first assignment for direct payload fields
+        const firstAssignment = teacherData.assignments[0];
         if (firstAssignment && firstAssignment.class) {
           let classId = null;
           if (typeof firstAssignment.class === 'string' || typeof firstAssignment.class === 'number') {
@@ -277,24 +271,42 @@ class TeachersService {
           }
           if (classId) {
             payload.class_id = classId;
-            console.log('TeachersService: Extracted class_id for backward compatibility:', classId);
+            console.log('TeachersService: Extracted class_id from first assignment:', classId);
           }
+          
+          // Extract subject_ids from first assignment
+          const subjectIds = [];
+          if (firstAssignment.subjects && Array.isArray(firstAssignment.subjects)) {
+            firstAssignment.subjects.forEach(subjectId => {
+              let id = subjectId;
+              if (typeof subjectId === 'object' && subjectId !== null && subjectId.id) {
+                id = subjectId.id;
+              }
+              if (id) {
+                subjectIds.push(id);
+              }
+            });
+          }
+          payload.subject_ids = subjectIds;
+          console.log('TeachersService: Extracted subject_ids from first assignment:', subjectIds);
         }
-      } else if (teacherData.class_id || teacherData.classId) {
-        // Handle direct class_id and subject_ids if provided (backward compatibility)
-        payload.class_id = teacherData.class_id || teacherData.classId;
-        if (teacherData.subject_ids || teacherData.subjectIds) {
+      } else if (hasExplicitClassId || hasExplicitSubjectIds) {
+        // Handle direct class_id and subject_ids if explicitly provided (backward compatibility)
+        if (hasExplicitClassId) {
+          payload.class_id = teacherData.class_id || teacherData.classId;
+        }
+        if (hasExplicitSubjectIds) {
           payload.subject_ids = Array.isArray(teacherData.subject_ids || teacherData.subjectIds) 
             ? (teacherData.subject_ids || teacherData.subjectIds)
             : [];
-        } else {
+        } else if (hasExplicitClassId) {
+          // If class_id is provided but subject_ids is not, set empty array
           payload.subject_ids = [];
         }
-        console.log('TeachersService: Using direct class_id and subject_ids:', payload.class_id, payload.subject_ids);
+        console.log('TeachersService: Using explicit class_id and subject_ids:', payload.class_id, payload.subject_ids);
       } else {
-        // Ensure assignments is always an array, even if empty
-        payload.assignments = [];
-        console.log('TeachersService: No assignments found, setting empty array');
+        // No assignments provided - don't include them in payload to preserve existing assignments
+        console.log('TeachersService: No assignments provided - ignoring assignments to preserve existing ones');
       }
       
       // Ensure class_id is provided when is_class_teacher is true

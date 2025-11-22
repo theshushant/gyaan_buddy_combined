@@ -57,7 +57,12 @@ const Login = () => {
     }
 
     try {
-      const result = await dispatch(loginUser(formData)).unwrap()
+      // Add type as 'dashboard' for web login
+      const loginData = {
+        ...formData,
+        type: 'dashboard'
+      }
+      const result = await dispatch(loginUser(loginData)).unwrap()
       if (result.user) {
         // The role will be set in Redux by authSlice (mapped from user_type)
         // AppRoutes component will automatically show the correct dashboard based on role

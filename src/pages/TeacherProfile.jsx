@@ -153,46 +153,37 @@ const TeacherProfile = () => {
   const transformTeacherForEdit = () => {
     if (!teacherData) return null
 
-    // Use raw classesData from Redux which should have IDs
     const assignments = []
-    const rawClassesData = classes[teacherId]
+    const classSubjectMap = {}
     
-    if (Array.isArray(rawClassesData)) {
-      // Group by class_id to collect all subjects for each class
-      const classSubjectMap = {}
-      
-      rawClassesData.forEach(cls => {
-        const classData = cls.data || cls
-        const classId = classData.id || classData.class_id || classData.class?.id
-        const className = classData.name || classData.class_name || classData.class?.name
+    // First, try to use teacher_assignments which has the proper structure with IDs
+    if (teacherData.teacher_assignments && Array.isArray(teacherData.teacher_assignments) && teacherData.teacher_assignments.length > 0) {
+      teacherData.teacher_assignments.forEach(ta => {
+        // Extract class ID - handle different formats
+        const classId = ta.class?.id || ta.class_id || ta.class
+        const className = ta.class?.name || ta.class_name
         
-        if (!classId && !className) return // Skip if no class identifier
+        // Extract subject ID - handle different formats
+        const subjectId = ta.subject?.id || ta.subject_id || ta.subject
+        const subjectName = ta.subject?.name || ta.subject_name
         
-        const subjectObj = classData.subject || classData.subject_name || classData.subject_id
-        let subjectId = null
+        // Skip if no class ID
+        if (!classId) return
         
-        // Extract subject ID
-        if (typeof subjectObj === 'object' && subjectObj) {
-          subjectId = subjectObj.id || subjectObj.subject_id
-        } else if (typeof subjectObj === 'string' || typeof subjectObj === 'number') {
-          // If it's a string/number, it might be an ID or name
-          subjectId = subjectObj
-        }
-        
-        // Use class ID or name as key
-        const key = classId || className
+        // Use class ID as key (not name, to ensure we use IDs)
+        const key = classId
         
         if (!classSubjectMap[key]) {
           classSubjectMap[key] = {
-            class: classId || className,
+            class: classId, // Always use ID, not name
             subjects: [],
-            isClassTeacher: classData.is_class_teacher !== undefined 
-              ? classData.is_class_teacher 
-              : classData.role === 'Class Teacher' || classData.role === 'class_teacher'
+            isClassTeacher: ta.isClassTeacher !== undefined 
+              ? ta.isClassTeacher 
+              : (ta.is_class_teacher !== undefined ? ta.is_class_teacher : false)
           }
         }
         
-        // Add subject if it exists and isn't already in the list
+        // Add subject ID if it exists and isn't already in the list
         if (subjectId && !classSubjectMap[key].subjects.includes(subjectId)) {
           classSubjectMap[key].subjects.push(subjectId)
         }
@@ -200,46 +191,91 @@ const TeacherProfile = () => {
       
       // Convert map to array
       assignments.push(...Object.values(classSubjectMap))
-    } else if (rawClassesData && rawClassesData.data && Array.isArray(rawClassesData.data)) {
-      // Handle nested data structure
-      const classSubjectMap = {}
+    } else {
+      // Fallback: Use raw classesData from Redux
+      const rawClassesData = classes[teacherId]
       
-      rawClassesData.data.forEach(cls => {
-        const classId = cls.id || cls.class_id || cls.class?.id
-        const className = cls.name || cls.class_name || cls.class?.name
-        
-        if (!classId && !className) return
-        
-        const subjectObj = cls.subject || cls.subject_id || cls.subject_name
-        let subjectId = null
-        
-        if (typeof subjectObj === 'object' && subjectObj) {
-          subjectId = subjectObj.id || subjectObj.subject_id
-        } else if (subjectObj) {
-          subjectId = subjectObj
-        }
-        
-        const key = classId || className
-        
-        if (!classSubjectMap[key]) {
-          classSubjectMap[key] = {
-            class: classId || className,
-            subjects: [],
-            isClassTeacher: cls.is_class_teacher || false
+      if (Array.isArray(rawClassesData)) {
+        rawClassesData.forEach(cls => {
+          const classData = cls.data || cls
+          const classId = classData.id || classData.class_id || classData.class?.id
+          const className = classData.name || classData.class_name || classData.class?.name
+          
+          if (!classId && !className) return // Skip if no class identifier
+          
+          const subjectObj = classData.subject || classData.subject_name || classData.subject_id
+          let subjectId = null
+          
+          // Extract subject ID
+          if (typeof subjectObj === 'object' && subjectObj) {
+            subjectId = subjectObj.id || subjectObj.subject_id
+          } else if (typeof subjectObj === 'string' || typeof subjectObj === 'number') {
+            // If it's a string/number, it might be an ID or name
+            subjectId = subjectObj
           }
-        }
+          
+          // Use class ID as key (prefer ID over name)
+          const key = classId || className
+          
+          if (!classSubjectMap[key]) {
+            classSubjectMap[key] = {
+              class: classId || className, // Prefer ID, fallback to name
+              subjects: [],
+              isClassTeacher: classData.is_class_teacher !== undefined 
+                ? classData.is_class_teacher 
+                : (classData.role === 'Class Teacher' || classData.role === 'class_teacher')
+            }
+          }
+          
+          // Add subject if it exists and isn't already in the list
+          if (subjectId && !classSubjectMap[key].subjects.includes(subjectId)) {
+            classSubjectMap[key].subjects.push(subjectId)
+          }
+        })
         
-        if (subjectId && !classSubjectMap[key].subjects.includes(subjectId)) {
-          classSubjectMap[key].subjects.push(subjectId)
-        }
-      })
-      
-      assignments.push(...Object.values(classSubjectMap))
+        // Convert map to array
+        assignments.push(...Object.values(classSubjectMap))
+      } else if (rawClassesData && rawClassesData.data && Array.isArray(rawClassesData.data)) {
+        // Handle nested data structure
+        rawClassesData.data.forEach(cls => {
+          const classId = cls.id || cls.class_id || cls.class?.id
+          const className = cls.name || cls.class_name || cls.class?.name
+          
+          if (!classId && !className) return
+          
+          const subjectObj = cls.subject || cls.subject_id || cls.subject_name
+          let subjectId = null
+          
+          if (typeof subjectObj === 'object' && subjectObj) {
+            subjectId = subjectObj.id || subjectObj.subject_id
+          } else if (subjectObj) {
+            subjectId = subjectObj
+          }
+          
+          const key = classId || className
+          
+          if (!classSubjectMap[key]) {
+            classSubjectMap[key] = {
+              class: classId || className,
+              subjects: [],
+              isClassTeacher: cls.is_class_teacher || false
+            }
+          }
+          
+          if (subjectId && !classSubjectMap[key].subjects.includes(subjectId)) {
+            classSubjectMap[key].subjects.push(subjectId)
+          }
+        })
+        
+        assignments.push(...Object.values(classSubjectMap))
+      }
     }
 
     // Determine if teacher is a class teacher
     const isClassTeacher = assignments.some(assignment => assignment.isClassTeacher) ||
-      processedClasses.some(cls => cls.role === 'Class Teacher')
+      processedClasses.some(cls => cls.role === 'Class Teacher') ||
+      teacherData.is_class_teacher ||
+      teacherData.isClassTeacher
 
     return {
       id: teacherData.id,

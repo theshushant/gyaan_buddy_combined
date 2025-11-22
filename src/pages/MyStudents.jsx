@@ -91,7 +91,7 @@ const MyStudents = () => {
       email,
       phone: student.phone_number || student.phone || '',
       lastActive: student.last_active || student.lastActive || 'N/A',
-      totalXP: student.total_xp || student.totalXP || student.xp || 0,
+      totalXP: student.total_exp || student.total_exp || student.xp || 0,
       averageScore: student.average_score || student.averageScore || 0,
       completedModules: student.completed_modules || student.completedModules || 0,
       pendingAssignments: student.pending_assignments || student.pendingAssignments || 0
@@ -225,9 +225,6 @@ const MyStudents = () => {
                   Class
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Active
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   XP
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -269,9 +266,6 @@ const MyStudents = () => {
                   {student.class}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {student.lastActive}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <span className="animate-count-up">{student.totalXP}</span> XP
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -306,7 +300,7 @@ const MyStudents = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
                     No students found matching your criteria.
                   </td>
                 </tr>

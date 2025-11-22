@@ -151,19 +151,38 @@ class ModulesService {
   // Create a new chapter for a module
   async createChapter(moduleId, chapterData) {
     try {
-      const payload = {
-        module: moduleId,
-        title: chapterData.title,
-      };
+      // Check if logo is a File object (for file upload)
+      const hasFile = chapterData.logo instanceof File;
       
-      // Add optional fields if they exist
-      if (chapterData.description) payload.description = chapterData.description;
-      if (chapterData.order !== undefined) payload.order = chapterData.order;
-      if (chapterData.logo) payload.logo = chapterData.logo;
-      if (chapterData.is_enabled !== undefined) payload.is_enabled = chapterData.is_enabled;
-      if (chapterData.is_important !== undefined) payload.is_important = chapterData.is_important;
+      let payload;
+      if (hasFile) {
+        // Use FormData for file uploads
+        payload = new FormData();
+        payload.append('module', moduleId);
+        payload.append('title', chapterData.title);
+        
+        // Add optional fields if they exist
+        if (chapterData.description) payload.append('description', chapterData.description);
+        if (chapterData.order !== undefined) payload.append('order', chapterData.order);
+        if (chapterData.logo) payload.append('logo', chapterData.logo);
+        if (chapterData.is_enabled !== undefined) payload.append('is_enabled', chapterData.is_enabled);
+        if (chapterData.is_important !== undefined) payload.append('is_important', chapterData.is_important);
+      } else {
+        // Use regular JSON payload
+        payload = {
+          module: moduleId,
+          title: chapterData.title,
+        };
+        
+        // Add optional fields if they exist
+        if (chapterData.description) payload.description = chapterData.description;
+        if (chapterData.order !== undefined) payload.order = chapterData.order;
+        if (chapterData.logo) payload.logo = chapterData.logo;
+        if (chapterData.is_enabled !== undefined) payload.is_enabled = chapterData.is_enabled;
+        if (chapterData.is_important !== undefined) payload.is_important = chapterData.is_important;
+      }
       
-      const response = await apiService.post('/module_chapters/', payload);
+      const response = await apiService.post('/module_chapters/', payload, { isFormData: hasFile });
       
       // Handle response structure: { success: true, data: {...}, message: "..." }
       // The backend returns: { success: true, data: {...}, message: "..." }
@@ -179,17 +198,35 @@ class ModulesService {
   // Update a chapter
   async updateChapter(chapterId, chapterData) {
     try {
-      const payload = {};
+      // Check if logo is a File object (for file upload)
+      const hasFile = chapterData.logo instanceof File;
       
-      if (chapterData.title) payload.title = chapterData.title;
-      if (chapterData.module) payload.module = chapterData.module;
-      if (chapterData.description !== undefined) payload.description = chapterData.description;
-      if (chapterData.order !== undefined) payload.order = chapterData.order;
-      if (chapterData.logo !== undefined) payload.logo = chapterData.logo;
-      if (chapterData.is_enabled !== undefined) payload.is_enabled = chapterData.is_enabled;
-      if (chapterData.is_important !== undefined) payload.is_important = chapterData.is_important;
+      let payload;
+      if (hasFile) {
+        // Use FormData for file uploads
+        payload = new FormData();
+        
+        if (chapterData.title) payload.append('title', chapterData.title);
+        if (chapterData.module) payload.append('module', chapterData.module);
+        if (chapterData.description !== undefined) payload.append('description', chapterData.description);
+        if (chapterData.order !== undefined) payload.append('order', chapterData.order);
+        if (chapterData.logo) payload.append('logo', chapterData.logo);
+        if (chapterData.is_enabled !== undefined) payload.append('is_enabled', chapterData.is_enabled);
+        if (chapterData.is_important !== undefined) payload.append('is_important', chapterData.is_important);
+      } else {
+        // Use regular JSON payload
+        payload = {};
+        
+        if (chapterData.title) payload.title = chapterData.title;
+        if (chapterData.module) payload.module = chapterData.module;
+        if (chapterData.description !== undefined) payload.description = chapterData.description;
+        if (chapterData.order !== undefined) payload.order = chapterData.order;
+        if (chapterData.logo !== undefined) payload.logo = chapterData.logo;
+        if (chapterData.is_enabled !== undefined) payload.is_enabled = chapterData.is_enabled;
+        if (chapterData.is_important !== undefined) payload.is_important = chapterData.is_important;
+      }
       
-      return await apiService.put(`/module_chapters/${chapterId}/`, payload);
+      return await apiService.put(`/module_chapters/${chapterId}/`, payload, { isFormData: hasFile });
     } catch (error) {
       throw new Error(`Failed to update chapter: ${error.message}`);
     }

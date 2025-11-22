@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { 
   Plus, 
   Eye, 
@@ -19,7 +18,6 @@ import {
   Settings,
   Trash2,
   Edit,
-  Play,
   BarChart3,
   Sparkles,
   Image as ImageIcon,
@@ -43,6 +41,7 @@ const ModulesAssignments = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateChapterModal, setShowCreateChapterModal] = useState(false);
   const [selectedModuleForChapter, setSelectedModuleForChapter] = useState(null);
+  const [editingChapter, setEditingChapter] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState({});
   const [creatingModule, setCreatingModule] = useState(false);
@@ -97,6 +96,7 @@ const ModulesAssignments = () => {
               is_active: module.is_active !== undefined ? module.is_active : true,
               is_enabled: module.is_enabled !== undefined ? module.is_enabled : false,
               subject: module.subject || module.subject_id || module.subject?.id,
+              logo: module.logo || null,
               modules: chaptersList.map((chapter, idx) => ({
                 id: chapter.id,
                 title: chapter.title || `Chapter ${idx + 1}`
@@ -117,6 +117,7 @@ const ModulesAssignments = () => {
               is_active: module.is_active !== undefined ? module.is_active : true,
               is_enabled: module.is_enabled !== undefined ? module.is_enabled : false,
               subject: module.subject || module.subject_id || module.subject?.id,
+              logo: module.logo || null,
               modules: []
             };
           }
@@ -214,7 +215,7 @@ const ModulesAssignments = () => {
   };
 
   const handleCreateChapter = async (chapterData) => {
-    if (!selectedModuleForChapter) {
+    if (!selectedModuleForChapter && !editingChapter) {
       setCreateChapterError('No module selected');
       return;
     }
@@ -223,20 +224,35 @@ const ModulesAssignments = () => {
     setCreateChapterError(null);
 
     try {
-      const response = await modulesService.createChapter(selectedModuleForChapter.id, chapterData);
-      const successMessage = response?.message || `Chapter "${chapterData.title}" has been created successfully.`;
-      
-      setShowCreateChapterModal(false);
-      setSelectedModuleForChapter(null);
-      setSuccessData({
-        title: 'Chapter Created Successfully',
-        message: successMessage
-      });
+      if (editingChapter) {
+        // Update existing chapter
+        const response = await modulesService.updateChapter(editingChapter.id, chapterData);
+        const successMessage = response?.message || `Chapter "${chapterData.title}" has been updated successfully.`;
+        
+        setShowCreateChapterModal(false);
+        setEditingChapter(null);
+        setSelectedModuleForChapter(null);
+        setSuccessData({
+          title: 'Chapter Updated Successfully',
+          message: successMessage
+        });
+      } else {
+        // Create new chapter
+        const response = await modulesService.createChapter(selectedModuleForChapter.id, chapterData);
+        const successMessage = response?.message || `Chapter "${chapterData.title}" has been created successfully.`;
+        
+        setShowCreateChapterModal(false);
+        setSelectedModuleForChapter(null);
+        setSuccessData({
+          title: 'Chapter Created Successfully',
+          message: successMessage
+        });
+      }
       setShowSuccessModal(true);
       await fetchAllModulesData();
     } catch (err) {
-      console.error('Error creating chapter:', err);
-      let errorMessage = 'Failed to create chapter. Please try again.';
+      console.error(`Error ${editingChapter ? 'updating' : 'creating'} chapter:`, err);
+      let errorMessage = `Failed to ${editingChapter ? 'update' : 'create'} chapter. Please try again.`;
       if (err.message) {
         errorMessage = err.message;
       } else if (typeof err === 'string') {
@@ -250,8 +266,32 @@ const ModulesAssignments = () => {
 
   const handleAddChapter = (module) => {
     setSelectedModuleForChapter(module);
+    setEditingChapter(null);
     setShowCreateChapterModal(true);
     setCreateChapterError(null);
+  };
+
+  const handleEditChapter = async (chapter, module) => {
+    try {
+      // Fetch full chapter data
+      const response = await modulesService.getModuleChapters(module.id);
+      const chaptersData = response.data || response;
+      const chaptersList = Array.isArray(chaptersData) ? chaptersData : [];
+      const fullChapterData = chaptersList.find(ch => ch.id === chapter.id);
+      
+      if (fullChapterData) {
+        setEditingChapter(fullChapterData);
+        setSelectedModuleForChapter(module);
+        setShowCreateChapterModal(true);
+        setCreateChapterError(null);
+      } else {
+        console.error('Chapter not found');
+        setCreateChapterError('Chapter data not found. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error fetching chapter data:', err);
+      setCreateChapterError('Failed to load chapter data. Please try again.');
+    }
   };
 
   const handleViewQuestions = async (chapter) => {
@@ -314,6 +354,8 @@ const ModulesAssignments = () => {
       // If image is present or needs to be removed, create FormData
       let dataToSend;
       const needsFormData = image instanceof File || questionPayload.remove_image;
+      const isMCQ = questionPayload.question_type === 'mcq_single' || questionPayload.question_type === 'mcq_multiple';
+      
       if (needsFormData) {
         dataToSend = new FormData();
         Object.keys(questionPayload).forEach(key => {
@@ -331,6 +373,23 @@ const ModulesAssignments = () => {
             }
           }
         });
+        
+        // Add options for MCQ questions - send as JSON string for FormData
+        // The backend will need to parse this, but for now we'll send it this way
+        if (isMCQ && options && Array.isArray(options) && options.length > 0) {
+          // Filter out empty options and ensure proper structure
+          const validOptions = options
+            .filter(opt => opt.option_text && opt.option_text.trim() !== '')
+            .map((opt, idx) => ({
+              option_text: opt.option_text.trim(),
+              is_correct: opt.is_correct || false,
+              order: opt.order || idx + 1,
+            }));
+          if (validOptions.length > 0) {
+            dataToSend.append('options', JSON.stringify(validOptions));
+          }
+        }
+        
         if (image instanceof File) {
           dataToSend.append('image', image);
         } else if (questionPayload.remove_image) {
@@ -339,19 +398,27 @@ const ModulesAssignments = () => {
           dataToSend.append('image', '');
         }
       } else {
-        dataToSend = questionPayload;
+        // For JSON payload, include options directly
+        dataToSend = { ...questionPayload };
+        if (isMCQ && options && Array.isArray(options) && options.length > 0) {
+          // Filter out empty options and ensure proper structure
+          const validOptions = options
+            .filter(opt => opt.option_text && opt.option_text.trim() !== '')
+            .map((opt, idx) => ({
+              option_text: opt.option_text.trim(),
+              is_correct: opt.is_correct || false,
+              order: opt.order || idx + 1,
+            }));
+          if (validOptions.length > 0) {
+            dataToSend.options = validOptions;
+          }
+        }
       }
 
       if (editingQuestion) {
         // Update existing question
         const questionId = editingQuestion.id;
         await questionsService.updateQuestion(questionId, dataToSend);
-
-        // Update options if provided
-        if (options && options.length > 0 && (questionPayload.question_type === 'mcq_single' || questionPayload.question_type === 'mcq_multiple')) {
-          // Note: You may need to implement update options endpoint or delete and recreate
-          // For now, we'll just update the question
-        }
 
         setShowCreateQuestionModal(false);
         setEditingQuestion(null);
@@ -667,6 +734,13 @@ const ModulesAssignments = () => {
                               </div>
                               <div className="flex items-center space-x-2">
                                 <button
+                                  onClick={() => handleEditChapter(module, chapter)}
+                                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                  <span className="text-sm font-medium">Edit</span>
+                                </button>
+                                <button
                                   onClick={() => handleViewQuestions(module)}
                                   className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 shadow-sm hover:shadow-md"
                                 >
@@ -680,13 +754,6 @@ const ModulesAssignments = () => {
                                   <Plus className="h-4 w-4" />
                                   <span className="text-sm font-medium">Question</span>
                                 </button>
-                                <Link 
-                                  to={`/modules/${module.id}`}
-                                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
-                                >
-                                  <Play className="h-4 w-4" />
-                                  <span className="text-sm font-medium">Open</span>
-                                </Link>
                               </div>
                             </div>
                           </div>
@@ -730,19 +797,21 @@ const ModulesAssignments = () => {
           />
         )}
 
-        {/* Create Chapter Modal */}
+        {/* Create/Edit Chapter Modal */}
         {showCreateChapterModal && (
           <CreateChapterModal
             isOpen={showCreateChapterModal}
             onClose={() => {
               setShowCreateChapterModal(false);
               setSelectedModuleForChapter(null);
+              setEditingChapter(null);
               setCreateChapterError(null);
             }}
             onSave={handleCreateChapter}
             loading={creatingChapter}
             error={createChapterError}
             selectedModule={selectedModuleForChapter}
+            chapterData={editingChapter}
           />
         )}
 
@@ -1026,6 +1095,48 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
     return null;
   });
 
+  // Update form data when initialData changes (switching between edit/create modes)
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        question_text: initialData.question_text || '',
+        question_type: initialData.question_type || 'mcq_single',
+        difficulty_level: initialData.difficulty_level || 'medium',
+        exp_points: initialData.exp_points || 10,
+        explanation: initialData.explanation || '',
+        is_active: initialData.is_active !== undefined ? initialData.is_active : true,
+        options: initialData.options && initialData.options.length > 0
+          ? initialData.options.map((opt, idx) => ({
+              option_text: opt.option_text || '',
+              is_correct: opt.is_correct || false,
+              order: opt.order || idx + 1,
+            }))
+          : [
+              { option_text: '', is_correct: false, order: 1 },
+              { option_text: '', is_correct: false, order: 2 },
+              { option_text: '', is_correct: false, order: 3 },
+              { option_text: '', is_correct: false, order: 4 },
+            ],
+      });
+    } else {
+      // Reset to default when no initialData (create mode)
+      setFormData({
+        question_text: '',
+        question_type: 'mcq_single',
+        difficulty_level: 'medium',
+        exp_points: 10,
+        explanation: '',
+        is_active: true,
+        options: [
+          { option_text: '', is_correct: false, order: 1 },
+          { option_text: '', is_correct: false, order: 2 },
+          { option_text: '', is_correct: false, order: 3 },
+          { option_text: '', is_correct: false, order: 4 },
+        ],
+      });
+    }
+  }, [initialData]);
+
   // Reset image state when initialData changes (switching between edit/create modes)
   useEffect(() => {
     if (initialData?.image) {
@@ -1041,7 +1152,29 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
   }, [initialData]);
 
   const handleFieldChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'question_type') {
+      // When changing to MCQ types, ensure options are initialized
+      if ((value === 'mcq_single' || value === 'mcq_multiple')) {
+        setFormData(prev => {
+          // If options don't exist or are empty, initialize them
+          const hasOptions = prev.options && prev.options.length > 0;
+          const options = hasOptions 
+            ? prev.options 
+            : [
+                { option_text: '', is_correct: false, order: 1 },
+                { option_text: '', is_correct: false, order: 2 },
+                { option_text: '', is_correct: false, order: 3 },
+                { option_text: '', is_correct: false, order: 4 },
+              ];
+          return { ...prev, [field]: value, options };
+        });
+      } else {
+        // When changing away from MCQ types, just update the type
+        setFormData(prev => ({ ...prev, [field]: value }));
+      }
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleOptionChange = (index, field, value) => {
@@ -1123,7 +1256,9 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
     
     // Validate that at least one correct option is selected for MCQ questions
     if (formData.question_type === 'mcq_single' || formData.question_type === 'mcq_multiple') {
-      const validOptions = formData.options.filter(opt => opt.option_text.trim() !== '');
+      // Ensure options exist and are an array
+      const options = formData.options && Array.isArray(formData.options) ? formData.options : [];
+      const validOptions = options.filter(opt => opt.option_text && opt.option_text.trim() !== '');
       const hasCorrectOption = validOptions.some(opt => opt.is_correct === true);
       
       if (!hasCorrectOption) {
@@ -1131,15 +1266,29 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         return;
       }
       
-      // Ensure we only send valid options (with text)
-      const dataToSave = { ...formData, options: validOptions };
+      if (validOptions.length === 0) {
+        setValidationError('Please add at least one option with text.');
+        return;
+      }
+      
+      // Ensure we send all valid options with proper structure
+      const dataToSave = { 
+        ...formData, 
+        options: validOptions.map((opt, idx) => ({
+          option_text: opt.option_text.trim(),
+          is_correct: opt.is_correct || false,
+          order: opt.order || idx + 1,
+        }))
+      };
       if (imageFile) {
         dataToSave.image = imageFile;
       }
       onSave(dataToSave);
     } else {
-      // For non-MCQ questions, just send the data
+      // For non-MCQ questions, just send the data (without options)
       const dataToSave = { ...formData };
+      // Remove options for non-MCQ questions
+      delete dataToSave.options;
       if (imageFile) {
         dataToSave.image = imageFile;
       }

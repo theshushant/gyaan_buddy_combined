@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { X } from 'lucide-react'
+import { X, Upload } from 'lucide-react'
 
 const CreateChapterModal = ({ 
   isOpen, 
@@ -18,6 +18,8 @@ const CreateChapterModal = ({
     is_important: false
   })
 
+  const [logoFile, setLogoFile] = useState(null)
+  const [logoPreview, setLogoPreview] = useState(null)
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
 
@@ -32,6 +34,29 @@ const CreateChapterModal = ({
           is_enabled: chapterData.is_enabled !== undefined ? chapterData.is_enabled : true,
           is_important: chapterData.is_important !== undefined ? chapterData.is_important : false
         })
+        
+        // Set logo preview if logo exists
+        if (chapterData.logo) {
+          let logoUrl = chapterData.logo
+          if (logoUrl && typeof logoUrl === 'string') {
+            // Handle different URL formats
+            if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
+              // Full URL
+            } else if (logoUrl.startsWith('/')) {
+              // Relative URL - construct full URL
+              const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.REACT_APP_API_URL || 'http://localhost:8000'
+              // Remove /api from baseURL if present, as media files are served from root
+              const cleanBaseUrl = baseUrl.replace('/api', '')
+              logoUrl = `${cleanBaseUrl}${logoUrl}`
+            }
+            setLogoPreview(logoUrl)
+          } else {
+            setLogoPreview(null)
+          }
+        } else {
+          setLogoPreview(null)
+        }
+        setLogoFile(null)
         setErrors({})
         setTouched({})
       } else {
@@ -42,6 +67,8 @@ const CreateChapterModal = ({
           is_enabled: true,
           is_important: false
         })
+        setLogoFile(null)
+        setLogoPreview(null)
         setErrors({})
         setTouched({})
       }
@@ -59,6 +86,8 @@ const CreateChapterModal = ({
       is_enabled: true,
       is_important: false
     })
+    setLogoFile(null)
+    setLogoPreview(null)
     setErrors({})
     setTouched({})
     onClose()
@@ -150,6 +179,52 @@ const CreateChapterModal = ({
     }
   }
 
+  const handleLogoChange = (e) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setErrors(prev => ({ ...prev, logo: 'Please select a valid image file' }))
+        return
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, logo: 'Image size must be less than 5MB' }))
+        return
+      }
+      
+      setLogoFile(file)
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors.logo
+        return newErrors
+      })
+      
+      // Create preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setLogoPreview(reader.result)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemoveLogo = () => {
+    setLogoFile(null)
+    setLogoPreview(null)
+    setErrors(prev => {
+      const newErrors = { ...prev }
+      delete newErrors.logo
+      return newErrors
+    })
+    // Reset file input
+    const fileInput = document.getElementById('chapter-logo-upload')
+    if (fileInput) {
+      fileInput.value = ''
+    }
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
     
@@ -161,7 +236,12 @@ const CreateChapterModal = ({
     setTouched(allTouched)
     
     if (validateForm()) {
-      onSave(formData)
+      // Include logo file in form data
+      const dataToSave = { ...formData }
+      if (logoFile) {
+        dataToSave.logo = logoFile
+      }
+      onSave(dataToSave)
     }
   }
 
@@ -268,6 +348,63 @@ const CreateChapterModal = ({
                     Order determines the sequence of chapters within the module
                   </p>
                 </div>
+              </div>
+            </div>
+
+            {/* Logo/Image Upload Field */}
+            <div>
+              <h4 className="text-md font-semibold text-gray-900 mb-4">Chapter Logo</h4>
+              <div className="space-y-4">
+                {/* File Input */}
+                <div className="flex items-center space-x-4">
+                  <input
+                    id="chapter-logo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    className="hidden"
+                    disabled={loading}
+                  />
+                  <label
+                    htmlFor="chapter-logo-upload"
+                    className={`flex items-center px-4 py-2 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                      errors.logo
+                        ? 'border-red-300 bg-red-50'
+                        : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                    } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <Upload className={`h-5 w-5 mr-2 ${errors.logo ? 'text-red-400' : 'text-gray-500'}`} />
+                    <span className={`text-sm font-medium ${errors.logo ? 'text-red-600' : 'text-gray-700'}`}>
+                      {logoFile ? logoFile.name : 'Choose image file'}
+                    </span>
+                  </label>
+                </div>
+
+                {/* Image Preview */}
+                {logoPreview && (
+                  <div className="relative inline-block">
+                    <img
+                      src={logoPreview}
+                      alt="Logo preview"
+                      className="h-32 w-32 object-cover rounded-lg border border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveLogo}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      disabled={loading}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+
+                {errors.logo && (
+                  <p className="mt-1 text-sm text-red-600">{errors.logo}</p>
+                )}
+                <p className="text-xs text-gray-500">
+                  Upload an image for the chapter logo (optional). Max size: 5MB
+                </p>
               </div>
             </div>
 

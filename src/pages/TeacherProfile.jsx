@@ -29,21 +29,21 @@ const TeacherProfile = () => {
       dispatch(fetchTeacherPerformance(teacherId))
       
       // Fetch dashboard usage separately
-      teachersService.getTeacherDashboardUsage(teacherId)
-        .then(response => {
-          // Handle response format - could be direct data or wrapped in data property
-          const data = response.data || response
-          if (data) {
-            setActivityInsights(prev => ({
-              dashboardUsage: data.dashboardUsage || data.dashboard_usage || prev.dashboardUsage || `${data.hours_per_week || 0} hours/week`,
-              contentCreation: data.contentCreation || data.content_creation || data.content_created || prev.contentCreation 
-            }))
-          }
-        })
-        .catch(err => {
-          console.error('Error fetching dashboard usage:', err)
-          // Keep default values on error
-        })
+      // teachersService.getTeacherDashboardUsage(teacherId)
+      //   .then(response => {
+      //     // Handle response format - could be direct data or wrapped in data property
+      //     const data = response.data || response
+      //     if (data) {
+      //       setActivityInsights(prev => ({
+      //         dashboardUsage: data.dashboardUsage || data.dashboard_usage || prev.dashboardUsage || `${data.hours_per_week || 0} hours/week`,
+      //         contentCreation: data.contentCreation || data.content_creation || data.content_created || prev.contentCreation 
+      //       }))
+      //     }
+      //   })
+      //   .catch(err => {
+      //     console.error('Error fetching dashboard usage:', err)
+      //     // Keep default values on error
+      //   })
     }
   }, [dispatch, teacherId])
 

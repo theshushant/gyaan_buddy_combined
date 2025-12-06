@@ -21,9 +21,9 @@ class TeachersService {
   }
 
   // Get teacher by ID
-  async getTeacherById(teacherId) {
+  async getTeacherById(teacherId, options = {}) {
     try {
-      return await apiService.get(`/users/${teacherId}`);
+      return await apiService.get(`/users/${teacherId}`, options);
     } catch (error) {
       throw new Error(`Failed to fetch teacher: ${error.message}`);
     }

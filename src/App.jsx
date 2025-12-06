@@ -53,7 +53,8 @@ const AppRoutes = () => {
         <Route path="/tests/generate" element={<GenerateWithAI />} />
         <Route path="/tests/questions" element={<ViewQuestions />} />
         <Route path="/tests/ai-generated" element={<AIGeneratedQuestions />} />
-        <Route path="/tests/performance/:studentId" element={<StudentTestPerformance />} />
+        <Route path="/tests/performance/:missionId/:studentId" element={<StudentTestPerformance />} />
+        <Route path="/tests/performance/:missionId" element={<StudentTestPerformance />} />
         <Route path="/reports" element={<ReportsAnalytics />} />
         <Route path="/leaderboards" element={<Leaderboards />} />
         <Route path="/missions" element={<DailyMissions />} />

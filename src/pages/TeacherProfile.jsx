@@ -34,10 +34,10 @@ const TeacherProfile = () => {
           // Handle response format - could be direct data or wrapped in data property
           const data = response.data || response
           if (data) {
-            setActivityInsights({
-              dashboardUsage: data.dashboardUsage || data.dashboard_usage || `${data.hours_per_week || 0} hours/week`,
-              contentCreation: data.contentCreation || data.content_creation || `${data.items_per_month || 0} items/month`
-            })
+            setActivityInsights(prev => ({
+              dashboardUsage: data.dashboardUsage || data.dashboard_usage || prev.dashboardUsage || `${data.hours_per_week || 0} hours/week`,
+              contentCreation: data.contentCreation || data.content_creation || data.content_created || prev.contentCreation 
+            }))
           }
         })
         .catch(err => {
@@ -46,6 +46,19 @@ const TeacherProfile = () => {
         })
     }
   }, [dispatch, teacherId])
+
+  // Update activity insights when teacher data is loaded, checking for content_created
+  useEffect(() => {
+    if (currentTeacher) {
+      const teacherData = currentTeacher.data || currentTeacher
+      if (teacherData.content_created !== undefined) {
+        setActivityInsights(prev => ({
+          ...prev,
+          contentCreation: teacherData.content_created || prev.contentCreation
+        }))
+      }
+    }
+  }, [currentTeacher])
   
   // Use fetched teacher data or fallback to current user data
   const teacherData = currentTeacher || (isOwnProfile && user ? {
@@ -53,6 +66,7 @@ const TeacherProfile = () => {
     firstName: user.firstName || user.first_name || '',
     lastName: user.lastName || user.last_name || '',
     email: user.email || '',
+    username: user.username || '',
     employeeId: user.employeeId || user.employee_id || '',
     subjects: user.subjects || [],
     classes: [],
@@ -130,6 +144,7 @@ const TeacherProfile = () => {
     firstName: teacherData.firstName || teacherData.first_name || '',
     lastName: teacherData.lastName || teacherData.last_name || '',
     email: teacherData.email || '',
+    username: teacherData.username || '',
     employeeId: teacherData.employeeId || teacherData.employee_id || '',
     profilePicture: teacherData.profilePicture || teacherData.profile_picture || null,
     classes: processedClasses,
@@ -378,6 +393,11 @@ const TeacherProfile = () => {
                 
                 <div className="space-y-2">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <span className="text-sm font-medium text-gray-500 sm:w-24">Username:</span>
+                    <span className="text-gray-900">{transformedData.username || 'N/A'}</span>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                     <span className="text-sm font-medium text-gray-500 sm:w-24">Email:</span>
                     <span className="text-gray-900">{transformedData.email || 'N/A'}</span>
                   </div>
@@ -428,7 +448,7 @@ const TeacherProfile = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600 mb-1">Content Creation</p>
-                <p className="text-lg font-medium text-gray-900">{transformedData.activityInsights.contentCreation}</p>
+                <p className="text-lg font-medium text-gray-900">{transformedData.activityInsights.contentCreation} items/month</p>
               </div>
             </div>
           </div>

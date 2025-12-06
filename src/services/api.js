@@ -25,13 +25,14 @@ class ApiService {
   }
 
   // Handle API failure by logging out user and redirecting to login
-  // Only navigates to login for /auth/me endpoint errors
-  async handleApiFailure(error, endpoint) {
-    // Only handle logout/navigation for /auth/me endpoint
+  // Navigates to login for /auth/me endpoint errors or 401 status errors
+  async handleApiFailure(error, endpoint, status = null) {
+    // Only handle logout/navigation for /auth/me endpoint or 401 errors
     const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
+    const is401Error = status === 401;
     
-    // Don't logout if already logging out or if it's not the /me endpoint
-    if (this.isLoggingOut || !isMeEndpoint) {
+    // Don't logout if already logging out or if it's not the /me endpoint or 401 error
+    if (this.isLoggingOut || (!isMeEndpoint && !is401Error)) {
       return;
     }
 
@@ -156,13 +157,15 @@ class ApiService {
                                      Array.isArray(errorData[key]) || typeof errorData[key] === 'object'
                                    ));
         
-        // Only logout/navigate for /auth/me endpoint errors (including validation errors)
-        // For all other endpoints, don't navigate to login
+        // Navigate to login for 401 status or /auth/me endpoint errors
+        // Don't navigate for 401 errors on public endpoints (login, register)
         const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
-        if (isMeEndpoint) {
+        const is401Error = response.status === 401 && !isPublicEndpoint;
+        
+        if (isMeEndpoint || is401Error) {
           // Handle the logout asynchronously to avoid blocking error throwing
-          // Navigate to login for all errors from /auth/me, including validation errors
-          this.handleApiFailure(new Error(`HTTP error! status: ${response.status}`), endpoint);
+          // Navigate to login for 401 errors or all errors from /auth/me, including validation errors
+          this.handleApiFailure(new Error(`HTTP error! status: ${response.status}`), endpoint, response.status);
         }
         
         // Extract error message from response
@@ -215,7 +218,7 @@ class ApiService {
         // Timeout errors - only logout/navigate for /auth/me endpoint
         const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
         if (isMeEndpoint && !this.isLoggingOut) {
-          this.handleApiFailure(error, endpoint);
+          this.handleApiFailure(error, endpoint, null);
         }
         throw new Error('Request timeout');
       }
@@ -233,7 +236,7 @@ class ApiService {
         // Only logout/navigate for /auth/me endpoint errors
         const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
         if (isMeEndpoint && !this.isLoggingOut) {
-          this.handleApiFailure(error, endpoint);
+          this.handleApiFailure(error, endpoint, null);
         }
         
         throw new Error('Cannot connect to server. Please ensure the backend is running.');
@@ -242,7 +245,7 @@ class ApiService {
       // For any other errors, only logout/navigate for /auth/me endpoint
       const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
       if (isMeEndpoint && !this.isLoggingOut && !error.message.includes('Session expired')) {
-        this.handleApiFailure(error, endpoint);
+        this.handleApiFailure(error, endpoint, null);
       }
       
       throw error;

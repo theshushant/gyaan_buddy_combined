@@ -464,7 +464,7 @@ const TestsQuizzes = () => {
                     <span>Edit Test</span>
                   </button>
                   <Link 
-                    to="/tests/performance/priya-sharma"
+                    to={`/tests/performance/${mission.id}`}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg"
                   >
                     <span className="transform transition-transform duration-200 hover:rotate-12">📊</span>

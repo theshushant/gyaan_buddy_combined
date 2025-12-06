@@ -85,6 +85,29 @@ class TestsService {
       throw new Error(`Failed to create mission question: ${error.message}`);
     }
   }
+
+  // Get students performance for a mission
+  async getStudentsPerformance(missionId) {
+    try {
+      console.log('TestsService: Fetching students performance for mission:', missionId);
+      console.log('TestsService: API URL will be:', `/missions/${missionId}/students_performance/`);
+      const response = await apiService.get(`/missions/${missionId}/students_performance/`);
+      console.log('TestsService: Students performance fetched successfully:', response);
+      return response;
+    } catch (error) {
+      console.error('TestsService: Failed to fetch students performance:', error);
+      console.error('TestsService: Error details:', {
+        message: error.message,
+        status: error.status,
+        responseData: error.responseData
+      });
+      // Re-throw the error with more context
+      const enhancedError = new Error(`Failed to fetch students performance: ${error.message}`);
+      enhancedError.status = error.status;
+      enhancedError.responseData = error.responseData;
+      throw enhancedError;
+    }
+  }
 }
 
 export default new TestsService();

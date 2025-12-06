@@ -83,7 +83,7 @@ const Layout = ({ children }) => {
     { name: 'Leaderboards', href: '/leaderboards', icon: Trophy },
     { name: 'Daily Missions', href: '/missions', icon: Calendar },
     { name: 'Notifications', href: '/notifications', icon: Bell },
-    { name: 'AI Suggestions', href: '/ai-suggestions', icon: Lightbulb },
+    // { name: 'AI Suggestions', href: '/ai-suggestions', icon: Lightbulb },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
 

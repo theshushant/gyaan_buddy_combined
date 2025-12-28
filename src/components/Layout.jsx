@@ -22,7 +22,8 @@ import {
   Brain,
   Target,
   LogOut,
-  Sparkles
+  Sparkles,
+  Wand2
 } from 'lucide-react'
 
 const Layout = ({ children }) => {
@@ -83,6 +84,7 @@ const Layout = ({ children }) => {
     { name: 'Leaderboards', href: '/leaderboards', icon: Trophy },
     { name: 'Daily Missions', href: '/missions', icon: Calendar },
     { name: 'Notifications', href: '/notifications', icon: Bell },
+    { name: 'AI Data', href: '/ai-data', icon: Wand2 },
     // { name: 'AI Suggestions', href: '/ai-suggestions', icon: Lightbulb },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]

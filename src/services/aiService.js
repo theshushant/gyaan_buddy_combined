@@ -120,6 +120,31 @@ class AIService {
       throw new Error(`Failed to fetch remedial activities: ${error.message}`);
     }
   }
+
+  // Generate AI questions using ChatGPT
+  // This will create questions, module content entries, and chapter HOTS entries if level is 5
+  async generateAIQuestions(requestData) {
+    try {
+      const response = await apiService.post('/ai/generate-questions/', requestData);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to generate AI questions: ${error.message}`);
+    }
+  }
+
+  // Deactivate AI-generated questions that are not in the provided list
+  // This marks questions as inactive (is_active=False)
+  async deactivateAIQuestions(questionIdsToKeep, moduleChapterId) {
+    try {
+      const response = await apiService.post('/ai/deactivate-questions/', {
+        question_ids: questionIdsToKeep,
+        module_chapter_id: moduleChapterId
+      });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to deactivate AI questions: ${error.message}`);
+    }
+  }
 }
 
 export default new AIService();

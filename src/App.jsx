@@ -34,6 +34,7 @@ import Leaderboards from './pages/Leaderboards'
 import DailyMissions from './pages/DailyMissions'
 import Notifications from './pages/Notifications'
 import AISuggestions from './pages/AISuggestions'
+import AIDataGenerator from './pages/AIDataGenerator'
 
 // Role-based routing component
 const AppRoutes = () => {
@@ -60,6 +61,7 @@ const AppRoutes = () => {
         <Route path="/missions" element={<DailyMissions />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/ai-suggestions" element={<AISuggestions />} />
+        <Route path="/ai-data" element={<AIDataGenerator />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     )

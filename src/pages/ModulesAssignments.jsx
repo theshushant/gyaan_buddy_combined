@@ -374,6 +374,11 @@ const ModulesAssignments = () => {
           }
         });
         
+        // Add chapter_id for linking question to chapter (ModuleContent) and ChapterHOTS if is_hots
+        if (selectedChapterForQuestion?.id) {
+          dataToSend.append('chapter_id', selectedChapterForQuestion.id);
+        }
+        
         // Add options for MCQ questions - send as JSON string for FormData
         // The backend will need to parse this, but for now we'll send it this way
         if (isMCQ && options && Array.isArray(options) && options.length > 0) {
@@ -400,6 +405,12 @@ const ModulesAssignments = () => {
       } else {
         // For JSON payload, include options directly
         dataToSend = { ...questionPayload };
+        
+        // Add chapter_id for linking question to chapter (ModuleContent) and ChapterHOTS if is_hots
+        if (selectedChapterForQuestion?.id) {
+          dataToSend.chapter_id = selectedChapterForQuestion.id;
+        }
+        
         if (isMCQ && options && Array.isArray(options) && options.length > 0) {
           // Filter out empty options and ensure proper structure
           const validOptions = options
@@ -433,22 +444,13 @@ const ModulesAssignments = () => {
           await handleViewQuestions(selectedChapterForQuestion);
         }
       } else {
-        // Create new question
+        // Create new question (backend handles ModuleContent creation when chapter_id is provided)
         const questionResponse = await questionsService.createQuestion(dataToSend);
         const questionId = questionResponse.data?.id || questionResponse.id;
 
         if (!questionId) {
           throw new Error('Failed to get question ID from response');
         }
-
-        if (options && options.length > 0 && (questionPayload.question_type === 'mcq_single' || questionPayload.question_type === 'mcq_multiple')) {
-          await questionsService.createQuestionOptions(questionId, options);
-        }
-
-        await modulesService.createChapterModuleContent(selectedChapterForQuestion.id, {
-          type: 'question',
-          question: questionId
-        });
 
         setShowCreateQuestionModal(false);
         setSelectedChapterForQuestion(null);
@@ -1053,6 +1055,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         exp_points: initialData.exp_points || 10,
         explanation: initialData.explanation || '',
         is_active: initialData.is_active !== undefined ? initialData.is_active : true,
+        is_hots: initialData.is_hots || false,
         options: initialData.options && initialData.options.length > 0
           ? initialData.options.map((opt, idx) => ({
               option_text: opt.option_text || '',
@@ -1074,6 +1077,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
       exp_points: 10,
       explanation: '',
       is_active: true,
+      is_hots: false,
       options: [
         { option_text: '', is_correct: false, order: 1 },
         { option_text: '', is_correct: false, order: 2 },
@@ -1105,6 +1109,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         exp_points: initialData.exp_points || 10,
         explanation: initialData.explanation || '',
         is_active: initialData.is_active !== undefined ? initialData.is_active : true,
+        is_hots: initialData.is_hots || false,
         options: initialData.options && initialData.options.length > 0
           ? initialData.options.map((opt, idx) => ({
               option_text: opt.option_text || '',
@@ -1127,6 +1132,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         exp_points: 10,
         explanation: '',
         is_active: true,
+        is_hots: false,
         options: [
           { option_text: '', is_correct: false, order: 1 },
           { option_text: '', is_correct: false, order: 2 },
@@ -1456,18 +1462,34 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
           <label className="block text-sm font-semibold text-gray-700 mb-3">
             Status
           </label>
-          <div className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              id="is_active"
-              checked={formData.is_active}
-              onChange={(e) => handleFieldChange('is_active', e.target.checked)}
-              className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-              disabled={loading}
-            />
-            <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
-              Active
-            </label>
+          <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="is_active"
+                checked={formData.is_active}
+                onChange={(e) => handleFieldChange('is_active', e.target.checked)}
+                className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                disabled={loading}
+              />
+              <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
+                Active
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="is_hots"
+                checked={formData.is_hots}
+                onChange={(e) => handleFieldChange('is_hots', e.target.checked)}
+                className="h-5 w-5 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                disabled={loading}
+              />
+              <label htmlFor="is_hots" className="text-sm font-medium text-gray-700">
+                HOTS
+              </label>
+              <span className="text-xs text-gray-500">(Higher Order Thinking Skills)</span>
+            </div>
           </div>
         </div>
       </div>

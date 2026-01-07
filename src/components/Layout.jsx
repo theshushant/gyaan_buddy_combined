@@ -84,7 +84,7 @@ const Layout = ({ children }) => {
     { name: 'Leaderboards', href: '/leaderboards', icon: Trophy },
     { name: 'Daily Missions', href: '/missions', icon: Calendar },
     { name: 'Notifications', href: '/notifications', icon: Bell },
-    { name: 'AI Data', href: '/ai-data', icon: Wand2 },
+    // { name: 'AI Data', href: '/ai-data', icon: Wand2 },
     // { name: 'AI Suggestions', href: '/ai-suggestions', icon: Lightbulb },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
@@ -100,9 +100,11 @@ const Layout = ({ children }) => {
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white">
           <div className="flex h-16 items-center justify-between px-4">
             <div className="flex items-center">
-              <div className="h-8 w-8 bg-blue-600 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-sm">G</span>
-              </div>
+              <img 
+                src="https://storage.googleapis.com/gyaanbuddy-media/final_logo.png" 
+                alt="GyanBuddy" 
+                className="h-8 w-8 rounded object-contain"
+              />
               <span className="ml-2 text-xl font-bold text-gray-900">GyanBuddy</span>
             </div>
             <button
@@ -153,9 +155,11 @@ const Layout = ({ children }) => {
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
           <div className="flex h-16 items-center px-4">
             <div className="flex items-center">
-              <div className="h-8 w-8 bg-blue-600 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-sm">G</span>
-              </div>
+              <img 
+                src="https://storage.googleapis.com/gyaanbuddy-media/final_logo.png" 
+                alt="GyanBuddy" 
+                className="h-8 w-8 rounded object-contain"
+              />
               <div className="ml-2">
                 <span className="text-xl font-bold text-gray-900">GyanBuddy</span>
                 <p className="text-xs text-gray-500">{roleLabel}</p>

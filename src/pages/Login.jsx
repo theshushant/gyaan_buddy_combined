@@ -96,7 +96,7 @@ const Login = () => {
         <div className="text-center mb-8">
           <div>
             <img 
-              src="https://storage.googleapis.com/gyaanbuddy-media/WhatsApp%20Image%202026-01-07%20at%209.20.40%20PM.jpeg" 
+              src="https://storage.googleapis.com/gyaanbuddy-media/gyan_buddy_light.png" 
               alt="Gyan Buddy Logo" 
               className="w-full h-full object-contain"
             />

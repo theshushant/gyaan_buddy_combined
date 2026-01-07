@@ -125,10 +125,23 @@ class AIService {
   // This will create questions, module content entries, and chapter HOTS entries if level is 5
   async generateAIQuestions(requestData) {
     try {
-      const response = await apiService.post('/ai/generate-questions/', requestData);
+      // Use 2 minute timeout for AI generation (can take longer)
+      const response = await apiService.post('/ai/generate-questions/', requestData, { timeout: 120000 });
       return response;
     } catch (error) {
       throw new Error(`Failed to generate AI questions: ${error.message}`);
+    }
+  }
+
+  // Generate AI questions using Gemini
+  // This will create questions, module content entries, and chapter HOTS entries if level is 5
+  async generateAIQuestionsGemini(requestData) {
+    try {
+      // Use 2 minute timeout for AI generation (can take longer)
+      const response = await apiService.post('/ai/generate-questions-gemini/', requestData, { timeout: 120000 });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to generate AI questions with Gemini: ${error.message}`);
     }
   }
 

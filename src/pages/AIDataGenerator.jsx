@@ -16,7 +16,8 @@ import {
   Save,
   Check,
   Square,
-  CheckSquare
+  CheckSquare,
+  HelpCircle
 } from 'lucide-react';
 import classesService from '../services/classesService';
 import subjectsService from '../services/subjectsService';
@@ -37,6 +38,7 @@ const AIDataGenerator = () => {
   const [selectedChapter, setSelectedChapter] = useState('');
   const [numberOfQuestions, setNumberOfQuestions] = useState('5');
   const [level, setLevel] = useState('1');
+  const [questionType, setQuestionType] = useState('mcq_single');
 
   // Loading states
   const [loadingClasses, setLoadingClasses] = useState(true);
@@ -72,6 +74,14 @@ const AIDataGenerator = () => {
     { value: '3', label: 'Level 3 - Medium' },
     { value: '4', label: 'Level 4 - Hard' },
     { value: '5', label: 'Level 5 - HOTS (Advanced)' },
+  ];
+
+  // Question type options
+  const questionTypeOptions = [
+    { value: 'mcq_single', label: 'MCQ - Single Correct' },
+    { value: 'mcq_multiple', label: 'MCQ - Multiple Correct' },
+    { value: 'short_answer', label: 'Short Answer' },
+    { value: 'rearrange', label: 'Re-arrange' },
   ];
 
   // Fetch classes on mount
@@ -210,6 +220,7 @@ const AIDataGenerator = () => {
         chapter_name: getSelectedChapterName(),
         number_of_questions: parseInt(numberOfQuestions),
         level: parseInt(level),
+        question_type: questionType,
       };
 
       const response = await aiService.generateAIQuestions(requestData);
@@ -299,6 +310,7 @@ const AIDataGenerator = () => {
     setSelectedChapter('');
     setNumberOfQuestions('5');
     setLevel('1');
+    setQuestionType('mcq_single');
     setError(null);
     setSuccess(null);
     setGenerationResult(null);
@@ -495,6 +507,31 @@ const AIDataGenerator = () => {
                 </div>
               </div>
 
+              {/* Question Type Dropdown */}
+              <div className="space-y-2">
+                <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
+                  <HelpCircle className="h-4 w-4 text-blue-600" />
+                  <span>Question Type</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={questionType}
+                    onChange={(e) => setQuestionType(e.target.value)}
+                    className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
+                  >
+                    {questionTypeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <HelpCircle className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+
               {/* Number of Questions & Level Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Number of Questions */}
@@ -583,7 +620,13 @@ const AIDataGenerator = () => {
                       <span className="text-gray-500">Questions:</span>
                       <span className="ml-2 text-gray-900 font-medium">{numberOfQuestions}</span>
                     </div>
-                    <div className="col-span-2">
+                    <div>
+                      <span className="text-gray-500">Type:</span>
+                      <span className="ml-2 text-gray-900 font-medium">
+                        {questionTypeOptions.find(t => t.value === questionType)?.label}
+                      </span>
+                    </div>
+                    <div>
                       <span className="text-gray-500">Level:</span>
                       <span className="ml-2 text-gray-900 font-medium">
                         {levelOptions.find(l => l.value === level)?.label}

@@ -94,11 +94,15 @@ const Login = () => {
       <div className="max-w-md w-full">
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
-            <User className="h-8 w-8 text-white" />
+          <div>
+            <img 
+              src="https://storage.googleapis.com/gyaanbuddy-media/WhatsApp%20Image%202026-01-07%20at%209.20.40%20PM.jpeg" 
+              alt="Gyan Buddy Logo" 
+              className="w-full h-full object-contain"
+            />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Gyaan Buddy</h1>
-          <p className="text-gray-600">Educational Management System</p>
+          {/* <h1 className="text-3xl font-bold text-gray-900 mb-2">Gyan Buddy</h1>
+          <p className="text-gray-600">Educational Management System</p> */}
         </div>
 
         {/* Login Form */}
@@ -188,40 +192,6 @@ const Login = () => {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-
-          {/* Quick Fill Buttons */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-600 text-center mb-4">Quick Fill (Uses Real API)</p>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('principal')}
-                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Principal
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('teacher')}
-                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Teacher
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 text-center mt-2">
-              These credentials connect to the actual backend API
-            </p>
-          </div>
-
-          {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">
-                Contact Administrator
-              </a>
-            </p>
-          </div>
         </div>
       </div>
     </div>

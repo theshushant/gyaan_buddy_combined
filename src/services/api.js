@@ -131,7 +131,9 @@ class ApiService {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+      // Allow custom timeout via options, default to class timeout
+      const requestTimeout = options.timeout || this.timeout;
+      const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
 
       const response = await fetch(url, {
         ...config,

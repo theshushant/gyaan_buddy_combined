@@ -90,7 +90,7 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gradient-start/20 to-gradient-end/30 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Logo and Title */}
         <div className="text-center mb-8">
@@ -128,7 +128,7 @@ const Login = () => {
                   type="text"
                   value={formData.username}
                   onChange={handleInputChange}
-                  className={`block w-full pl-10 pr-3 py-3 border rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`block w-full pl-10 pr-3 py-3 border rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
                     formErrors.username ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Enter your username"
@@ -154,7 +154,7 @@ const Login = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={handleInputChange}
-                  className={`block w-full pl-10 pr-12 py-3 border rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`block w-full pl-10 pr-12 py-3 border rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
                     formErrors.password ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Enter your password"
@@ -187,7 +187,10 @@ const Login = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full py-3 px-4 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02]"
+              style={{ backgroundColor: '#00167a', color: 'white' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#001262'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#00167a'}
             >
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>

@@ -71,7 +71,7 @@ const ViewQuestions = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-800">View Questions (Module - Visual Probability)</h1>
         </div>
-        <Link to="/tests" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg">
+        <Link to="/tests" className="px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg" style={{ backgroundColor: '#00167a' }}>
           <span className="transform transition-transform duration-200 hover:-translate-x-1">←</span>
           <span>Back</span>
         </Link>
@@ -91,7 +91,7 @@ const ViewQuestions = () => {
               <select
                 value={difficultyFilter}
                 onChange={(e) => setDifficultyFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
               >
                 <option value="All">All Difficulties</option>
                 <option value="Easy">Easy</option>
@@ -105,7 +105,7 @@ const ViewQuestions = () => {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
               >
                 <option value="All">All Types</option>
                 <option value="Single choice">Single Choice</option>
@@ -132,7 +132,7 @@ const ViewQuestions = () => {
                   <div className="flex-1">
                     <p className="text-gray-800 mb-3">{question.text}</p>
                     <div className="flex items-center space-x-4">
-                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                      <span className="px-2 py-1 text-xs font-medium bg-primary-500/20 text-primary-500 rounded-full">
                         {question.type}
                       </span>
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getDifficultyColor(question.difficulty)}`}>
@@ -170,7 +170,7 @@ const ViewQuestions = () => {
         
         <Link 
           to="/tests/generate"
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          className="px-6 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors flex items-center space-x-2" style={{ backgroundColor: '#00167a' }}
         >
           <span>✨</span>
           <span>Generate with AI</span>

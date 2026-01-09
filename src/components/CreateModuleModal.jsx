@@ -347,7 +347,10 @@ const CreateModuleModal = ({
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col transform transition-all duration-300 scale-100 overflow-hidden">
           {/* Header with gradient - Fixed */}
-          <div className="relative bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 px-8 py-6 flex-shrink-0">
+          <div 
+            className="relative px-8 py-6 flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #00167a 0%, #1fb7eb 50%, #1e3a8a 100%)' }}
+          >
             <div className="absolute inset-0 bg-black/5"></div>
             <div className="relative flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -358,7 +361,7 @@ const CreateModuleModal = ({
                   <h3 className="text-2xl font-bold text-white">
                     {isEditMode ? 'Edit Module' : 'Create New Module'}
                   </h3>
-                  <p className="text-sm text-blue-100 mt-0.5">
+                  <p className="text-sm text-primary-200 mt-0.5">
                     {isEditMode ? 'Update module details' : 'Fill in the details to create a new module'}
                   </p>
                 </div>
@@ -405,8 +408,8 @@ const CreateModuleModal = ({
             {/* Module Information Section */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
               <div className="flex items-center space-x-2 mb-6">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FileText className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-primary-100 rounded-lg">
+                  <FileText className="h-5 w-5 text-primary-500" />
                 </div>
                 <h4 className="text-lg font-semibold text-gray-900">Module Information</h4>
               </div>
@@ -423,7 +426,7 @@ const CreateModuleModal = ({
                       value={formData.subject}
                       onChange={(e) => handleFieldChange('subject', e.target.value)}
                       onBlur={() => handleFieldBlur('subject')}
-                      className={`w-full px-4 py-3 pl-11 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white appearance-none cursor-pointer ${
+                      className={`w-full px-4 py-3 pl-11 border-2 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white appearance-none cursor-pointer ${
                         touched.subject && errors.subject 
                           ? 'border-red-300 bg-red-50' 
                           : 'border-gray-200 hover:border-gray-300'
@@ -468,7 +471,7 @@ const CreateModuleModal = ({
                       value={formData.name}
                       onChange={(e) => handleFieldChange('name', e.target.value)}
                       onBlur={() => handleFieldBlur('name')}
-                      className={`w-full px-4 py-3 pl-11 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                      className={`w-full px-4 py-3 pl-11 border-2 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 ${
                         touched.name && errors.name 
                           ? 'border-red-300 bg-red-50' 
                           : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -504,7 +507,7 @@ const CreateModuleModal = ({
                     onChange={(e) => handleFieldChange('description', e.target.value)}
                     onBlur={() => handleFieldBlur('description')}
                     rows={4}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none ${
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 resize-none ${
                       touched.description && errors.description 
                         ? 'border-red-300 bg-red-50' 
                         : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -547,7 +550,7 @@ const CreateModuleModal = ({
                         className={`flex items-center justify-center space-x-2 px-4 py-3 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
                           errors.logo
                             ? 'border-red-300 bg-red-50'
-                            : 'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50'
+                            : 'border-gray-300 bg-gray-50 hover:border-primary-500 hover:bg-primary-50'
                         } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
                       >
                         <Upload className={`h-5 w-5 ${errors.logo ? 'text-red-400' : 'text-gray-500'}`} />
@@ -606,7 +609,7 @@ const CreateModuleModal = ({
                       value={formData.order}
                       onChange={(e) => handleFieldChange('order', parseInt(e.target.value) || 1)}
                       onBlur={() => handleFieldBlur('order')}
-                      className={`w-full px-4 py-3 pl-11 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                      className={`w-full px-4 py-3 pl-11 border-2 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 ${
                         touched.order && errors.order 
                           ? 'border-red-300 bg-red-50' 
                           : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -664,7 +667,7 @@ const CreateModuleModal = ({
                     type="button"
                     onClick={() => handleFieldChange('is_active', !formData.is_active)}
                     disabled={loading}
-                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                       formData.is_active ? 'bg-green-500' : 'bg-gray-300'
                     } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
@@ -679,9 +682,9 @@ const CreateModuleModal = ({
                 {/* Enabled Toggle */}
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
                   <div className="flex items-center space-x-3">
-                    <div className={`p-2 rounded-lg ${formData.is_enabled ? 'bg-blue-100' : 'bg-gray-200'}`}>
+                    <div className={`p-2 rounded-lg ${formData.is_enabled ? 'bg-primary-100' : 'bg-gray-200'}`}>
                       {formData.is_enabled ? (
-                        <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                        <CheckCircle2 className="h-5 w-5 text-primary-500" />
                       ) : (
                         <ToggleLeft className="h-5 w-5 text-gray-500" />
                       )}
@@ -699,9 +702,10 @@ const CreateModuleModal = ({
                     type="button"
                     onClick={() => handleFieldChange('is_enabled', !formData.is_enabled)}
                     disabled={loading}
-                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                      formData.is_enabled ? 'bg-blue-500' : 'bg-gray-300'
+                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                      !formData.is_enabled ? 'bg-gray-300' : ''
                     } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    style={formData.is_enabled ? { backgroundColor: '#00167a' } : {}}
                   >
                     <span
                       className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${
@@ -725,7 +729,8 @@ const CreateModuleModal = ({
               </button>
               <button
                 type="submit"
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center space-x-2"
+                className="px-6 py-3 text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center space-x-2"
+                style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
                 disabled={loading}
               >
                 {loading ? (

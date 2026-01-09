@@ -136,7 +136,7 @@ const Classes = () => {
   if (loading.classes) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     )
   }
@@ -149,7 +149,7 @@ const Classes = () => {
           <p className="text-red-800">Error loading classes: {error.classes}</p>
           <button
             onClick={() => dispatch(fetchClasses({}))}
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="mt-2 px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}
           >
             Retry
           </button>
@@ -165,7 +165,7 @@ const Classes = () => {
         <h1 className="text-3xl font-bold text-gray-900">Classes</h1>
         <button 
           onClick={handleAddClass}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}
         >
           <Plus className="h-5 w-5" />
           New Class
@@ -214,7 +214,7 @@ const Classes = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
                         onClick={() => handleViewDetails(classItem.id || classItem.uuid)}
-                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                        className="text-sm text-primary-500 hover:text-primary-600 hover:underline transition-colors"
                       >
                         View Details
                       </button>

@@ -326,12 +326,15 @@ const AIDataGenerator = () => {
   const isFormValid = selectedSubject && selectedModule && selectedChapter;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/20">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gradient-start/10 to-gradient-end/10">
       <div className="p-6 lg:p-8">
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">
-            <div className="p-3 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-lg">
+            <div 
+              className="p-3 rounded-2xl shadow-lg"
+              style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
+            >
               <Brain className="h-8 w-8 text-white" />
             </div>
             <div>
@@ -349,9 +352,9 @@ const AIDataGenerator = () => {
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             {/* Card Header */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 px-8 py-6">
+            <div className="border-b border-gray-200 px-8 py-6" style={{ background: 'linear-gradient(135deg, rgba(0,22,122,0.1) 0%, rgba(30,58,138,0.1) 100%)' }}>
               <div className="flex items-center space-x-3">
-                <Sparkles className="h-6 w-6 text-blue-600" />
+                <Sparkles className="h-6 w-6 text-primary-500" />
                 <h2 className="text-xl font-bold text-gray-900">Configure Generation Parameters</h2>
               </div>
               <p className="text-sm text-gray-600 mt-2">
@@ -386,7 +389,7 @@ const AIDataGenerator = () => {
               {/* Class Dropdown */}
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                  <BookOpen className="h-4 w-4 text-blue-600" />
+                  <BookOpen className="h-4 w-4 text-primary-500" />
                   <span>Class <span className="text-gray-400 font-normal">(Optional)</span></span>
                 </label>
                 <div className="relative">
@@ -394,7 +397,7 @@ const AIDataGenerator = () => {
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
                     disabled={loadingClasses}
-                    className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:border-gray-300"
+                    className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:border-gray-300"
                   >
                     <option value="">Select Class (Optional)</option>
                     {classes.map((cls) => (
@@ -417,7 +420,7 @@ const AIDataGenerator = () => {
               {/* Subject Dropdown */}
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                  <Layers className="h-4 w-4 text-blue-600" />
+                  <Layers className="h-4 w-4 text-primary-500" />
                   <span>Subject <span className="text-red-500">*</span></span>
                 </label>
                 <div className="relative">
@@ -425,7 +428,7 @@ const AIDataGenerator = () => {
                     value={selectedSubject}
                     onChange={(e) => setSelectedSubject(e.target.value)}
                     disabled={loadingSubjects}
-                    className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:border-gray-300"
+                    className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:border-gray-300"
                   >
                     <option value="">Select Subject</option>
                     {subjects.map((subject) => (
@@ -448,7 +451,7 @@ const AIDataGenerator = () => {
               {/* Module Dropdown */}
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                  <FileText className="h-4 w-4 text-blue-600" />
+                  <FileText className="h-4 w-4 text-primary-500" />
                   <span>Module <span className="text-red-500">*</span></span>
                 </label>
                 <div className="relative">
@@ -456,7 +459,7 @@ const AIDataGenerator = () => {
                     value={selectedModule}
                     onChange={(e) => setSelectedModule(e.target.value)}
                     disabled={!selectedSubject || loadingModules}
-                    className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:border-gray-300"
+                    className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:border-gray-300"
                   >
                     <option value="">{!selectedSubject ? 'Select subject first' : 'Select Module'}</option>
                     {modules.map((module) => (
@@ -479,7 +482,7 @@ const AIDataGenerator = () => {
               {/* Chapter Dropdown */}
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                  <Hash className="h-4 w-4 text-blue-600" />
+                  <Hash className="h-4 w-4 text-primary-500" />
                   <span>Module Chapter <span className="text-red-500">*</span></span>
                 </label>
                 <div className="relative">
@@ -487,7 +490,7 @@ const AIDataGenerator = () => {
                     value={selectedChapter}
                     onChange={(e) => setSelectedChapter(e.target.value)}
                     disabled={!selectedModule || loadingChapters}
-                    className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:border-gray-300"
+                    className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:border-gray-300"
                   >
                     <option value="">{!selectedModule ? 'Select module first' : 'Select Chapter'}</option>
                     {chapters.map((chapter) => (
@@ -510,14 +513,14 @@ const AIDataGenerator = () => {
               {/* Question Type Dropdown */}
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                  <HelpCircle className="h-4 w-4 text-blue-600" />
+                  <HelpCircle className="h-4 w-4 text-primary-500" />
                   <span>Question Type</span>
                 </label>
                 <div className="relative">
                   <select
                     value={questionType}
                     onChange={(e) => setQuestionType(e.target.value)}
-                    className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
+                    className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
                   >
                     {questionTypeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -537,14 +540,14 @@ const AIDataGenerator = () => {
                 {/* Number of Questions */}
                 <div className="space-y-2">
                   <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                    <BarChart2 className="h-4 w-4 text-blue-600" />
+                    <BarChart2 className="h-4 w-4 text-primary-500" />
                     <span>Number of Questions</span>
                   </label>
                   <div className="relative">
                     <select
                       value={numberOfQuestions}
                       onChange={(e) => setNumberOfQuestions(e.target.value)}
-                      className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
+                      className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
                     >
                       {questionCountOptions.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -562,14 +565,14 @@ const AIDataGenerator = () => {
                 {/* Level */}
                 <div className="space-y-2">
                   <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                    <Zap className="h-4 w-4 text-blue-600" />
+                    <Zap className="h-4 w-4 text-primary-500" />
                     <span>Difficulty Level</span>
                   </label>
                   <div className="relative">
                     <select
                       value={level}
                       onChange={(e) => setLevel(e.target.value)}
-                      className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
+                      className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
                     >
                       {levelOptions.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -601,8 +604,8 @@ const AIDataGenerator = () => {
 
               {/* Summary Preview */}
               {isFormValid && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-3">
-                  <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wider">Generation Summary</h3>
+                <div className="bg-primary-500/10 border border-primary-500/20 rounded-xl p-5 space-y-3">
+                  <h3 className="text-sm font-bold text-primary-500 uppercase tracking-wider">Generation Summary</h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-gray-500">Subject:</span>
@@ -649,7 +652,8 @@ const AIDataGenerator = () => {
                 <button
                   onClick={handleGenerate}
                   disabled={!isFormValid || generating}
-                  className="flex items-center space-x-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transform hover:scale-105 active:scale-95"
+                  className="flex items-center space-x-2 px-8 py-3 text-white font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transform hover:scale-105 active:scale-95"
+                  style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
                 >
                   {generating ? (
                     <>
@@ -670,18 +674,18 @@ const AIDataGenerator = () => {
           {/* Generated Questions List */}
           {generatedQuestions.length > 0 && (
             <div className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 px-8 py-6">
+              <div className="border-b border-gray-200 px-8 py-6" style={{ background: 'linear-gradient(135deg, rgba(0,22,122,0.1) 0%, rgba(30,58,138,0.1) 100%)' }}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <CheckCircle2 className="h-6 w-6 text-blue-600" />
+                    <CheckCircle2 className="h-6 w-6 text-primary-500" />
                     <h2 className="text-xl font-bold text-gray-900">Generated Questions</h2>
-                    <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                    <span className="px-3 py-1 bg-primary-500/20 text-primary-500 rounded-full text-sm font-medium">
                       {selectedQuestionIds.size}/{generatedQuestions.length} selected
                     </span>
                   </div>
                   <button
                     onClick={toggleAllQuestions}
-                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-primary-500 hover:text-primary-500 hover:bg-primary-500/10 rounded-lg transition-colors"
                   >
                     {selectedQuestionIds.size === generatedQuestions.length ? (
                       <>
@@ -708,7 +712,7 @@ const AIDataGenerator = () => {
                     key={question.id}
                     className={`bg-gray-50 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
                       selectedQuestionIds.has(question.id)
-                        ? 'border-blue-500 shadow-md bg-blue-50/30'
+                        ? 'border-primary-500 shadow-md bg-primary-500/10'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                     onClick={() => toggleQuestionSelection(question.id)}
@@ -718,7 +722,7 @@ const AIDataGenerator = () => {
                       <div className="flex items-start space-x-4">
                         <div className="flex-shrink-0 mt-1">
                           {selectedQuestionIds.has(question.id) ? (
-                            <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
+                            <div className="w-6 h-6 bg-primary-500 rounded-md flex items-center justify-center">
                               <Check className="h-4 w-4 text-white" />
                             </div>
                           ) : (
@@ -727,7 +731,7 @@ const AIDataGenerator = () => {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-2">
-                            <span className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-bold">
+                            <span className="px-2.5 py-1 bg-primary-500/20 text-primary-500 rounded-md text-xs font-bold">
                               Q{index + 1}
                             </span>
                             <span className="px-2.5 py-1 bg-gray-200 text-gray-700 rounded-md text-xs font-medium">
@@ -780,11 +784,11 @@ const AIDataGenerator = () => {
 
                           {/* Explanation */}
                           {question.explanation && (
-                            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                              <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-1">
+                            <div className="mt-4 p-3 bg-primary-500/10 border border-primary-500/30 rounded-lg">
+                              <p className="text-xs font-semibold text-primary-500 uppercase tracking-wider mb-1">
                                 Explanation
                               </p>
-                              <p className="text-sm text-blue-800">
+                              <p className="text-sm text-primary-500">
                                 {question.explanation}
                               </p>
                             </div>

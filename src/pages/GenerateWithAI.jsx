@@ -42,7 +42,7 @@ const GenerateWithAI = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Generate with AI</h1>
         </div>
-        <Link to="/tests" className="text-blue-600 hover:text-blue-800 flex items-center space-x-2 transform transition-all duration-200 hover:scale-105 hover:-translate-x-1">
+        <Link to="/tests" className="text-primary-500 hover:text-primary-600 flex items-center space-x-2 transform transition-all duration-200 hover:scale-105 hover:-translate-x-1">
           <span className="transform transition-transform duration-200 hover:-translate-x-1">←</span>
           <span>Back to View Questions</span>
         </Link>
@@ -65,7 +65,7 @@ const GenerateWithAI = () => {
                 type="number"
                 value={questionCount}
                 onChange={(e) => setQuestionCount(parseInt(e.target.value) || 1)}
-                className="w-20 text-center border border-gray-300 rounded px-3 py-2 transform transition-all duration-200 hover:scale-105 focus:ring-2 focus:ring-blue-500"
+                className="w-20 text-center border border-gray-300 rounded px-3 py-2 transform transition-all duration-200 hover:scale-105 focus:ring-2 focus:ring-primary-500"
                 min="1"
                 max="50"
               />
@@ -158,9 +158,10 @@ const GenerateWithAI = () => {
                   onClick={() => applyPreset(preset)}
                   className={`px-4 py-2 rounded-lg border transition-colors ${
                     selectedPreset === preset.id
-                      ? 'bg-blue-600 text-white border-blue-600'
+                      ? 'text-white'
                       : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                   }`}
+                  style={selectedPreset === preset.id ? { backgroundColor: '#00167a', borderColor: '#00167a' } : {}}
                 >
                   {preset.label}
                 </button>
@@ -175,7 +176,7 @@ const GenerateWithAI = () => {
             </button>
             <Link
               to="/tests/ai-generated"
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              className="px-6 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors flex items-center space-x-2" style={{ backgroundColor: '#00167a' }}
             >
               <span>✨</span>
               <span>Generate Questions</span>

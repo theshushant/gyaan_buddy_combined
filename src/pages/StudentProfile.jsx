@@ -176,20 +176,20 @@ const StudentProfile = () => {
   if (loading.currentStudent) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     )
   }
   
   if (error.currentStudent) {
     return (
-      <div className="min-h-screen bg-gray-50bg-gray-900 flex items-center justify-center">
-        <div className="bg-red-50bg-red-900/20 border border-red-200border-red-800 rounded-lg p-6 max-w-md">
-          <h2 className="text-red-800text-red-400 font-semibold text-xl mb-2">Error Loading Student</h2>
-          <p className="text-red-600text-red-400">{error.currentStudent}</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+          <h2 className="text-red-800 font-semibold text-xl mb-2">Error Loading Student</h2>
+          <p className="text-red-600">{error.currentStudent}</p>
           <button
             onClick={() => navigate('/students')}
-            className="mt-4 px-4 py-2 bg-red-600bg-red-700 text-white rounded hover:bg-red-700hover:bg-red-600 transition-colors"
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
           >
             Back to Students
           </button>
@@ -199,26 +199,27 @@ const StudentProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50bg-gray-900">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900text-white">{studentData.firstName} {studentData.lastName}</h1>
-              <p className="text-gray-600text-gray-300">Roll No: {studentData.rollNumber} • Class: {studentData.class}</p>
+              <h1 className="text-3xl font-bold text-gray-900">{studentData.firstName} {studentData.lastName}</h1>
+              <p className="text-gray-600">Roll No: {studentData.rollNumber} • Class: {studentData.class}</p>
             </div>
             <div className="flex items-center space-x-3">
               <button 
                 onClick={handleEdit}
-                className="flex items-center px-4 py-2 bg-blue-600bg-blue-700 text-white rounded-lg hover:bg-blue-700hover:bg-blue-600 hover:scale-105 transition-all duration-200"
+                className="flex items-center px-4 py-2 text-white rounded-lg hover:scale-105 transition-all duration-200" 
+                style={{ backgroundColor: '#00167a' }}
               >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Information
               </button>
               <button
                 onClick={() => navigate('/students')}
-                className="px-4 py-2 border border-gray-300border-gray-600 text-gray-700text-gray-300 rounded-lg hover:bg-gray-50hover:bg-gray-700 transition-colors"
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Back
               </button>
@@ -230,28 +231,31 @@ const StudentProfile = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Profile Card */}
           <div className="lg:col-span-1">
-            <div className="bg-whitebg-gray-800 rounded-xl shadow-sm border border-gray-200border-gray-700 p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 ease-in-out">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 ease-in-out">
               <div className="flex flex-col items-center text-center">
-                <div className="h-32 w-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-6 hover:scale-110 transition-transform duration-300">
+                <div 
+                  className="h-32 w-32 rounded-full flex items-center justify-center mb-6 hover:scale-110 transition-transform duration-300"
+                  style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
+                >
                   <User className="h-16 w-16 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900text-white mb-2">{studentData.firstName} {studentData.lastName}</h3>
-                <p className="text-gray-600text-gray-300 mb-1">Roll No: {studentData.rollNumber}</p>
-                <p className="text-gray-600text-gray-300 mb-4">{studentData.class}</p>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">{studentData.firstName} {studentData.lastName}</h3>
+                <p className="text-gray-600 mb-1">Roll No: {studentData.rollNumber}</p>
+                <p className="text-gray-600 mb-4">{studentData.class}</p>
                 
                 {/* Quick Stats */}
                 <div className="grid grid-cols-3 gap-4 w-full mt-6">
-                  <div className="text-center p-3 bg-blue-50bg-blue-900/50 rounded-lg hover:bg-blue-100hover:bg-blue-900/70 hover:scale-105 transition-all duration-200">
-                    <p className="text-2xl font-bold text-blue-600text-blue-400 animate-pulse">{studentData.overallScore}%</p>
-                    <p className="text-xs text-gray-600text-gray-300">Overall Score</p>
+                  <div className="text-center p-3 rounded-lg hover:scale-105 transition-all duration-200" style={{ backgroundColor: 'rgba(0,22,122,0.1)' }}>
+                    <p className="text-2xl font-bold animate-pulse" style={{ color: '#00167a' }}>{studentData.overallScore}%</p>
+                    <p className="text-xs text-gray-600">Overall Score</p>
                   </div>
-                  <div className="text-center p-3 bg-green-50bg-green-900/50 rounded-lg hover:bg-green-100hover:bg-green-900/70 hover:scale-105 transition-all duration-200">
-                    <p className="text-2xl font-bold text-green-600text-green-400 animate-pulse">{studentData.averageGrade}</p>
-                    <p className="text-xs text-gray-600text-gray-300">Average Grade</p>
+                  <div className="text-center p-3 bg-green-50 rounded-lg hover:bg-green-100 hover:scale-105 transition-all duration-200">
+                    <p className="text-2xl font-bold text-green-600 animate-pulse">{studentData.averageGrade}</p>
+                    <p className="text-xs text-gray-600">Average Grade</p>
                   </div>
-                  <div className="text-center p-3 bg-purple-50bg-purple-900/50 rounded-lg hover:bg-purple-100hover:bg-purple-900/70 hover:scale-105 transition-all duration-200">
-                    <p className="text-2xl font-bold text-purple-600text-purple-400 animate-pulse">{studentData.attendance}%</p>
-                    <p className="text-xs text-gray-600text-gray-300">Attendance</p>
+                  <div className="text-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 hover:scale-105 transition-all duration-200">
+                    <p className="text-2xl font-bold text-purple-600 animate-pulse">{studentData.attendance}%</p>
+                    <p className="text-xs text-gray-600">Attendance</p>
                   </div>
                 </div>
               </div>
@@ -328,7 +332,7 @@ const StudentProfile = () => {
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Progress Trends</h3>
               {loading.progressTrends ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
                 </div>
               ) : Object.keys(progressTrendsData).length === 0 ? (
                 <div className="text-center py-8 text-gray-500">

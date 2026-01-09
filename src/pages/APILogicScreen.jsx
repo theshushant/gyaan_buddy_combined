@@ -37,7 +37,7 @@ const APILogicScreen = () => {
     {
       name: 'Authentication',
       icon: Users,
-      color: 'bg-blue-500',
+      color: 'bg-primary-500',
       endpoints: ['/auth/login', '/auth/logout', '/auth/me', '/auth/profile'],
       description: 'User authentication and session management',
       status: apiStatus.auth
@@ -98,7 +98,7 @@ const APILogicScreen = () => {
       title: 'User Authentication',
       description: 'User logs in and receives JWT token',
       icon: Users,
-      color: 'bg-blue-100 text-blue-800'
+      color: 'bg-primary-500/20 text-primary-500'
     },
     {
       step: 2,
@@ -134,7 +134,7 @@ const APILogicScreen = () => {
     {
       name: 'User',
       fields: ['id', 'email', 'firstName', 'lastName', 'role', 'school', 'permissions'],
-      color: 'bg-blue-50 border-blue-200'
+      color: 'bg-primary-500/10 border-primary-500/20'
     },
     {
       name: 'Student',
@@ -213,7 +213,7 @@ const APILogicScreen = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
+                      ? 'border-primary-500 text-primary-500'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -314,7 +314,7 @@ const APILogicScreen = () => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Component Interaction Flow</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center">
-                    <div className="bg-blue-100 text-blue-800 p-4 rounded-lg mb-2">
+                    <div className="bg-primary-500/20 text-primary-500 p-4 rounded-lg mb-2">
                       <Database className="h-8 w-8 mx-auto mb-2" />
                       <div className="font-semibold">API Services</div>
                     </div>
@@ -362,7 +362,7 @@ const APILogicScreen = () => {
                       {module.endpoints.map((endpoint, idx) => (
                         <div key={idx} className="bg-gray-50 p-3 rounded-lg">
                           <div className="flex items-center space-x-2 mb-2">
-                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                            <span className="px-2 py-1 bg-primary-500/20 text-primary-500 text-xs font-medium rounded">
                               GET
                             </span>
                             <span className="font-mono text-sm text-gray-700">{endpoint}</span>
@@ -396,7 +396,7 @@ const APILogicScreen = () => {
                     <div className="space-y-2">
                       {model.fields.map((field, idx) => (
                         <div key={idx} className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
                           <span className="text-sm text-gray-700 font-mono">{field}</span>
                         </div>
                       ))}

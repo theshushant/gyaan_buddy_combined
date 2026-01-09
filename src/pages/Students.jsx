@@ -252,7 +252,7 @@ const Students = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     )
   }
@@ -290,7 +290,7 @@ const Students = () => {
                 placeholder="Search for a student by name..."
                 value={filters.search}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -299,7 +299,7 @@ const Students = () => {
             <select
               value={filters.class}
               onChange={(e) => handleClassFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="">Select Class</option>
               {Array.isArray(classes) && classes.map((classItem) => {
@@ -316,7 +316,7 @@ const Students = () => {
             <select
               value={filters.subject}
               onChange={(e) => handleSubjectFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="">Select Subject</option>
               {Array.isArray(subjects) && subjects.map((subject) => {
@@ -349,8 +349,8 @@ const Students = () => {
                 <p className="text-sm font-medium text-gray-600">{card.label}</p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">{card.value}</p>
               </div>
-              <div className="h-12 w-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                <Eye className="h-6 w-6 text-blue-600" />
+              <div className="h-12 w-12 bg-primary-50 rounded-lg flex items-center justify-center">
+                <Eye className="h-6 w-6 text-primary-500" />
               </div>
             </div>
           </div>
@@ -363,7 +363,7 @@ const Students = () => {
           <h2 className="text-lg font-semibold text-gray-900">Students</h2>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}
           >
             <Plus className="h-4 w-4" />
             Add Student
@@ -386,8 +386,8 @@ const Students = () => {
                 <tr key={student.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-600">
+                      <div className="h-10 w-10 rounded-full bg-primary-50 flex items-center justify-center">
+                        <span className="text-sm font-medium text-primary-500">
                           {(student.first_name?.charAt(0) || '').toUpperCase()}{(student.last_name?.charAt(0) || '').toUpperCase()}
                         </span>
                       </div>
@@ -405,7 +405,7 @@ const Students = () => {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleViewStudent(student.id)}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-primary-500 hover:text-primary-600"
                       >
                         <Eye className="h-4 w-4" />
                       </button>
@@ -493,7 +493,7 @@ const Students = () => {
             <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
               <button
                 onClick={handleDeleteCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
               >
                 Cancel
               </button>

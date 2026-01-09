@@ -57,7 +57,7 @@ const TeacherDashboard = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2" style={{ borderColor: '#00167a' }}></div>
       </div>
     )
   }
@@ -90,7 +90,8 @@ const TeacherDashboard = () => {
         <div className="mt-4 flex gap-3">
           <button
             onClick={handleRetry}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 text-white rounded transition-colors"
+            style={{ backgroundColor: '#00167a' }}
           >
             Retry
           </button>
@@ -120,7 +121,7 @@ const TeacherDashboard = () => {
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-700 animate-slide-right">Class-wise quick stats</h2>
-          <button className="text-blue-600 hover:text-blue-800 font-medium transform hover:scale-105 transition-all duration-200">
+          <button className="font-medium transform hover:scale-105 transition-all duration-200" style={{ color: '#00167a' }}>
             More &gt;
           </button>
         </div>
@@ -133,7 +134,7 @@ const TeacherDashboard = () => {
               style={{animationDelay: `${(index + 1) * 0.1}s`}}
             >
               <div className="text-center">
-                <div className="text-4xl font-bold text-blue-600 mb-2 animate-count-up">{metric.value}</div>
+                <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>{metric.value}</div>
                 <div className="text-gray-600">{metric.title}</div>
               </div>
             </div>
@@ -146,22 +147,34 @@ const TeacherDashboard = () => {
         <h2 className="text-xl font-semibold text-gray-700 mb-4 animate-slide-right">Shortcuts to most-used actions</h2>
         
         <div className="flex flex-wrap gap-4">
-          <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.4s'}}>
+          <button 
+            className="text-white px-6 py-3 rounded-lg transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" 
+            style={{animationDelay: '0.4s', backgroundColor: '#00167a'}}
+          >
             <span className="text-xl transform transition-transform duration-200 hover:rotate-90">+</span>
             <span>Create Assignment</span>
           </button>
           
-          <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.5s'}}>
+          <button 
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" 
+            style={{animationDelay: '0.5s'}}
+          >
             <span className="text-xl">📊</span>
             <span>View Reports</span>
           </button>
           
-          <button className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.6s'}}>
+          <button 
+            className="text-white px-6 py-3 rounded-lg transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" 
+            style={{animationDelay: '0.6s', backgroundColor: '#1e3a8a'}}
+          >
             <span className="text-xl">🤖</span>
             <span>AI Suggestions</span>
           </button>
           
-          <button className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.7s'}}>
+          <button 
+            className="text-white px-6 py-3 rounded-lg transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" 
+            style={{animationDelay: '0.7s', backgroundColor: '#1fb7eb'}}
+          >
             <span className="text-xl">📝</span>
             <span>Generate Quiz</span>
           </button>

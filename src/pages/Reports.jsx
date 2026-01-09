@@ -91,7 +91,7 @@ const Reports = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     )
   }
@@ -128,7 +128,7 @@ const Reports = () => {
         <div className="mt-4 flex gap-3">
           <button
             onClick={handleRetry}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 text-white rounded hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}
           >
             Retry
           </button>
@@ -391,8 +391,8 @@ const Reports = () => {
       icon: IconComponent,
       title: insight.title || 'AI Insight',
       description: insight.description || (insight.recommendations?.[0] || ''),
-      color: insight.impact === 'high' ? 'text-red-600' : insight.impact === 'medium' ? 'text-yellow-600' : 'text-blue-600',
-      bgColor: insight.impact === 'high' ? 'bg-red-50' : insight.impact === 'medium' ? 'bg-yellow-50' : 'bg-blue-50'
+      color: insight.impact === 'high' ? 'text-red-600' : insight.impact === 'medium' ? 'text-yellow-600' : 'text-primary-500',
+      bgColor: insight.impact === 'high' ? 'bg-red-50' : insight.impact === 'medium' ? 'bg-yellow-50' : 'bg-primary-50'
     }
   })
 
@@ -415,7 +415,7 @@ const Reports = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-300 ease-in-out hover:scale-105 ${
                 activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-primary-500 text-primary-500'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
               style={{ animationDelay: `${index * 100}ms` }}
@@ -432,7 +432,7 @@ const Reports = () => {
           <select
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="all">All Classes</option>
             <option value="9A">Class 9A</option>
@@ -444,7 +444,7 @@ const Reports = () => {
           <select
             value={selectedSubject}
             onChange={(e) => setSelectedSubject(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="all">All Subjects</option>
             <option value="math">Mathematics</option>
@@ -456,7 +456,7 @@ const Reports = () => {
           <select
             value={selectedDateRange}
             onChange={(e) => setSelectedDateRange(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="7">Last 7 Days</option>
             <option value="30">Last 30 Days</option>
@@ -464,7 +464,7 @@ const Reports = () => {
             <option value="365">Last Year</option>
           </select>
           
-          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <button className="flex items-center px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}>
             <Download className="h-4 w-4 mr-2" />
             Export Report
           </button>
@@ -519,7 +519,7 @@ const Reports = () => {
                           <div className="flex items-center">
                             <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                               <div 
-                                className="bg-blue-600 h-2 rounded-full"
+                                className="bg-primary-500 h-2 rounded-full"
                                 style={{ width: `${student.score}%` }}
                               ></div>
                             </div>
@@ -561,7 +561,7 @@ const Reports = () => {
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 
-                        className="bg-blue-600 h-2 rounded-full"
+                        className="bg-primary-500 h-2 rounded-full"
                         style={{ width: `${item.score}%` }}
                       ></div>
                     </div>
@@ -607,24 +607,36 @@ const Reports = () => {
             <p className="text-gray-600 mb-6">Track student performance trends over different periods.</p>
             
             <div className="flex flex-wrap gap-4 mb-6">
-              <button className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedDateRange === '7' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}>
+              <button 
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  selectedDateRange === '7' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                style={selectedDateRange === '7' ? { backgroundColor: '#00167a' } : {}}
+              >
                 Weekly
               </button>
-              <button className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedDateRange === '30' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}>
+              <button 
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  selectedDateRange === '30' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                style={selectedDateRange === '30' ? { backgroundColor: '#00167a' } : {}}
+              >
                 Monthly
               </button>
-              <button className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedDateRange === '90' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}>
+              <button 
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  selectedDateRange === '90' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                style={selectedDateRange === '90' ? { backgroundColor: '#00167a' } : {}}
+              >
                 Quarterly
               </button>
-              <button className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedDateRange === '365' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}>
+              <button 
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  selectedDateRange === '365' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                style={selectedDateRange === '365' ? { backgroundColor: '#00167a' } : {}}
+              >
                 Yearly
               </button>
             </div>
@@ -736,7 +748,7 @@ const Reports = () => {
                                   <div className={`${colorClass} h-2 rounded-full`} style={{ width: `${completionRate}%` }}></div>
                                 </div>
                                 <span className="text-sm text-gray-900">{completionRate}%</span>
-                                <a href="#" className="text-blue-600 hover:text-blue-800 text-sm font-medium ml-2">View Details</a>
+                                <a href="#" className="text-primary-500 hover:text-primary-600 text-sm font-medium ml-2">View Details</a>
                               </div>
                             </td>
                           </tr>
@@ -772,7 +784,7 @@ const Reports = () => {
                     <p className="text-gray-600 mb-4">{insight.description}</p>
                     <button 
                       onClick={() => navigate('/ai-insights')}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      className="text-primary-500 hover:text-primary-600 text-sm font-medium"
                     >
                       View Details →
                     </button>
@@ -783,15 +795,15 @@ const Reports = () => {
           </div>
           
           {/* Quick Access to Full AI Insights */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <div className="bg-primary-50 border border-primary-200 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-blue-900 mb-2">Comprehensive AI Analysis</h3>
-                <p className="text-blue-700">Get detailed AI insights including weak topics, remedial activities, and mastery heatmaps.</p>
+                <h3 className="text-lg font-semibold text-primary-900 mb-2">Comprehensive AI Analysis</h3>
+                <p className="text-primary-700">Get detailed AI insights including weak topics, remedial activities, and mastery heatmaps.</p>
               </div>
               <button 
                 onClick={() => navigate('/ai-insights')}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-6 py-3 text-white rounded-lg hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}
               >
                 View Full AI Insights
               </button>

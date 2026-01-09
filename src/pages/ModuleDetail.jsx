@@ -18,7 +18,7 @@ const ModuleDetail = () => {
       {/* Header */}
       <div className="mb-8 flex justify-between items-center animate-slide-down">
         <div className="flex items-center space-x-4">
-          <Link to="/modules" className="text-blue-600 hover:text-blue-800 flex items-center space-x-2 transform transition-all duration-200 hover:scale-105 hover:-translate-x-1">
+          <Link to="/modules" className="text-primary-500 hover:text-primary-600 flex items-center space-x-2 transform transition-all duration-200 hover:scale-105 hover:-translate-x-1">
             <span className="transform transition-transform duration-200 hover:-translate-x-1">←</span>
             <span>Back to Modules</span>
           </Link>
@@ -28,7 +28,7 @@ const ModuleDetail = () => {
             <span className="transform transition-transform duration-200 hover:rotate-12">✏️</span>
             <span>Edit Slides</span>
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg">
+          <button className="px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg" style={{ backgroundColor: '#00167a' }}>
             <span className="transform transition-transform duration-200 hover:rotate-12">👁️</span>
             <span>View Questions</span>
           </button>
@@ -47,7 +47,7 @@ const ModuleDetail = () => {
           <div className="w-full h-full bg-white rounded-2xl overflow-hidden">
             {/* Phone Content */}
             <div className="p-6 h-full flex flex-col">
-              <h2 className="text-xl font-bold text-blue-600 mb-4 animate-slide-down">
+              <h2 className="text-xl font-bold text-primary-500 mb-4 animate-slide-down">
                 What are Indicators? (Suchak kya hain?)
               </h2>
               <p className="text-gray-700 text-sm leading-relaxed mb-6 animate-slide-right">
@@ -69,7 +69,7 @@ const ModuleDetail = () => {
                     <div
                       key={slide}
                       className={`w-2 h-2 rounded-full transition-all duration-300 transform hover:scale-125 ${
-                        slide === currentSlide ? 'bg-blue-600 animate-pulse-custom' : 'bg-gray-300'
+                        slide === currentSlide ? 'bg-primary-500 animate-pulse-custom' : 'bg-gray-300'
                       }`}
                     />
                   ))}
@@ -99,7 +99,7 @@ const ModuleDetail = () => {
             <div
               key={slide}
               className={`w-3 h-3 rounded-full transition-all duration-300 transform hover:scale-125 ${
-                slide === currentSlide ? 'bg-blue-600 animate-pulse-custom' : 'bg-gray-300'
+                slide === currentSlide ? 'bg-primary-500 animate-pulse-custom' : 'bg-gray-300'
               }`}
             />
           ))}

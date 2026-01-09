@@ -75,7 +75,7 @@ const TeacherProfile = () => {
   if (loading.currentTeacher) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     )
   }
@@ -353,7 +353,7 @@ const TeacherProfile = () => {
               </button>
               <button 
                 onClick={handleEditClick}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}
               >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Profile
@@ -427,7 +427,7 @@ const TeacherProfile = () => {
                   <span className={`px-3 py-1 text-xs font-medium rounded-full ${
                     assignment.isClassTeacher 
                       ? 'bg-green-100 text-green-800' 
-                      : 'bg-blue-100 text-blue-800'
+                      : 'bg-primary-500/20 text-primary-500'
                   }`}>
                     {assignment.isClassTeacher ? 'Class Teacher' : 'Subject Teacher'}
                   </span>

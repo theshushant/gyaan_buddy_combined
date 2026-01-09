@@ -494,7 +494,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                     type="text"
                     value={formData.firstName}
                     onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="Enter first name"
                     required
                   />
@@ -506,7 +506,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                     type="text"
                     value={formData.lastName}
                     onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="Enter last name"
                     required
                   />
@@ -518,7 +518,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="teacher@school.edu"
                     required
                   />
@@ -537,7 +537,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                           setFormData(prev => ({ ...prev, password: e.target.value }))
                           setPasswordError('')
                         }}
-                        className={`w-full px-3 py-2 border ${passwordError ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                        className={`w-full px-3 py-2 border ${passwordError ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                         placeholder="Enter password"
                         required
                       />
@@ -554,7 +554,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                           setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))
                           setPasswordError('')
                         }}
-                        className={`w-full px-3 py-2 border ${passwordError ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                        className={`w-full px-3 py-2 border ${passwordError ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                         placeholder="Confirm password"
                         required
                       />
@@ -607,7 +607,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                           setCreateClassSubjectType('class')
                           setShowCreateClassSubjectModal(true)
                         }}
-                        className="text-xs text-blue-600 hover:text-blue-800 underline"
+                        className="text-xs text-primary-500 hover:text-primary-600 underline"
                       >
                         Create Class
                       </button>
@@ -623,7 +623,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                         })
                         setNewAssignment(prev => ({ ...prev, class: selectedClassId }))
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       disabled={loadingClasses}
                     >
                       <option value="">{loadingClasses ? 'Loading classes...' : 'Select Class'}</option>
@@ -642,7 +642,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                           setCreateClassSubjectType('subject')
                           setShowCreateClassSubjectModal(true)
                         }}
-                        className="text-xs text-blue-600 hover:text-blue-800 underline"
+                        className="text-xs text-primary-500 hover:text-primary-600 underline"
                       >
                         Create Subject
                       </button>
@@ -660,7 +660,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                                 type="checkbox"
                                 checked={newAssignment.subjects.includes(subject.id)}
                                 onChange={() => handleAssignmentSubjectChange(subject.id)}
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
                               />
                               <span className="text-gray-700">{subject.name}</span>
                             </label>
@@ -674,7 +674,8 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                 <button
                   type="button"
                   onClick={addAssignment}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex items-center px-4 py-2 text-white rounded-lg transition-colors"
+                  style={{ backgroundColor: '#00167a' }}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Class & Subject
@@ -693,7 +694,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                     id="isClassTeacher"
                     checked={formData.isClassTeacher}
                     onChange={(e) => setFormData(prev => ({ ...prev, isClassTeacher: e.target.checked }))}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
                   />
                   <label htmlFor="isClassTeacher" className="ml-2 text-sm font-medium text-gray-700">
                     Is Class Teacher?
@@ -706,7 +707,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                     type="text"
                     value={formData.employeeId}
                     onChange={(e) => setFormData(prev => ({ ...prev, employeeId: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="GYB-12345"
                   />
                 </div>
@@ -724,7 +725,8 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 text-white rounded-lg transition-colors"
+                style={{ backgroundColor: '#00167a' }}
               >
                 Save
               </button>

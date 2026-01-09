@@ -294,7 +294,7 @@ const CreateChapterModal = ({
                     value={formData.title}
                     onChange={(e) => handleFieldChange('title', e.target.value)}
                     onBlur={() => handleFieldBlur('title')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                       touched.title && errors.title ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="e.g., Introduction to Algebra, Basic Concepts"
@@ -314,7 +314,7 @@ const CreateChapterModal = ({
                     onChange={(e) => handleFieldChange('description', e.target.value)}
                     onBlur={() => handleFieldBlur('description')}
                     rows={3}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                       touched.description && errors.description ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="Brief description of the chapter..."
@@ -335,7 +335,7 @@ const CreateChapterModal = ({
                     value={formData.order}
                     onChange={(e) => handleFieldChange('order', parseInt(e.target.value) || 1)}
                     onBlur={() => handleFieldBlur('order')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                       touched.order && errors.order ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="1"
@@ -370,7 +370,7 @@ const CreateChapterModal = ({
                     className={`flex items-center px-4 py-2 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
                       errors.logo
                         ? 'border-red-300 bg-red-50'
-                        : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                        : 'border-gray-300 hover:border-primary-500 hover:bg-primary-500/10'
                     } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <Upload className={`h-5 w-5 mr-2 ${errors.logo ? 'text-red-400' : 'text-gray-500'}`} />
@@ -419,7 +419,7 @@ const CreateChapterModal = ({
                     id="is_enabled"
                     checked={formData.is_enabled}
                     onChange={(e) => handleFieldChange('is_enabled', e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
                     disabled={loading}
                   />
                   <label htmlFor="is_enabled" className="ml-2 text-sm font-medium text-gray-700">
@@ -433,7 +433,7 @@ const CreateChapterModal = ({
                     id="is_important"
                     checked={formData.is_important}
                     onChange={(e) => handleFieldChange('is_important', e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
                     disabled={loading}
                   />
                   <label htmlFor="is_important" className="ml-2 text-sm font-medium text-gray-700">
@@ -455,7 +455,8 @@ const CreateChapterModal = ({
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 text-white rounded-lg transition-colors"
+                style={{ backgroundColor: '#00167a' }}
                 disabled={loading}
               >
                 {loading 

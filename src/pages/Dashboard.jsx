@@ -81,7 +81,7 @@ const Dashboard = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     )
   }
@@ -113,7 +113,7 @@ const Dashboard = () => {
         <div className="mt-4 flex gap-3">
           <button
             onClick={handleRetry}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 text-white rounded hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}
           >
             Retry
           </button>
@@ -343,7 +343,7 @@ const Dashboard = () => {
             )}
             {/* Show "More →" if there are more datasets */}
             {chartProgressTrends && chartProgressTrends.datasets && chartProgressTrends.datasets.length > 3 && (
-              <a href="#" className="text-blue-600 hover:text-blue-800 text-sm font-medium">More →</a>
+              <a href="#" className="text-primary-500 hover:text-primary-600 text-sm font-medium">More →</a>
             )}
           </div>
         </div>
@@ -386,7 +386,7 @@ const Dashboard = () => {
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-900">Critical Alerts & Announcements</h2>
-            <a href="#" className="text-blue-600 hover:text-blue-800 text-sm font-medium">More →</a>
+            <a href="#" className="text-primary-500 hover:text-primary-600 text-sm font-medium">More →</a>
           </div>
           <div className="space-y-3">
             {displayAlerts.length > 0 ? (

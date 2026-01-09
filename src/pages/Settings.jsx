@@ -158,7 +158,7 @@ const Settings = () => {
                 onClick={() => setActiveSection(section.id)}
                 className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 ${
                   activeSection === section.id
-                    ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700'
+                    ? 'bg-primary-50 text-primary-700 border-l-4 border-primary-700'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
                 style={{ animationDelay: `${index * 50}ms` }}
@@ -182,15 +182,18 @@ const Settings = () => {
                   {/* Profile Card */}
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md hover:scale-105 transition-all duration-200 ease-in-out">
                     <div className="flex items-center">
-                      <div className="h-12 w-12 bg-blue-50 rounded-lg flex items-center justify-center mr-4 hover:bg-blue-100 transition-colors duration-200">
-                        <User className="h-6 w-6 text-blue-600" />
+                      <div className="h-12 w-12 bg-primary-50 rounded-lg flex items-center justify-center mr-4 hover:bg-primary-100 transition-colors duration-200">
+                        <User className="h-6 w-6 text-primary-500" />
                       </div>
                       <div>
                         <h3 className="font-medium text-gray-900">Profile Information</h3>
                         <p className="text-sm text-gray-600">Update your personal information and contact details</p>
                       </div>
                     </div>
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:scale-105 transition-all duration-200">
+                    <button 
+                      className="px-4 py-2 text-white rounded-lg hover:scale-105 transition-all duration-200"
+                      style={{ backgroundColor: '#00167a' }}
+                    >
                       Edit Profile
                     </button>
                   </div>
@@ -198,8 +201,8 @@ const Settings = () => {
                   {/* Password Card */}
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md hover:scale-105 transition-all duration-200 ease-in-out">
                     <div className="flex items-center">
-                      <div className="h-12 w-12 bg-blue-50 rounded-lg flex items-center justify-center mr-4 hover:bg-blue-100 transition-colors duration-200">
-                        <Lock className="h-6 w-6 text-blue-600" />
+                      <div className="h-12 w-12 bg-primary-50 rounded-lg flex items-center justify-center mr-4 hover:bg-primary-100 transition-colors duration-200">
+                        <Lock className="h-6 w-6 text-primary-500" />
                       </div>
                       <div>
                         <h3 className="font-medium text-gray-900">Password & Security</h3>
@@ -208,7 +211,8 @@ const Settings = () => {
                     </div>
                     <button 
                       onClick={handleOpenPasswordModal}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:scale-105 transition-all duration-200"
+                      className="px-4 py-2 text-white rounded-lg hover:scale-105 transition-all duration-200"
+                      style={{ backgroundColor: '#00167a' }}
                     >
                       Change Password
                     </button>
@@ -221,7 +225,7 @@ const Settings = () => {
                     {/* Loading State */}
                     {(loading.fetchUser || profileLoading) && (
                       <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
                       </div>
                     )}
                     
@@ -258,7 +262,7 @@ const Settings = () => {
                           <input
                             type="text"
                             value={getUserDisplayName()}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             readOnly
                           />
                         </div>
@@ -267,7 +271,7 @@ const Settings = () => {
                           <input
                             type="email"
                             value={getUserEmail()}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             readOnly
                           />
                         </div>
@@ -276,7 +280,7 @@ const Settings = () => {
                           <input
                             type="tel"
                             value={getUserPhone()}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             placeholder="Not set"
                             readOnly
                           />
@@ -286,7 +290,7 @@ const Settings = () => {
                           <input
                             type="text"
                             value={getUserRole()}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             readOnly
                           />
                         </div>
@@ -296,7 +300,7 @@ const Settings = () => {
                             <input
                               type="text"
                               value={user.username}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                               readOnly
                             />
                           </div>
@@ -307,7 +311,7 @@ const Settings = () => {
                             <input
                               type="text"
                               value={user.employeeId || user.employee_id}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                               readOnly
                             />
                           </div>
@@ -340,7 +344,7 @@ const Settings = () => {
                         onChange={(e) => setEmailNotifications(e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                     </label>
                   </div>
 
@@ -357,7 +361,7 @@ const Settings = () => {
                         onChange={(e) => setInAppAlerts(e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                     </label>
                   </div>
 
@@ -374,7 +378,7 @@ const Settings = () => {
                         onChange={(e) => setSmsNotifications(e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                     </label>
                   </div>
                 </div>
@@ -392,7 +396,7 @@ const Settings = () => {
                   {/* Language */}
                   <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <h3 className="font-medium text-gray-900 mb-2">Language</h3>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                       <option value="en">English</option>
                       <option value="hi">Hindi</option>
                       <option value="mr">Marathi</option>
@@ -402,7 +406,7 @@ const Settings = () => {
                   {/* Timezone */}
                   <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <h3 className="font-medium text-gray-900 mb-2">Timezone</h3>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                       <option value="IST">India Standard Time (IST)</option>
                       <option value="UTC">UTC</option>
                     </select>
@@ -428,7 +432,7 @@ const Settings = () => {
                         <input
                           type="text"
                           value={academicYearSettings.currentYear}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -436,7 +440,7 @@ const Settings = () => {
                         <input
                           type="date"
                           value={academicYearSettings.startDate}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -444,7 +448,7 @@ const Settings = () => {
                         <input
                           type="date"
                           value={academicYearSettings.endDate}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                       </div>
                     </div>
@@ -460,7 +464,10 @@ const Settings = () => {
                             <p className="font-medium text-gray-900">{term.name}</p>
                             <p className="text-sm text-gray-600">{term.start} to {term.end}</p>
                           </div>
-                          <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
+                          <button 
+                            className="px-3 py-1 text-sm text-white rounded"
+                            style={{ backgroundColor: '#00167a' }}
+                          >
                             Edit
                           </button>
                         </div>
@@ -492,7 +499,7 @@ const Settings = () => {
                         onChange={(e) => setAutoBackup(e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                     </label>
                   </div>
 
@@ -502,7 +509,10 @@ const Settings = () => {
                       <h3 className="font-medium text-gray-900">Manual Backup</h3>
                       <p className="text-sm text-gray-600">Create a backup of all data immediately.</p>
                     </div>
-                    <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <button 
+                      className="flex items-center px-4 py-2 text-white rounded-lg transition-colors"
+                      style={{ backgroundColor: '#00167a' }}
+                    >
                       <Download className="h-4 w-4 mr-2" />
                       Backup Now
                     </button>
@@ -514,7 +524,7 @@ const Settings = () => {
                     <select
                       value={dataRetention}
                       onChange={(e) => setDataRetention(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       <option value="1">1 Year</option>
                       <option value="2">2 Years</option>
@@ -549,11 +559,14 @@ const Settings = () => {
                           </p>
                         </div>
                       </div>
-                      <button className={`px-4 py-2 rounded-lg transition-colors ${
-                        integration.status === 'Connected'
-                          ? 'bg-red-600 text-white hover:bg-red-700'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}>
+                      <button 
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          integration.status === 'Connected'
+                            ? 'bg-red-600 text-white hover:bg-red-700'
+                            : 'text-white'
+                        }`}
+                        style={integration.status !== 'Connected' ? { backgroundColor: '#00167a' } : {}}
+                      >
                         {integration.status === 'Connected' ? 'Disconnect' : 'Connect'}
                       </button>
                     </div>
@@ -581,7 +594,7 @@ const Settings = () => {
                         type="checkbox"
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                     </label>
                   </div>
 
@@ -597,7 +610,7 @@ const Settings = () => {
                         defaultChecked
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                     </label>
                   </div>
 
@@ -607,7 +620,10 @@ const Settings = () => {
                       <h3 className="font-medium text-gray-900">Data Export</h3>
                       <p className="text-sm text-gray-600">Export all your data in a portable format.</p>
                     </div>
-                    <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <button 
+                      className="flex items-center px-4 py-2 text-white rounded-lg transition-colors"
+                      style={{ backgroundColor: '#00167a' }}
+                    >
                       <Upload className="h-4 w-4 mr-2" />
                       Export Data
                     </button>
@@ -636,7 +652,7 @@ const Settings = () => {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="Enter new password"
               minLength={8}
             />
@@ -651,7 +667,7 @@ const Settings = () => {
               id="confirmPassword"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="Confirm new password"
               minLength={8}
             />
@@ -674,7 +690,8 @@ const Settings = () => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-white rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              style={{ backgroundColor: isChangingPassword ? undefined : '#00167a' }}
               disabled={isChangingPassword}
             >
               {isChangingPassword ? 'Changing...' : 'Change Password'}

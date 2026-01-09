@@ -292,7 +292,7 @@ const CreateSubjectModal = ({
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border ${errors.name ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                    className={`w-full px-3 py-2 border ${errors.name ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                     placeholder="e.g., Mathematics"
                     required
                     disabled={loading}
@@ -319,7 +319,7 @@ const CreateSubjectModal = ({
                     name="code"
                     value={formData.code}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border ${errors.code ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase`}
+                    className={`w-full px-3 py-2 border ${errors.code ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent uppercase`}
                     placeholder="e.g., MATH"
                     required
                     disabled={loading}
@@ -348,7 +348,7 @@ const CreateSubjectModal = ({
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={3}
-                  className={`w-full px-3 py-2 border ${errors.description ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  className={`w-full px-3 py-2 border ${errors.description ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                   placeholder="Enter subject description (optional)"
                   disabled={loading}
                 />
@@ -434,7 +434,7 @@ const CreateSubjectModal = ({
                           type="checkbox"
                           checked={formData.classes.includes(cls.id)}
                           onChange={() => handleClassToggle(cls.id)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
                           disabled={loading}
                         />
                         <span className="text-gray-700">{cls.name}</span>
@@ -455,7 +455,7 @@ const CreateSubjectModal = ({
                   name="is_active"
                   checked={formData.is_active}
                   onChange={handleInputChange}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
                   disabled={loading}
                 />
                 <label htmlFor="is_active" className="ml-2 text-sm font-medium text-gray-700">
@@ -476,7 +476,8 @@ const CreateSubjectModal = ({
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#00167a' }}
                 disabled={loading}
               >
                 {loading ? (subject ? 'Updating...' : 'Creating...') : (subject ? 'Update Subject' : 'Create Subject')}

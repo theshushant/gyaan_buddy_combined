@@ -391,10 +391,9 @@ const TestsQuizzes = () => {
                 setActiveTab('tests');
               }}
               className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-300 transform hover:scale-105 ${
-                activeTab === 'tests'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                activeTab !== 'tests' ? 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' : ''
               }`}
+              style={activeTab === 'tests' ? { borderColor: '#00167a', color: '#00167a' } : {}}
             >
               All Tests
             </button>
@@ -406,10 +405,9 @@ const TestsQuizzes = () => {
                 setActiveTab('create');
               }}
               className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-300 transform hover:scale-105 ${
-                activeTab === 'create'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                activeTab !== 'create' ? 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' : ''
               }`}
+              style={activeTab === 'create' ? { borderColor: '#00167a', color: '#00167a' } : {}}
             >
               Create New Test
             </button>
@@ -465,7 +463,8 @@ const TestsQuizzes = () => {
                   </button>
                   <Link 
                     to={`/tests/performance/${mission.id}`}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg"
+                    className="text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg"
+                    style={{ backgroundColor: '#00167a' }}
                   >
                     <span className="transform transition-transform duration-200 hover:rotate-12">📊</span>
                     <span>View Results</span>
@@ -476,7 +475,7 @@ const TestsQuizzes = () => {
               {/* Mission Details */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="text-center transform hover:scale-105 transition-all duration-300 animate-count-up" style={{animationDelay: '0.2s'}}>
-                  <div className="text-2xl font-bold text-blue-600">{mission.duration || 'N/A'}</div>
+                  <div className="text-2xl font-bold" style={{ color: '#00167a' }}>{mission.duration || 'N/A'}</div>
                   <div className="text-sm text-gray-600">Duration (min)</div>
                 </div>
                 <div className="text-center transform hover:scale-105 transition-all duration-300 animate-count-up" style={{animationDelay: '0.3s'}}>
@@ -495,10 +494,10 @@ const TestsQuizzes = () => {
 
               {/* Mission Description */}
               {mission.description && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.6s'}}>
+                <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-4 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.6s'}}>
                   <div className="flex items-center space-x-2">
-                    <span className="text-blue-600 transform transition-transform duration-200 hover:rotate-12">📝</span>
-                    <span className="text-sm font-medium text-blue-800">
+                    <span className="text-primary-500 transform transition-transform duration-200 hover:rotate-12">📝</span>
+                    <span className="text-sm font-medium text-primary-800">
                       {mission.description}
                     </span>
                   </div>
@@ -514,11 +513,11 @@ const TestsQuizzes = () => {
       {activeTab === 'create' && !showQuestionForm && (
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           {/* Header Section */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 text-white">
+          <div className="px-8 py-6 text-white" style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}>
             <h2 className="text-3xl font-bold mb-2">
               {isEditMode ? '✏️ Edit Test' : '➕ Create New Test'}
             </h2>
-            <p className="text-blue-100">
+            <p className="text-accent-500/50">
               {isEditMode ? 'Update the details for this test mission.' : 'Fill in the details below to create a new test mission for your students.'}
             </p>
           </div>
@@ -551,7 +550,7 @@ const TestsQuizzes = () => {
               {/* Basic Information Section */}
               <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
-                  <span className="text-blue-600">📋</span>
+                  <span className="text-primary-500">📋</span>
                   <span>Basic Information</span>
                 </h3>
                 <div className="space-y-5">
@@ -565,7 +564,7 @@ const TestsQuizzes = () => {
                       value={formData.title}
                       onChange={handleInputChange}
                       placeholder="e.g., 'Modern Physics - Chapter 1 Test'"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
                       required
                     />
                   </div>
@@ -578,7 +577,7 @@ const TestsQuizzes = () => {
                       value={selectedSubject}
                       onChange={(e) => setSelectedSubject(e.target.value)}
                       disabled={loadingSubjects}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                       <option value="">{loadingSubjects ? 'Loading subjects...' : 'Select Subject'}</option>
                       {subjects.map((subject) => (
@@ -616,7 +615,7 @@ const TestsQuizzes = () => {
                             key={cls.id} 
                             className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                               selectedClasses.includes(cls.id)
-                                ? 'bg-blue-50 border-2 border-blue-500'
+                                ? 'bg-primary-500/10 border-2 border-primary-500'
                                 : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
                             }`}
                           >
@@ -625,9 +624,9 @@ const TestsQuizzes = () => {
                               checked={selectedClasses.includes(cls.id)}
                               onChange={() => handleClassToggle(cls.id)}
                               disabled={isEditMode}
-                              className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer" 
+                              className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded cursor-pointer" 
                             />
-                            <span className={`font-medium ${selectedClasses.includes(cls.id) ? 'text-blue-800' : 'text-gray-700'}`}>
+                            <span className={`font-medium ${selectedClasses.includes(cls.id) ? 'text-primary-800' : 'text-gray-700'}`}>
                               {cls.name}
                             </span>
                           </label>
@@ -658,7 +657,7 @@ const TestsQuizzes = () => {
                       name="testDate"
                       value={formData.testDate}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
                       required
                     />
                   </div>
@@ -671,7 +670,7 @@ const TestsQuizzes = () => {
                       name="testTime"
                       value={formData.testTime}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
                     />
                   </div>
                 </div>
@@ -686,7 +685,7 @@ const TestsQuizzes = () => {
                     onChange={handleInputChange}
                     placeholder="e.g., 60"
                     min="1"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
                     required
                   />
                 </div>
@@ -705,7 +704,7 @@ const TestsQuizzes = () => {
                     name="notification"
                     checked={formData.notification}
                     onChange={handleInputChange}
-                    className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer" 
+                    className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded cursor-pointer" 
                   />
                   <label htmlFor="notification" className="text-sm font-medium text-gray-700 cursor-pointer flex-1">
                     Send 30-minute prior auto-notification to students
@@ -741,7 +740,8 @@ const TestsQuizzes = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
                 >
                   {submitting ? (
                     <>
@@ -921,7 +921,7 @@ const TestView = ({
                 const selected = createdMissions.find(m => (m.id || m.uuid) === e.target.value);
                 if (selected) onMissionSelect(selected);
               }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               {createdMissions.map((m) => (
                 <option key={m.id || m.uuid} value={m.id || m.uuid}>
@@ -934,7 +934,7 @@ const TestView = ({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{mission.duration || 'N/A'}</div>
+            <div className="text-2xl font-bold text-primary-500">{mission.duration || 'N/A'}</div>
             <div className="text-sm text-gray-600">Duration (min)</div>
           </div>
           <div className="text-center">
@@ -975,7 +975,7 @@ const TestView = ({
               onChange={(e) => handleFieldChange('question_text', e.target.value)}
               required
               rows={4}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 resize-none"
               placeholder="Enter the question text..."
               disabled={creatingQuestion}
             />
@@ -990,7 +990,7 @@ const TestView = ({
                 value={formData.question_type}
                 onChange={(e) => handleFieldChange('question_type', e.target.value)}
                 required
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
                 disabled={creatingQuestion}
               >
                 <option value="mcq_single">MCQ - Single Correct Answer</option>
@@ -1007,7 +1007,7 @@ const TestView = ({
                 value={formData.difficulty_level}
                 onChange={(e) => handleFieldChange('difficulty_level', e.target.value)}
                 required
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
                 disabled={creatingQuestion}
               >
                 <option value="easy">Easy</option>
@@ -1027,7 +1027,7 @@ const TestView = ({
                 value={formData.exp_points}
                 onChange={(e) => handleFieldChange('exp_points', parseInt(e.target.value) || 10)}
                 min="1"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
                 disabled={creatingQuestion}
               />
             </div>
@@ -1042,7 +1042,7 @@ const TestView = ({
                   id="is_active"
                   checked={formData.is_active}
                   onChange={(e) => handleFieldChange('is_active', e.target.checked)}
-                  className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
                   disabled={creatingQuestion}
                 />
                 <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
@@ -1060,7 +1060,7 @@ const TestView = ({
               value={formData.explanation}
               onChange={(e) => handleFieldChange('explanation', e.target.value)}
               rows={3}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 resize-none"
               placeholder="Enter explanation for the correct answer..."
               disabled={creatingQuestion}
             />
@@ -1076,7 +1076,7 @@ const TestView = ({
                 <button
                   type="button"
                   onClick={addOption}
-                  className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                  className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-primary-500 hover:text-primary-500 hover:bg-primary-500/10 rounded-lg transition-colors"
                   disabled={creatingQuestion}
                 >
                   <Plus className="h-4 w-4" />
@@ -1092,7 +1092,7 @@ const TestView = ({
                         value={option.option_text}
                         onChange={(e) => handleOptionChange(index, 'option_text', e.target.value)}
                         placeholder={`Option ${index + 1}`}
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
                         disabled={creatingQuestion}
                       />
                     </div>
@@ -1115,7 +1115,7 @@ const TestView = ({
                               handleOptionChange(index, 'is_correct', e.target.checked);
                             }
                           }}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300"
                           disabled={creatingQuestion}
                         />
                         <span>Correct</span>
@@ -1153,7 +1153,8 @@ const TestView = ({
             </button>
             <button
               type="submit"
-              className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              className="px-6 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              style={{ backgroundColor: '#00167a' }}
               disabled={creatingQuestion}
             >
               {creatingQuestion ? (

@@ -165,7 +165,7 @@ const Teachers = () => {
       return 'bg-red-500'
     } else {
       // Overall Mastery colors: blue >= 80, orange >= 60, red < 60
-      if (percentage >= 80) return 'bg-blue-500'
+      if (percentage >= 80) return 'bg-primary-500'
       if (percentage >= 60) return 'bg-orange-500'
       return 'bg-red-500'
     }
@@ -217,7 +217,7 @@ const Teachers = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     )
   }
@@ -247,7 +247,7 @@ const Teachers = () => {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
+          className="flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors shadow-sm hover:shadow-md" style={{ backgroundColor: '#00167a' }}
         >
           <Plus className="h-5 w-5" />
           Add New Teacher
@@ -265,7 +265,7 @@ const Teachers = () => {
                 placeholder="Search teachers by name, subject..."
                 value={filters.search}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
               />
             </div>
           </div>
@@ -275,7 +275,7 @@ const Teachers = () => {
               <select
                 value={filters.subject || ''}
                 onChange={(e) => handleSubjectFilter(e.target.value)}
-                className="appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer"
+                className="appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 cursor-pointer"
               >
                 <option value="">All Subjects</option>
                 {Array.isArray(subjects) && subjects.map((subject) => {
@@ -326,8 +326,8 @@ const Teachers = () => {
                   <tr key={teacher.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm font-semibold text-blue-600">
+                        <div className="h-10 w-10 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-semibold text-primary-500">
                             {(teacher.firstName || '').charAt(0).toUpperCase()}{(teacher.lastName || '').charAt(0).toUpperCase()}
                           </span>
                         </div>
@@ -382,7 +382,7 @@ const Teachers = () => {
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => handleViewTeacher(teacher.id)}
-                          className="text-blue-600 hover:text-blue-800 transition-colors"
+                          className="text-primary-500 hover:text-primary-600 transition-colors"
                         >
                           View Profile
                         </button>
@@ -467,7 +467,7 @@ const Teachers = () => {
             <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
               <button
                 onClick={handleDeleteCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
               >
                 Cancel
               </button>

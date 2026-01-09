@@ -79,7 +79,7 @@ const StudentTestPerformance = () => {
 
   const getPercentageColor = (percentage) => {
     if (percentage >= 80) return 'text-green-600';
-    if (percentage >= 60) return 'text-blue-600';
+    if (percentage >= 60) return 'text-primary-500';
     if (percentage >= 40) return 'text-yellow-600';
     return 'text-red-600';
   };
@@ -89,7 +89,7 @@ const StudentTestPerformance = () => {
       <div className="p-6 animate-fade-in">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="flex flex-col items-center space-y-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
             <p className="text-gray-600">Loading performance data...</p>
           </div>
         </div>
@@ -100,7 +100,7 @@ const StudentTestPerformance = () => {
   if (error) {
     return (
       <div className="p-6 animate-fade-in">
-        <Link to="/tests" className="text-blue-600 hover:text-blue-800 flex items-center space-x-2 mb-4">
+        <Link to="/tests" className="text-primary-500 hover:text-primary-600 flex items-center space-x-2 mb-4">
           <span>←</span>
           <span>Back to Test Results</span>
         </Link>
@@ -123,7 +123,7 @@ const StudentTestPerformance = () => {
   if (!missionData || students.length === 0) {
     return (
       <div className="p-6 animate-fade-in">
-        <Link to="/tests" className="text-blue-600 hover:text-blue-800 flex items-center space-x-2 mb-4">
+        <Link to="/tests" className="text-primary-500 hover:text-primary-600 flex items-center space-x-2 mb-4">
           <span>←</span>
           <span>Back to Test Results</span>
         </Link>
@@ -143,7 +143,7 @@ const StudentTestPerformance = () => {
       {/* Header */}
       <div className="mb-8 flex justify-between items-center animate-slide-down">
         <div>
-          <Link to="/tests" className="text-blue-600 hover:text-blue-800 flex items-center space-x-2 mb-4 transform transition-all duration-200 hover:scale-105 hover:-translate-x-1">
+          <Link to="/tests" className="text-primary-500 hover:text-primary-600 flex items-center space-x-2 mb-4 transform transition-all duration-200 hover:scale-105 hover:-translate-x-1">
             <span className="transform transition-transform duration-200 hover:-translate-x-1">←</span>
             <span>Back to Test Results</span>
           </Link>
@@ -174,11 +174,11 @@ const StudentTestPerformance = () => {
           <div className="text-2xl font-bold text-red-600">{students.filter(s => !s.pass).length}</div>
           <div className="text-sm text-red-700">Failed</div>
         </div>
-        <div className="bg-blue-50 rounded-lg border border-blue-200 p-4 text-center">
-          <div className="text-2xl font-bold text-blue-600">
+        <div className="bg-primary-500/10 rounded-lg border border-primary-500/30 p-4 text-center">
+          <div className="text-2xl font-bold text-primary-500">
             {((students.filter(s => s.pass).length / students.length) * 100).toFixed(0)}%
           </div>
-          <div className="text-sm text-blue-700">Pass Rate</div>
+          <div className="text-sm text-primary-500">Pass Rate</div>
         </div>
         <div className="bg-purple-50 rounded-lg border border-purple-200 p-4 text-center">
           <div className="text-2xl font-bold text-purple-600">
@@ -201,7 +201,7 @@ const StudentTestPerformance = () => {
               {/* Student Row - Always Visible */}
               <div 
                 className={`px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                  expandedStudentId === student.user_id ? 'bg-blue-50' : ''
+                  expandedStudentId === student.user_id ? 'bg-primary-500/10' : ''
                 }`}
                 onClick={() => toggleStudentExpand(student.user_id)}
               >
@@ -266,9 +266,9 @@ const StudentTestPerformance = () => {
                           <div className="text-2xl font-bold text-red-600">{student.wrong_answer_count}</div>
                           <div className="text-sm text-red-700">Incorrect</div>
                         </div>
-                        <div className="bg-white rounded-lg border border-blue-200 p-4 text-center">
-                          <div className="text-2xl font-bold text-blue-600">{student.percentage}%</div>
-                          <div className="text-sm text-blue-700">Score</div>
+                        <div className="bg-white rounded-lg border border-primary-500/30 p-4 text-center">
+                          <div className="text-2xl font-bold text-primary-500">{student.percentage}%</div>
+                          <div className="text-sm text-primary-500">Score</div>
                         </div>
                       </div>
 
@@ -338,9 +338,9 @@ const StudentTestPerformance = () => {
                       </div>
 
                       {/* AI Insights */}
-                      <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
+                      <div className="bg-primary-500/10 rounded-lg border border-primary-500/30 p-4">
                         <div className="flex items-center space-x-2 mb-3">
-                          <span className="text-blue-600">✨</span>
+                          <span className="text-primary-500">✨</span>
                           <h4 className="font-semibold text-gray-800">AI Insights</h4>
                         </div>
                         <div className="space-y-3">

@@ -142,7 +142,7 @@ const ClassRoster = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     )
   }
@@ -174,7 +174,7 @@ const ClassRoster = () => {
         <div className="flex gap-3">
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}
           >
             <Plus className="h-5 w-5" />
             Add Student
@@ -190,7 +190,7 @@ const ClassRoster = () => {
           placeholder="Search students by name or roll number"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
         />
       </div>
 
@@ -248,7 +248,7 @@ const ClassRoster = () => {
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => handleViewReport(student.id || student.uuid)}
-                          className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                          className="text-sm text-primary-500 hover:text-primary-700 hover:underline transition-colors"
                         >
                           View Report
                         </button>

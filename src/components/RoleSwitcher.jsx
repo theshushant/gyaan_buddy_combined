@@ -16,7 +16,8 @@ const RoleSwitcher = () => {
       <span className="text-sm text-gray-600">Role:</span>
       <button
         onClick={handleRoleSwitch}
-        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all duration-300 transform hover:scale-105 hover:shadow-md text-sm font-medium"
+        className="px-3 py-1 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-md text-sm font-medium"
+        style={{ backgroundColor: '#e6e8f4', color: '#00167a' }}
       >
         {role === 'teacher' ? 'Switch to Principal' : 'Switch to Teacher'}
       </button>

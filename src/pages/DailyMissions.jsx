@@ -236,7 +236,7 @@ const DailyMissions = () => {
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}
             disabled={loadingClasses}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transform transition-all duration-200 hover:scale-105 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105 disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
             <option value="">{loadingClasses ? 'Loading classes...' : 'Select Class'}</option>
             {classes.map((cls) => (
@@ -253,7 +253,7 @@ const DailyMissions = () => {
             value={selectedSubject}
             onChange={(e) => setSelectedSubject(e.target.value)}
             disabled={loadingSubjects}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transform transition-all duration-200 hover:scale-105 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105 disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
             <option value="">{loadingSubjects ? 'Loading subjects...' : 'Select Subject'}</option>
             {subjects.map((subject) => (
@@ -271,7 +271,8 @@ const DailyMissions = () => {
         <div className="flex justify-between items-center mb-4">
           <button 
             onClick={handlePreviousMonth}
-            className="text-gray-400 hover:text-gray-600 transform transition-all duration-200 hover:scale-125 hover:-translate-x-1"
+            className="text-gray-600 hover:text-gray-900 transform transition-all duration-200 hover:scale-125 hover:-translate-x-1"
+            style={{ color: '#00167a' }}
           >
             ◀
           </button>
@@ -280,7 +281,8 @@ const DailyMissions = () => {
           </h3>
           <button 
             onClick={handleNextMonth}
-            className="text-gray-400 hover:text-gray-600 transform transition-all duration-200 hover:scale-125 hover:translate-x-1"
+            className="text-gray-600 hover:text-gray-900 transform transition-all duration-200 hover:scale-125 hover:translate-x-1"
+            style={{ color: '#00167a' }}
           >
             ▶
           </button>
@@ -306,10 +308,13 @@ const DailyMissions = () => {
                   onClick={() => setSelectedDate(day)}
                   className={`relative p-2 text-sm rounded-lg transition-all duration-300 transform hover:scale-110 animate-slide-up ${
                     isSelected
-                      ? 'bg-blue-600 text-white shadow-lg'
+                      ? 'text-white shadow-lg'
                       : 'text-gray-700 hover:bg-gray-100 hover:shadow-md'
                   }`}
-                  style={{animationDelay: `${0.6 + index * 0.01}s`}}
+                  style={{
+                    animationDelay: `${0.6 + index * 0.01}s`,
+                    ...(isSelected ? { backgroundColor: '#00167a' } : {})
+                  }}
                 >
                   {day}
                   {hasActivity && (
@@ -344,7 +349,7 @@ const DailyMissions = () => {
               {missions.map((mission, index) => (
               <div 
                 key={index} 
-                className="border border-gray-200 rounded-lg p-4 transform hover:scale-105 transition-all duration-300 hover:shadow-md hover:bg-blue-50 animate-slide-up"
+                className="border border-gray-200 rounded-lg p-4 transform hover:scale-105 transition-all duration-300 hover:shadow-md hover:bg-primary-50 animate-slide-up"
                 style={{animationDelay: `${0.8 + index * 0.1}s`}}
               >
                 <div className="flex justify-between items-start mb-2">
@@ -375,7 +380,7 @@ const DailyMissions = () => {
                   </div>
                 </div>
 
-                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium transform transition-all duration-200 hover:scale-105 hover:translate-x-1">
+                <button className="text-primary-500 hover:text-primary-700 text-sm font-medium transform transition-all duration-200 hover:scale-105 hover:translate-x-1">
                   View Details
                 </button>
               </div>

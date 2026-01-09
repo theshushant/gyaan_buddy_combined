@@ -81,7 +81,7 @@ const AIGeneratedQuestions = () => {
             <h1 className="text-3xl font-bold text-gray-800">AI Generated Questions</h1>
             <p className="text-gray-600 mt-2">Review, edit, and select questions to add to your question bank.</p>
           </div>
-          <Link to="/tests" className="text-blue-600 hover:text-blue-800 flex items-center space-x-2 transform transition-all duration-200 hover:scale-105 hover:-translate-x-1">
+          <Link to="/tests" className="text-primary-500 hover:text-primary-600 flex items-center space-x-2 transform transition-all duration-200 hover:scale-105 hover:-translate-x-1">
             <span className="transform transition-transform duration-200 hover:-translate-x-1">←</span>
             <span>Back</span>
           </Link>
@@ -128,7 +128,7 @@ const AIGeneratedQuestions = () => {
                       {question.englishText}
                     </p>
                     <div className="flex space-x-2">
-                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                      <span className="px-2 py-1 text-xs font-medium bg-primary-500/20 text-primary-500 rounded-full">
                         {question.type}
                       </span>
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getDifficultyColor(question.difficulty)}`}>
@@ -172,13 +172,13 @@ const AIGeneratedQuestions = () => {
         </button>
         
         <button 
-          className="px-6 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+          className="px-6 py-2 bg-primary-500/10 text-primary-500 rounded-lg hover:bg-primary-500/20 transition-colors"
           disabled={selectedQuestions.length === 0}
         >
           Add Selected to Bank ({selectedQuestions.length})
         </button>
         
-        <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <button className="px-6 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}>
           Add All to Bank
         </button>
       </div>

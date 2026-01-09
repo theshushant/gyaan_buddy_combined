@@ -24,7 +24,7 @@ export default {
         subject: 'Geometry',
         masteryLevel: 75,
         strugglingPercentage: 25,
-        color: 'bg-blue-500'
+        color: 'bg-primary-500'
       },
       {
         subject: 'Statistics',
@@ -39,7 +39,7 @@ export default {
         title: 'Algebraic Equations Practice',
         icon: 'Calculator',
         description: 'Focuses on solving linear and quadratic equations with real-world applications.',
-        color: 'bg-blue-500',
+        color: 'bg-primary-500',
         link: 'View Activity →',
         difficulty: 'Easy',
         estimatedTime: '30 minutes',
@@ -101,7 +101,7 @@ export default {
         pattern: 'Visual Learners',
         percentage: 35,
         recommendation: 'Use more diagrams, charts, and visual aids in teaching materials.',
-        color: 'bg-blue-100 text-blue-800'
+        color: 'bg-primary-500/20 text-primary-500'
       },
       {
         pattern: 'Kinesthetic Learners',

@@ -50,7 +50,7 @@ const AIInsights = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     )
   }
@@ -80,7 +80,7 @@ const AIInsights = () => {
         <div className="mt-4 flex gap-3">
           <button
             onClick={handleRetry}
-            className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+            className="px-4 py-2 bg-primary-500 dark:bg-primary-600 text-white rounded hover:bg-primary-600 dark:hover:bg-primary-500 transition-colors"
           >
             Retry
           </button>
@@ -134,7 +134,7 @@ const AIInsights = () => {
       title: 'Algebraic Equations Practice',
       icon: Calculator,
       description: 'Focuses on solving linear and quadratic equations with real-world applications.',
-      color: 'bg-blue-500',
+      color: 'bg-primary-500',
       link: 'View Activity →'
     },
     {
@@ -215,7 +215,7 @@ const AIInsights = () => {
             <p className="text-gray-600 dark:text-gray-300 mt-2">Analyze student performance and identify areas for improvement.</p>
           </div>
         </div>
-        <button className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 hover:scale-105 transition-all duration-200">
+        <button className="flex items-center px-4 py-2 bg-primary-500 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-600 dark:hover:bg-primary-500 hover:scale-105 transition-all duration-200">
           <Download className="h-4 w-4 mr-2" />
           Export Report
         </button>
@@ -285,7 +285,7 @@ const AIInsights = () => {
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{activity.title}</h3>
                     <p className="text-gray-600 dark:text-gray-300 text-sm mb-3">{activity.description}</p>
-                    <a href="#" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
+                    <a href="#" className="text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 text-sm font-medium">
                       {activity.link}
                     </a>
                   </div>
@@ -383,7 +383,7 @@ const AIInsights = () => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Weak Topics</h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-4">Identify topics where students are struggling the most.</p>
-                <button className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
+                <button className="text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 text-sm font-medium">
                   View Details →
                 </button>
               </div>
@@ -396,7 +396,7 @@ const AIInsights = () => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Remedial Suggestions</h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-4">Get suggestions for remedial actions to improve student performance.</p>
-                <button className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
+                <button className="text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 text-sm font-medium">
                   View Suggestions →
                 </button>
               </div>

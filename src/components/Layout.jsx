@@ -122,16 +122,19 @@ const Layout = ({ children }) => {
                   key={item.name}
                   to={item.href}
                   className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 transform hover:translate-x-1 ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                      : 'text-gray-700 hover:bg-gray-100'
+                    !isActive ? 'text-gray-700 hover:bg-gray-100' : ''
                   }`}
                   style={{
                     animationDelay: `${index * 50}ms`,
-                    animation: 'slideInLeft 0.5s ease-out forwards'
+                    animation: 'slideInLeft 0.5s ease-out forwards',
+                    ...(isActive ? {
+                      backgroundColor: '#e6e8f4',
+                      color: '#00167a',
+                      borderRight: '3px solid #00167a'
+                    } : {})
                   }}
                 >
-                  <item.icon className="h-5 w-5 mr-3" />
+                  <item.icon className="h-5 w-5 mr-3" style={isActive ? { color: '#00167a' } : {}} />
                   {item.name}
                 </Link>
               )
@@ -141,7 +144,8 @@ const Layout = ({ children }) => {
           <div className="px-4 pb-4">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="w-full flex items-center justify-center px-4 py-2 rounded-lg transition-all duration-200 font-medium hover:shadow-lg"
+              style={{ backgroundColor: '#00167a', color: 'white' }}
             >
               <LogOut className="h-4 w-4 mr-2" />
               Logout
@@ -174,16 +178,19 @@ const Layout = ({ children }) => {
                   key={item.name}
                   to={item.href}
                   className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 transform hover:translate-x-1 ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                      : 'text-gray-700 hover:bg-gray-100'
+                    !isActive ? 'text-gray-700 hover:bg-gray-100' : ''
                   }`}
                   style={{
                     animationDelay: `${index * 50}ms`,
-                    animation: 'slideInLeft 0.5s ease-out forwards'
+                    animation: 'slideInLeft 0.5s ease-out forwards',
+                    ...(isActive ? {
+                      backgroundColor: '#e6e8f4',
+                      color: '#00167a',
+                      borderRight: '3px solid #00167a'
+                    } : {})
                   }}
                 >
-                  <item.icon className="h-5 w-5 mr-3" />
+                  <item.icon className="h-5 w-5 mr-3" style={isActive ? { color: '#00167a' } : {}} />
                   {item.name}
                 </Link>
               )
@@ -193,7 +200,8 @@ const Layout = ({ children }) => {
           <div className="px-4 pb-4">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="w-full flex items-center justify-center px-4 py-2 rounded-lg transition-all duration-200 font-medium hover:shadow-lg"
+              style={{ backgroundColor: '#00167a', color: 'white' }}
             >
               <LogOut className="h-4 w-4 mr-2" />
               Logout
@@ -220,7 +228,7 @@ const Layout = ({ children }) => {
                   <input
                     type="text"
                     placeholder="Ask with AI..."
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -235,7 +243,10 @@ const Layout = ({ children }) => {
                   onClick={toggleAvatarMenu}
                   className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-all duration-200 hover:scale-105"
                 >
-                  <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md transition-transform duration-200 hover:scale-110">
+                  <div 
+                    className="h-8 w-8 rounded-full flex items-center justify-center shadow-md transition-transform duration-200 hover:scale-110"
+                    style={{ background: 'linear-gradient(135deg, #1fb7eb 0%, #00167a 100%)' }}
+                  >
                     <span className="text-sm font-medium text-white">
                       {user?.firstName?.charAt(0) || (role === 'teacher' ? 'T' : 'P')}
                     </span>
@@ -263,7 +274,7 @@ const Layout = ({ children }) => {
                     <Link
                       to="/profile"
                       onClick={() => setAvatarMenuOpen(false)}
-                      className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 group"
+                      className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-500 transition-all duration-200 group"
                     >
                       <UserCheck className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform duration-200" />
                       <span>My Profile</span>

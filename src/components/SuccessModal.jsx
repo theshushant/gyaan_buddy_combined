@@ -43,9 +43,10 @@ const SuccessModal = ({ isOpen, onClose, type, title, message, detail, actions }
                   onClick={action.onClick}
                   className={`flex items-center justify-center px-4 py-2 rounded-lg transition-colors ${
                     action.primary
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      ? 'text-white'
                       : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                   }`}
+                  style={action.primary ? { backgroundColor: '#00167a' } : {}}
                 >
                   {action.icon && <action.icon className="h-4 w-4 mr-2" />}
                   {action.label}
@@ -55,7 +56,7 @@ const SuccessModal = ({ isOpen, onClose, type, title, message, detail, actions }
               {actions?.length > 2 && (
                 <button
                   onClick={actions[2].onClick}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  className="text-primary-500 hover:text-primary-600 text-sm font-medium"
                 >
                   {actions[2].label}
                 </button>
@@ -65,7 +66,7 @@ const SuccessModal = ({ isOpen, onClose, type, title, message, detail, actions }
               {(!actions || actions.length === 0) && (
                 <button
                   onClick={onClose}
-                  className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="w-full flex items-center justify-center px-4 py-2 bg-primary-primary text-white rounded-lg hover:bg-primary-secondary transition-colors font-medium"
                 >
                   OK
                 </button>

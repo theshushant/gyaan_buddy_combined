@@ -494,13 +494,16 @@ const ModulesAssignments = () => {
   const selectedSubjectName = subjects.find(s => s.id.toString() === selectedSubject.toString())?.name || '';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/20">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gradient-start/10 to-gradient-end/10">
       <div className="p-6 lg:p-8">
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
-              <div className="p-3 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-lg">
+              <div 
+                className="p-3 rounded-2xl shadow-lg"
+                style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
+              >
                 <BookOpen className="h-8 w-8 text-white" />
               </div>
               <div>
@@ -520,8 +523,8 @@ const ModulesAssignments = () => {
                   <p className="text-sm text-gray-600">Total Modules</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">{chapters.length}</p>
                 </div>
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <FileText className="h-6 w-6 text-blue-600" />
+                <div className="p-3 bg-primary-100 rounded-lg">
+                  <FileText className="h-6 w-6 text-primary-500" />
                 </div>
               </div>
             </div>
@@ -566,7 +569,7 @@ const ModulesAssignments = () => {
                 <select 
                   value={selectedSubject}
                   onChange={(e) => setSelectedSubject(e.target.value)}
-                  className="w-full md:w-64 px-4 py-3 pl-11 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white appearance-none cursor-pointer hover:border-gray-300"
+                  className="w-full md:w-64 px-4 py-3 pl-11 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white appearance-none cursor-pointer hover:border-gray-300"
                 >
                   <option value="">Select Subject</option>
                   {subjects.map((subject) => (
@@ -590,7 +593,8 @@ const ModulesAssignments = () => {
                   setShowCreateModal(true);
                   setCreateError(null);
                 }}
-                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-2 px-6 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
                 disabled={!selectedSubject}
               >
                 <Plus className="h-5 w-5" />
@@ -604,8 +608,8 @@ const ModulesAssignments = () => {
         {loading && (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="relative">
-              <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-blue-600"></div>
-              <Loader2 className="h-8 w-8 text-blue-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-spin" />
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-primary-500"></div>
+              <Loader2 className="h-8 w-8 text-primary-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-spin" />
             </div>
             <p className="text-gray-600 mt-4 font-medium">Loading modules...</p>
           </div>
@@ -654,7 +658,8 @@ const ModulesAssignments = () => {
                         setShowCreateModal(true);
                         setCreateError(null);
                       }}
-                      className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                      className="inline-flex items-center space-x-2 px-6 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                      style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
                     >
                       <Plus className="h-5 w-5" />
                       <span>Create First Module</span>
@@ -677,7 +682,7 @@ const ModulesAssignments = () => {
                       <div className="flex items-center space-x-4 flex-1">
                         <div className={`p-2 rounded-lg transition-colors ${
                           expandedChapters.includes(chapter.id) 
-                            ? 'bg-blue-100 text-blue-600' 
+                            ? 'bg-primary-100 text-primary-500' 
                             : 'bg-gray-100 text-gray-600'
                         }`}>
                           {expandedChapters.includes(chapter.id) ? (
@@ -690,9 +695,9 @@ const ModulesAssignments = () => {
                           <div className="flex items-center space-x-3">
                             <h3 className="text-xl font-bold text-gray-900">{chapter.title}</h3>
                             <div className="flex items-center space-x-2">
-                              <div className="flex items-center space-x-1 px-3 py-1 bg-blue-50 rounded-full">
-                                <TrendingUp className="h-4 w-4 text-blue-600" />
-                                <span className="text-sm font-semibold text-blue-600">
+                              <div className="flex items-center space-x-1 px-3 py-1 bg-primary-50 rounded-full">
+                                <TrendingUp className="h-4 w-4 text-primary-500" />
+                                <span className="text-sm font-semibold text-primary-500">
                                   {chapter.completionRate}%
                                 </span>
                               </div>
@@ -709,7 +714,7 @@ const ModulesAssignments = () => {
                             e.stopPropagation();
                             handleEditModule(chapter);
                           }}
-                          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                          className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md" style={{ backgroundColor: '#00167a' }}
                         >
                           <Edit className="h-4 w-4" />
                           <span className="text-sm font-medium">Edit</span>
@@ -723,8 +728,9 @@ const ModulesAssignments = () => {
                               // Handle toggle due status
                             }}
                             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 ${
-                              chapter.isDue ? 'bg-blue-600' : 'bg-gray-300'
+                              chapter.isDue ? '' : 'bg-gray-300'
                             }`}
+                            style={chapter.isDue ? { backgroundColor: '#00167a' } : {}}
                           >
                             <span
                               className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
@@ -744,7 +750,7 @@ const ModulesAssignments = () => {
                         chapter.modules.map((module, moduleIndex) => (
                           <div 
                             key={module.id} 
-                            className="bg-white rounded-xl p-4 border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200"
+                            className="bg-white rounded-xl p-4 border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all duration-200"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-3 flex-1">
@@ -759,7 +765,7 @@ const ModulesAssignments = () => {
                               <div className="flex items-center space-x-2">
                                 <button
                                   onClick={() => handleEditChapter(module, chapter)}
-                                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                                  className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md" style={{ backgroundColor: '#00167a' }}
                                 >
                                   <Edit className="h-4 w-4" />
                                   <span className="text-sm font-medium">Edit</span>
@@ -913,11 +919,11 @@ const ModulesAssignments = () => {
                         >
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center space-x-3">
-                              <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">
-                                <span className="text-sm font-bold text-blue-600">Q{index + 1}</span>
+                              <div className="flex items-center justify-center w-8 h-8 bg-primary-100 rounded-full">
+                                <span className="text-sm font-bold text-primary-500">Q{index + 1}</span>
                               </div>
                               <div className="flex items-center space-x-2">
-                                <span className="px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
+                                <span className="px-3 py-1 text-xs font-semibold bg-primary-100 text-primary-800 rounded-full">
                                   {question.question_type?.replace('_', ' ').toUpperCase() || 'MCQ'}
                                 </span>
                                 <span className="px-3 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full capitalize">
@@ -927,7 +933,7 @@ const ModulesAssignments = () => {
                             </div>
                             <button
                               onClick={() => handleEditQuestion(question)}
-                              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                              className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md" style={{ backgroundColor: '#00167a' }}
                             >
                               <Edit className="h-4 w-4" />
                               <span className="text-sm font-medium">Edit</span>
@@ -1002,7 +1008,10 @@ const ModulesAssignments = () => {
             <div className="flex min-h-screen items-center justify-center p-4">
               <div className="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Modal Header */}
-                <div className={`px-8 py-6 ${editingQuestion ? 'bg-gradient-to-r from-blue-600 to-indigo-600' : 'bg-gradient-to-r from-green-600 to-emerald-600'}`}>
+                <div 
+                  className="px-8 py-6"
+                  style={{ background: editingQuestion ? 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' : 'linear-gradient(135deg, #16a34a 0%, #059669 100%)' }}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
@@ -1012,7 +1021,7 @@ const ModulesAssignments = () => {
                         <h2 className="text-2xl font-bold text-white">
                           {editingQuestion ? 'Edit Question' : 'Create Question'}
                         </h2>
-                        <p className={`text-sm mt-0.5 ${editingQuestion ? 'text-blue-100' : 'text-green-100'}`}>
+                        <p className={`text-sm mt-0.5 ${editingQuestion ? 'text-accent-500/50' : 'text-green-100'}`}>
                           {selectedChapterForQuestion?.title || 'Chapter'}
                         </p>
                       </div>
@@ -1254,7 +1263,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
           {/* Modal Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+          <div className="px-8 py-6" style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
@@ -1264,7 +1273,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                   <h2 className="text-2xl font-bold text-white">
                     AI Question Generator
                   </h2>
-                  <p className="text-sm text-blue-100 mt-0.5">
+                  <p className="text-sm text-accent-500/50 mt-0.5">
                     {chapter?.title || 'Chapter'}
                   </p>
                 </div>
@@ -1309,7 +1318,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                   {/* AI Provider Toggle - Hidden for now, defaulting to Gemini */}
                   {/* <div className="space-y-2">
                     <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                      <Brain className="h-4 w-4 text-blue-600" />
+                      <Brain className="h-4 w-4 text-primary-500" />
                       <span>AI Provider</span>
                     </label>
                     <div className="flex rounded-xl border-2 border-gray-200 p-1 bg-gray-50">
@@ -1330,7 +1339,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                         onClick={() => setAiProvider('gemini')}
                         className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
                           aiProvider === 'gemini'
-                            ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md'
+                            ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-md'
                             : 'text-gray-600 hover:bg-gray-100'
                         }`}
                       >
@@ -1343,14 +1352,14 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                   {/* Question Type Dropdown */}
                   <div className="space-y-2">
                     <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                      <HelpCircle className="h-4 w-4 text-blue-600" />
+                      <HelpCircle className="h-4 w-4 text-primary-500" />
                       <span>Question Type</span>
                     </label>
                     <div className="relative">
                       <select
                         value={questionType}
                         onChange={(e) => setQuestionType(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
+                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
                       >
                         {questionTypeOptions.map((option) => (
                           <option key={option.value} value={option.value}>
@@ -1367,14 +1376,14 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                     {/* Number of Questions */}
                     <div className="space-y-2">
                       <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                        <BarChart3 className="h-4 w-4 text-blue-600" />
+                        <BarChart3 className="h-4 w-4 text-primary-500" />
                         <span>Number of Questions</span>
                       </label>
                       <div className="relative">
                         <select
                           value={numberOfQuestions}
                           onChange={(e) => setNumberOfQuestions(e.target.value)}
-                          className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
+                          className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
                         >
                           {questionCountOptions.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -1389,14 +1398,14 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                     {/* Level */}
                     <div className="space-y-2">
                       <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                        <Zap className="h-4 w-4 text-blue-600" />
+                        <Zap className="h-4 w-4 text-primary-500" />
                         <span>Difficulty Level</span>
                       </label>
                       <div className="relative">
                         <select
                           value={level}
                           onChange={(e) => setLevel(e.target.value)}
-                          className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
+                          className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
                         >
                           {levelOptions.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -1436,7 +1445,8 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                     <button
                       onClick={handleGenerate}
                       disabled={generating}
-                      className="flex items-center space-x-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transform hover:scale-105 active:scale-95"
+                      className="flex items-center space-x-2 px-8 py-3 text-white font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transform hover:scale-105 active:scale-95"
+                      style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
                     >
                       {generating ? (
                         <>
@@ -1457,18 +1467,18 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
               {/* Generated Questions List */}
               {generatedQuestions.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 px-6 py-4">
+                  <div className="bg-gradient-to-r from-primary-500/10 to-secondary-500/10 border-b border-gray-200 px-6 py-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                        <CheckCircle2 className="h-5 w-5 text-primary-500" />
                         <h3 className="text-lg font-bold text-gray-900">Generated Questions</h3>
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                        <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
                           {selectedQuestionIds.size}/{generatedQuestions.length} selected
                         </span>
                       </div>
                       <button
                         onClick={toggleAllQuestions}
-                        className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-primary-500 hover:text-primary-800 hover:bg-primary-50 rounded-lg transition-colors"
                       >
                         {selectedQuestionIds.size === generatedQuestions.length ? (
                           <>
@@ -1495,7 +1505,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                         key={question.id}
                         className={`bg-gray-50 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
                           selectedQuestionIds.has(question.id)
-                            ? 'border-blue-500 shadow-md bg-blue-50/30'
+                            ? 'border-primary-500 shadow-md bg-primary-50/30'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                         onClick={() => toggleQuestionSelection(question.id)}
@@ -1504,7 +1514,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                           <div className="flex items-start space-x-4">
                             <div className="flex-shrink-0 mt-1">
                               {selectedQuestionIds.has(question.id) ? (
-                                <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
+                                <div className="w-6 h-6 bg-primary-500 rounded-md flex items-center justify-center">
                                   <Check className="h-4 w-4 text-white" />
                                 </div>
                               ) : (
@@ -1513,7 +1523,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center space-x-3 mb-2">
-                                <span className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-bold">
+                                <span className="px-2.5 py-1 bg-primary-100 text-primary-700 rounded-md text-xs font-bold">
                                   Q{index + 1}
                                 </span>
                                 <span className="px-2.5 py-1 bg-gray-200 text-gray-700 rounded-md text-xs font-medium">
@@ -2170,7 +2180,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
           type="submit"
           className={`px-6 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 ${
             initialData 
-              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'
+              ? 'bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-secondary-500 hover:to-primary-500'
               : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
           }`}
           disabled={loading}

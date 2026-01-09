@@ -227,7 +227,7 @@ const Leaderboards = () => {
           <select 
             value={filters.subject_id}
             onChange={(e) => handleFilterChange('subject_id', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
           >
             <option value="">All Subjects</option>
             {subjects.map((subject) => (
@@ -243,7 +243,7 @@ const Leaderboards = () => {
           <select 
             value={filters.class_id}
             onChange={(e) => handleFilterChange('class_id', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
           >
             <option value="">All Classes</option>
             {classes.map((cls) => (
@@ -261,7 +261,7 @@ const Leaderboards = () => {
             value={filters.grade}
             onChange={(e) => handleFilterChange('grade', e.target.value)}
             placeholder="e.g., 9, 10"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
           />
         </div>
 
@@ -271,20 +271,18 @@ const Leaderboards = () => {
             <button 
               onClick={() => setScope('class')}
               className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transform transition-all duration-200 hover:scale-105 ${
-                scope === 'class' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'text-gray-500'
+                scope === 'class' ? 'text-white' : 'text-gray-500'
               }`}
+              style={scope === 'class' ? { backgroundColor: '#00167a' } : {}}
             >
               Class
             </button>
             <button 
               onClick={() => setScope('grade')}
               className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transform transition-all duration-200 hover:scale-105 ${
-                scope === 'grade' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'text-gray-500'
+                scope === 'grade' ? 'text-white' : 'text-gray-500'
               }`}
+              style={scope === 'grade' ? { backgroundColor: '#00167a' } : {}}
             >
               Grade
             </button>
@@ -301,7 +299,7 @@ const Leaderboards = () => {
             value={filters.min_xp}
             onChange={(e) => handleFilterChange('min_xp', e.target.value)}
             placeholder="Minimum XP"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
 
@@ -312,7 +310,7 @@ const Leaderboards = () => {
             value={filters.max_xp}
             onChange={(e) => handleFilterChange('max_xp', e.target.value)}
             placeholder="Maximum XP"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
 
@@ -323,7 +321,7 @@ const Leaderboards = () => {
             value={filters.min_score}
             onChange={(e) => handleFilterChange('min_score', e.target.value)}
             placeholder="Minimum Score"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
 
@@ -334,7 +332,7 @@ const Leaderboards = () => {
             value={filters.max_score}
             onChange={(e) => handleFilterChange('max_score', e.target.value)}
             placeholder="Maximum Score"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
       </div>
@@ -347,7 +345,7 @@ const Leaderboards = () => {
               onClick={() => handleTabChange('xp')}
               className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-300 transform hover:scale-105 ${
                 activeTab === 'xp'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-primary-500 text-primary-500'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -357,7 +355,7 @@ const Leaderboards = () => {
               onClick={() => handleTabChange('score')}
               className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-300 transform hover:scale-105 ${
                 activeTab === 'score'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-primary-500 text-primary-500'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -371,7 +369,7 @@ const Leaderboards = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden transform hover:shadow-lg transition-all duration-300 animate-slide-up" style={{animationDelay: '0.4s'}}>
         {loading ? (
           <div className="p-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
             <p className="mt-4 text-gray-600">Loading leaderboard...</p>
           </div>
         ) : students.length === 0 ? (
@@ -437,7 +435,7 @@ const Leaderboards = () => {
       <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.6s'}}>
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600 mb-2 animate-count-up">
+            <div className="text-2xl font-bold text-primary-500 mb-2 animate-count-up">
               {statistics.highest_xp.toLocaleString()}
             </div>
             <div className="text-sm text-gray-600">Highest XP</div>

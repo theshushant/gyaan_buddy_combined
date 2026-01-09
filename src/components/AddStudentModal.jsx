@@ -390,7 +390,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     value={formData.firstName}
                     onChange={(e) => handleFieldChange('firstName', e.target.value)}
                     onBlur={() => handleFieldBlur('firstName')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.firstName && errors.firstName ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Enter first name"
@@ -407,7 +407,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     value={formData.rollNumber}
                     onChange={(e) => handleFieldChange('rollNumber', e.target.value)}
                     onBlur={() => handleFieldBlur('rollNumber')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.rollNumber && errors.rollNumber ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Enter roll number"
@@ -423,7 +423,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     value={formData.gender}
                     onChange={(e) => handleFieldChange('gender', e.target.value)}
                     onBlur={() => handleFieldBlur('gender')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.gender && errors.gender ? 'border-red-500' : 'border-gray-300'
                     }`}
                   >
@@ -444,7 +444,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     value={formData.parentName}
                     onChange={(e) => handleFieldChange('parentName', e.target.value)}
                     onBlur={() => handleFieldBlur('parentName')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.parentName && errors.parentName ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Enter parent/guardian name"
@@ -461,7 +461,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     value={formData.parentContact}
                     onChange={(e) => handleFieldChange('parentContact', e.target.value)}
                     onBlur={() => handleFieldBlur('parentContact')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.parentContact && errors.parentContact ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Enter email or phone number"
@@ -489,7 +489,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                                 type="checkbox"
                                 checked={formData.subjectIds.includes(subject.id)}
                                 onChange={() => handleSubjectChange(subject.id)}
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
                               />
                               <span className="text-sm text-gray-700">{subject.name}</span>
                             </label>
@@ -514,7 +514,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     value={formData.lastName}
                     onChange={(e) => handleFieldChange('lastName', e.target.value)}
                     onBlur={() => handleFieldBlur('lastName')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.lastName && errors.lastName ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Enter last name"
@@ -532,7 +532,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                       value={formData.dateOfBirth}
                       onChange={(e) => handleFieldChange('dateOfBirth', e.target.value)}
                       onBlur={() => handleFieldBlur('dateOfBirth')}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                         touched.dateOfBirth && errors.dateOfBirth ? 'border-red-500' : 'border-gray-300'
                       }`}
                     />
@@ -549,7 +549,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     value={formData.classId}
                     onChange={(e) => handleFieldChange('classId', e.target.value)}
                     onBlur={() => handleFieldBlur('classId')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.classId && errors.classId ? 'border-red-500' : 'border-gray-300'
                     }`}
                     disabled={loadingClasses}
@@ -578,7 +578,8 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#00167a' }}
                 disabled={loading}
               >
                 {loading ? (student ? 'Updating...' : 'Adding...') : (student ? 'Update Student' : 'Add Student')}

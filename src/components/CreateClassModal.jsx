@@ -142,7 +142,7 @@ const CreateClassModal = ({ isOpen, onClose, onSave, loading = false, error = nu
                 value={formData.name}
                 onChange={(e) => handleFieldChange('name', e.target.value)}
                 onBlur={() => handleFieldBlur('name')}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                   touched.name && errors.name ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="e.g., Class 9A, Class 10B"
@@ -165,7 +165,8 @@ const CreateClassModal = ({ isOpen, onClose, onSave, loading = false, error = nu
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#00167a' }}
                 disabled={loading}
               >
                 {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Class' : 'Create Class')}

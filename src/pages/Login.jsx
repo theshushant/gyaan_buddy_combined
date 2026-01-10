@@ -90,7 +90,7 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gradient-start/20 to-gradient-end/30 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#00167a' }}>
       <div className="max-w-md w-full">
         {/* Logo and Title */}
         <div className="text-center mb-8">
@@ -188,7 +188,7 @@ const Login = () => {
               type="submit"
               disabled={isLoading}
               className="w-full py-3 px-4 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02]"
-              style={{ backgroundColor: '#00167a', color: 'white' }}
+              style={{ backgroundColor: '#1fb7eb', color: 'white' }}
               onMouseEnter={(e) => e.target.style.backgroundColor = '#001262'}
               onMouseLeave={(e) => e.target.style.backgroundColor = '#00167a'}
             >

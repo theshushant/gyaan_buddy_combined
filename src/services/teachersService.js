@@ -13,7 +13,7 @@ class TeachersService {
       if (filters.page) queryParams.append('page', filters.page);
       if (filters.limit) queryParams.append('limit', filters.limit);
 
-      const endpoint = `/users/teachers${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const endpoint = `/teachers${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch teachers: ${error.message}`);
@@ -380,7 +380,7 @@ class TeachersService {
   // Get teacher statistics
   async getTeacherStats() {
     try {
-      return await apiService.get('/users/teachers/stats');
+      return await apiService.get('/teachers/stats');
     } catch (error) {
       throw new Error(`Failed to fetch teacher statistics: ${error.message}`);
     }

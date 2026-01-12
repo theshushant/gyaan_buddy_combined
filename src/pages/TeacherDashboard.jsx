@@ -24,6 +24,19 @@ const TeacherDashboard = () => {
     error
   } = useSelector(state => state.dashboard)
 
+  // Label mapping for teacher dashboard cards
+  const labelMapping = {
+    "My Students' Average Score": "Average Student Score",
+    "Module Completed": "Module completion rate",
+    "Students Engaged": "Last Module Student Engagement",
+    "Questions Created": "Chapters covered"
+  }
+
+  // Function to get mapped label
+  const getMappedLabel = (label) => {
+    return labelMapping[label] || label
+  }
+
   useEffect(() => {
     // Check if there's already an error - don't retry automatically
     const hasError = Object.values(error).some(err => err !== null)
@@ -135,10 +148,33 @@ const TeacherDashboard = () => {
             >
               <div className="text-center">
                 <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>{metric.value}</div>
-                <div className="text-gray-600">{metric.title}</div>
+                <div className="text-gray-600">{getMappedLabel(metric.title)}</div>
               </div>
             </div>
           ))}
+          
+          {/* Module Covered Card */}
+          <div 
+            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
+            style={{animationDelay: `${(metricsData.length + 1) * 0.1}s`}}
+          >
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>12</div>
+              <div className="text-gray-600">Module Covered</div>
+            </div>
+          </div>
+          
+          {/* Active Student with Latest Module Card */}
+          <div 
+            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
+            style={{animationDelay: `${(metricsData.length + 2) * 0.1}s`}}
+          >
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>45</div>
+              <div className="text-gray-600">Active Students</div>
+              <div className="text-sm text-gray-500 mt-1">Latest module attempted for same subject</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -189,7 +225,7 @@ const TeacherDashboard = () => {
             {quickSummaryData.map((item, index) => (
               <div key={index} className="text-center animate-slide-up" style={{animationDelay: `${(index + 1) * 0.1}s`}}>
                 <div className="text-2xl font-bold text-gray-800">{item.value}</div>
-                <div className="text-sm text-gray-600">{item.label}</div>
+                <div className="text-sm text-gray-600">{getMappedLabel(item.label)}</div>
               </div>
             ))}
           </div>

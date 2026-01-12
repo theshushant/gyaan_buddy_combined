@@ -245,7 +245,7 @@ class StudentsService {
   // Get student statistics
   async getStudentStats() {
     try {
-      return await apiService.get('/users/students/stats');
+      return await apiService.get('/students/stats');
     } catch (error) {
       throw new Error(`Failed to fetch student statistics: ${error.message}`);
     }

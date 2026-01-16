@@ -147,8 +147,15 @@ const DailyMissions = () => {
       
       // Transform missions to include completion rate and status
       const transformedMissions = filteredMissions.map(mission => {
-        // Calculate completion rate (mock for now, can be enhanced with real progress data)
-        const completionRate = Math.floor(Math.random() * 100);
+        // Calculate completion rate from progress data if available
+        let completionRate = 0;
+        if (mission.progress) {
+          completionRate = mission.progress.percentage || 0;
+        } else {
+          // Mock completion rate if no progress data
+          completionRate = Math.floor(Math.random() * 100);
+        }
+        
         let status, statusColor;
         if (completionRate >= 70) {
           status = 'High';
@@ -161,17 +168,28 @@ const DailyMissions = () => {
           statusColor = 'red';
         }
         
+        // Get title - fallback to module/chapter info if title doesn't exist
+        const missionTitle = mission.title || 
+          (mission.module_name && mission.chapter_title 
+            ? `${mission.module_name} - ${mission.chapter_title}` 
+            : mission.module_name || 'Untitled Mission');
+        
         return {
           id: mission.id || mission.uuid,
-          name: mission.title,
+          name: missionTitle,
           description: mission.description,
           completionRate,
           status,
           statusColor,
-          mission_date: mission.mission_date,
+          mission_date: mission.mission_date || mission.test_datetime,
           duration: mission.duration,
           base_exp: mission.base_exp,
-          exp_multiplier: mission.exp_multiplier
+          exp_multiplier: mission.exp_multiplier,
+          question_count: mission.question_count || mission.questions?.length || 0,
+          subject_name: mission.subject_name || mission.subject?.name,
+          module_name: mission.module_name,
+          chapter_title: mission.chapter_title,
+          progress: mission.progress
         };
       });
       
@@ -348,12 +366,17 @@ const DailyMissions = () => {
             <div className="space-y-4">
               {missions.map((mission, index) => (
               <div 
-                key={index} 
+                key={mission.id || index} 
                 className="border border-gray-200 rounded-lg p-4 transform hover:scale-105 transition-all duration-300 hover:shadow-md hover:bg-primary-50 animate-slide-up"
                 style={{animationDelay: `${0.8 + index * 0.1}s`}}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-medium text-gray-800">{mission.name}</h4>
+                  <div>
+                    <h4 className="font-medium text-gray-800">{mission.name}</h4>
+                    {mission.subject_name && (
+                      <p className="text-xs text-gray-500 mt-1">{mission.subject_name}</p>
+                    )}
+                  </div>
                   <span className={`px-2 py-1 text-xs font-medium rounded-full transform transition-all duration-200 hover:scale-110 ${
                     mission.statusColor === 'green' ? 'bg-green-100 text-green-800' :
                     mission.statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
@@ -361,6 +384,28 @@ const DailyMissions = () => {
                   }`}>
                     {mission.status}
                   </span>
+                </div>
+
+                {/* Mission Info */}
+                <div className="flex items-center space-x-4 text-xs text-gray-500 mb-3">
+                  {mission.duration && (
+                    <span className="flex items-center space-x-1">
+                      <span>⏱️</span>
+                      <span>{mission.duration} min</span>
+                    </span>
+                  )}
+                  {mission.question_count > 0 && (
+                    <span className="flex items-center space-x-1">
+                      <span>❓</span>
+                      <span>{mission.question_count} questions</span>
+                    </span>
+                  )}
+                  {mission.base_exp && (
+                    <span className="flex items-center space-x-1">
+                      <span>⭐</span>
+                      <span>{mission.base_exp} EXP</span>
+                    </span>
+                  )}
                 </div>
 
                 <div className="mb-3">

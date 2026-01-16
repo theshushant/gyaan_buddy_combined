@@ -26,7 +26,7 @@ const TeacherDashboard = () => {
 
   // Label mapping for teacher dashboard cards
   const labelMapping = {
-    "My Students' Average Score": "Average Student Score",
+    "My Students' Average Score": "Average Student Percentage",
     "Module Completed": "Module completion rate",
     "Students Engaged": "Last Module Student Engagement",
     "Questions Created": "Chapters covered"
@@ -173,6 +173,39 @@ const TeacherDashboard = () => {
               <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>45</div>
               <div className="text-gray-600">Active Students</div>
               <div className="text-sm text-gray-500 mt-1">Latest module attempted for same subject</div>
+            </div>
+          </div>
+          
+          {/* Total Students Card */}
+          <div 
+            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
+            style={{animationDelay: `${(metricsData.length + 3) * 0.1}s`}}
+          >
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>120</div>
+              <div className="text-gray-600">Total Students</div>
+            </div>
+          </div>
+          
+          {/* Completion Rate Card */}
+          <div 
+            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
+            style={{animationDelay: `${(metricsData.length + 4) * 0.1}s`}}
+          >
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>78%</div>
+              <div className="text-gray-600">Completion Rate</div>
+            </div>
+          </div>
+          
+          {/* Average Score Card */}
+          <div 
+            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
+            style={{animationDelay: `${(metricsData.length + 5) * 0.1}s`}}
+          >
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>85</div>
+              <div className="text-gray-600">Average Score</div>
             </div>
           </div>
         </div>

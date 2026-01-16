@@ -110,7 +110,8 @@ const ModulesAssignments = () => {
               logo: module.logo || null,
               modules: chaptersList.map((chapter, idx) => ({
                 id: chapter.id,
-                title: chapter.title || `Chapter ${idx + 1}`
+                title: chapter.title || `Assignment ${idx + 1}`,
+                isDue: chapter.is_due || false
               }))
             };
           } catch (err) {
@@ -238,24 +239,24 @@ const ModulesAssignments = () => {
       if (editingChapter) {
         // Update existing chapter
         const response = await modulesService.updateChapter(editingChapter.id, chapterData);
-        const successMessage = response?.message || `Chapter "${chapterData.title}" has been updated successfully.`;
+        const successMessage = response?.message || `Assignment "${chapterData.title}" has been updated successfully.`;
         
         setShowCreateChapterModal(false);
         setEditingChapter(null);
         setSelectedModuleForChapter(null);
         setSuccessData({
-          title: 'Chapter Updated Successfully',
+          title: 'Assignment Updated Successfully',
           message: successMessage
         });
       } else {
         // Create new chapter
         const response = await modulesService.createChapter(selectedModuleForChapter.id, chapterData);
-        const successMessage = response?.message || `Chapter "${chapterData.title}" has been created successfully.`;
+        const successMessage = response?.message || `Assignment "${chapterData.title}" has been created successfully.`;
         
         setShowCreateChapterModal(false);
         setSelectedModuleForChapter(null);
         setSuccessData({
-          title: 'Chapter Created Successfully',
+          title: 'Assignment Created Successfully',
           message: successMessage
         });
       }
@@ -263,7 +264,7 @@ const ModulesAssignments = () => {
       await fetchAllModulesData();
     } catch (err) {
       console.error(`Error ${editingChapter ? 'updating' : 'creating'} chapter:`, err);
-      let errorMessage = `Failed to ${editingChapter ? 'update' : 'create'} chapter. Please try again.`;
+      let errorMessage = `Failed to ${editingChapter ? 'update' : 'create'} assignment. Please try again.`;
       if (err.message) {
         errorMessage = err.message;
       } else if (typeof err === 'string') {
@@ -282,6 +283,42 @@ const ModulesAssignments = () => {
     setCreateChapterError(null);
   };
 
+  const handleToggleModuleDue = (module, newDueStatus) => {
+    // TODO: Uncomment API call when backend is ready
+    // try {
+    //   await modulesService.updateModule(module.id, { is_due: newDueStatus });
+    // } catch (err) {
+    //   console.error('Error toggling module due status:', err);
+    // }
+    
+    // Update local state
+    setAllModulesData(prev => prev.map(m => 
+      m.id === module.id ? { ...m, isDue: newDueStatus } : m
+    ));
+  };
+
+  const handleToggleChapterDue = (chapter, parentModule, newDueStatus) => {
+    // TODO: Uncomment API call when backend is ready
+    // try {
+    //   await modulesService.updateChapter(chapter.id, { is_due: newDueStatus });
+    // } catch (err) {
+    //   console.error('Error toggling chapter due status:', err);
+    // }
+    
+    // Update local state
+    setAllModulesData(prev => prev.map(m => {
+      if (m.id === parentModule.id) {
+        return {
+          ...m,
+          modules: m.modules.map(ch => 
+            ch.id === chapter.id ? { ...ch, isDue: newDueStatus } : ch
+          )
+        };
+      }
+      return m;
+    }));
+  };
+
   const handleEditChapter = async (chapter, module) => {
     try {
       // Fetch full chapter data
@@ -296,12 +333,12 @@ const ModulesAssignments = () => {
         setShowCreateChapterModal(true);
         setCreateChapterError(null);
       } else {
-        console.error('Chapter not found');
-        setCreateChapterError('Chapter data not found. Please try again.');
+        console.error('Assignment not found');
+        setCreateChapterError('Assignment data not found. Please try again.');
       }
     } catch (err) {
-      console.error('Error fetching chapter data:', err);
-      setCreateChapterError('Failed to load chapter data. Please try again.');
+      console.error('Error fetching assignment data:', err);
+      setCreateChapterError('Failed to load assignment data. Please try again.');
     }
   };
 
@@ -478,7 +515,7 @@ const ModulesAssignments = () => {
         setSelectedChapterForQuestion(null);
         setSuccessData({
           title: 'Question Created Successfully',
-          message: 'Question has been created and added to the chapter successfully.'
+          message: 'Question has been created and added to the assignment successfully.'
         });
         setShowSuccessModal(true);
         await fetchAllModulesData();
@@ -531,7 +568,7 @@ const ModulesAssignments = () => {
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Total Chapters</p>
+                  <p className="text-sm text-gray-600">Total Assignments</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">
                     {chapters.reduce((sum, ch) => sum + (ch.modules?.length || 0), 0)}
                   </p>
@@ -704,7 +741,7 @@ const ModulesAssignments = () => {
                             </div>
                           </div>
                           <p className="text-sm text-gray-500 mt-1">
-                            {chapter.modules?.length || 0} {chapter.modules?.length === 1 ? 'chapter' : 'chapters'}
+                            {chapter.modules?.length || 0} {chapter.modules?.length === 1 ? 'assignment' : 'assignments'}
                           </p>
                         </div>
                       </div>
@@ -719,13 +756,12 @@ const ModulesAssignments = () => {
                           <Edit className="h-4 w-4" />
                           <span className="text-sm font-medium">Edit</span>
                         </button>
-                        {/* Mark Due toggle hidden for now */}
-                        {/* <div className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg">
-                          <span className="text-sm text-gray-600">Mark Due</span>
+                        <div className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg">
+                          <span className="text-sm text-gray-600">Due</span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              // Handle toggle due status
+                              handleToggleModuleDue(chapter, !chapter.isDue);
                             }}
                             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 ${
                               chapter.isDue ? '' : 'bg-gray-300'
@@ -738,7 +774,7 @@ const ModulesAssignments = () => {
                               }`}
                             />
                           </button>
-                        </div> */}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -759,16 +795,35 @@ const ModulesAssignments = () => {
                                 </div>
                                 <div>
                                   <h4 className="font-semibold text-gray-900">{module.title}</h4>
-                                  <p className="text-xs text-gray-500">Chapter {moduleIndex + 1}</p>
+                                  <p className="text-xs text-gray-500">Assignment {moduleIndex + 1}</p>
                                 </div>
                               </div>
                               <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg">
+                                  <span className="text-sm text-gray-600">Due</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleToggleChapterDue(module, chapter, !module.isDue);
+                                    }}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 ${
+                                      module.isDue ? '' : 'bg-gray-300'
+                                    }`}
+                                    style={module.isDue ? { backgroundColor: '#00167a' } : {}}
+                                  >
+                                    <span
+                                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
+                                        module.isDue ? 'translate-x-6' : 'translate-x-1'
+                                      }`}
+                                    />
+                                  </button>
+                                </div>
                                 <button
                                   onClick={() => handleEditChapter(module, chapter)}
                                   className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md" style={{ backgroundColor: '#00167a' }}
                                 >
                                   <Edit className="h-4 w-4" />
-                                  <span className="text-sm font-medium">Edit</span>
+                                  <span className="text-sm font-medium">Learn Mode</span>
                                 </button>
                                 <button
                                   onClick={() => handleViewQuestions(module)}
@@ -790,7 +845,7 @@ const ModulesAssignments = () => {
                         ))
                       ) : (
                         <div className="text-center py-6 text-gray-500">
-                          <p>No chapters in this module yet.</p>
+                          <p>No assignments in this module yet.</p>
                         </div>
                       )}
                       <div className="pt-3 border-t border-gray-200">
@@ -799,7 +854,7 @@ const ModulesAssignments = () => {
                           className="flex items-center justify-center space-x-2 w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
                         >
                           <Plus className="h-5 w-5" />
-                          <span>Add Chapter</span>
+                          <span>Add Assignment</span>
                         </button>
                       </div>
                     </div>
@@ -867,7 +922,7 @@ const ModulesAssignments = () => {
                           Questions
                         </h2>
                         <p className="text-sm text-purple-100 mt-0.5">
-                          {selectedChapterForQuestion?.title || 'Chapter'}
+                          {selectedChapterForQuestion?.title || 'Assignment'}
                         </p>
                       </div>
                     </div>
@@ -898,7 +953,7 @@ const ModulesAssignments = () => {
                         <HelpCircle className="h-10 w-10 text-gray-400" />
                       </div>
                       <h3 className="text-xl font-semibold text-gray-900 mb-2">No Questions Found</h3>
-                      <p className="text-gray-600 mb-6">This chapter doesn't have any questions yet.</p>
+                      <p className="text-gray-600 mb-6">This assignment doesn't have any questions yet.</p>
                       <button
                         onClick={() => {
                           setShowViewQuestionsModal(false);
@@ -1022,7 +1077,7 @@ const ModulesAssignments = () => {
                           {editingQuestion ? 'Edit Question' : 'Create Question'}
                         </h2>
                         <p className={`text-sm mt-0.5 ${editingQuestion ? 'text-accent-500/50' : 'text-green-100'}`}>
-                          {selectedChapterForQuestion?.title || 'Chapter'}
+                          {selectedChapterForQuestion?.title || 'Assignment'}
                         </p>
                       </div>
                     </div>
@@ -1095,7 +1150,7 @@ const ModulesAssignments = () => {
               setSelectedChapterForAI(null);
               setSuccessData({
                 title: 'Questions Generated Successfully',
-                message: 'AI-generated questions have been added to the chapter successfully.'
+                message: 'AI-generated questions have been added to the assignment successfully.'
               });
               setShowSuccessModal(true);
               fetchAllModulesData();
@@ -1274,7 +1329,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                     AI Question Generator
                   </h2>
                   <p className="text-sm text-accent-500/50 mt-0.5">
-                    {chapter?.title || 'Chapter'}
+                    {chapter?.title || 'Assignment'}
                   </p>
                 </div>
               </div>
@@ -1426,7 +1481,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                         <p className="text-sm font-medium text-amber-800">HOTS Questions</p>
                         <p className="text-sm text-amber-700 mt-1">
                           Level 5 will generate Higher Order Thinking Skills (HOTS) questions. 
-                          These questions will also be added to the Chapter HOTS section.
+                          These questions will also be added to the Assignment HOTS section.
                         </p>
                       </div>
                     </div>

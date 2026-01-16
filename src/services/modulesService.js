@@ -112,6 +112,7 @@ class ModulesService {
         if (moduleData.logo) payload.append('logo', moduleData.logo);
         if (moduleData.is_active !== undefined) payload.append('is_active', moduleData.is_active);
         if (moduleData.is_enabled !== undefined) payload.append('is_enabled', moduleData.is_enabled);
+        if (moduleData.is_due !== undefined) payload.append('is_due', moduleData.is_due);
       } else {
         // Use regular JSON payload
         payload = {};
@@ -123,6 +124,7 @@ class ModulesService {
         if (moduleData.logo !== undefined) payload.logo = moduleData.logo;
         if (moduleData.is_active !== undefined) payload.is_active = moduleData.is_active;
         if (moduleData.is_enabled !== undefined) payload.is_enabled = moduleData.is_enabled;
+        if (moduleData.is_due !== undefined) payload.is_due = moduleData.is_due;
       }
       
       return await apiService.put(`/modules/${moduleId}/`, payload, { isFormData: hasFile });
@@ -213,6 +215,7 @@ class ModulesService {
         if (chapterData.logo) payload.append('logo', chapterData.logo);
         if (chapterData.is_enabled !== undefined) payload.append('is_enabled', chapterData.is_enabled);
         if (chapterData.is_important !== undefined) payload.append('is_important', chapterData.is_important);
+        if (chapterData.is_due !== undefined) payload.append('is_due', chapterData.is_due);
       } else {
         // Use regular JSON payload
         payload = {};
@@ -224,6 +227,7 @@ class ModulesService {
         if (chapterData.logo !== undefined) payload.logo = chapterData.logo;
         if (chapterData.is_enabled !== undefined) payload.is_enabled = chapterData.is_enabled;
         if (chapterData.is_important !== undefined) payload.is_important = chapterData.is_important;
+        if (chapterData.is_due !== undefined) payload.is_due = chapterData.is_due;
       }
       
       return await apiService.put(`/module_chapters/${chapterId}/`, payload, { isFormData: hasFile });

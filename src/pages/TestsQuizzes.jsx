@@ -115,24 +115,41 @@ const TestsQuizzes = () => {
   // Pre-fill form when editing a mission
   useEffect(() => {
     if (editingMission && isEditMode) {
-      // Extract date from mission_date
-      const missionDate = editingMission.mission_date 
-        ? new Date(editingMission.mission_date).toISOString().split('T')[0]
+      // Extract date from mission_date or test_datetime
+      const dateValue = editingMission.mission_date || editingMission.test_datetime;
+      const missionDate = dateValue 
+        ? new Date(dateValue).toISOString().split('T')[0]
         : '';
       
-      // Extract time from description if available, or leave empty
-      const timeMatch = editingMission.description?.match(/\d{1,2}:\d{2}/);
-      const missionTime = timeMatch ? timeMatch[0] : '';
+      // Extract time from test_datetime or description
+      let missionTime = '';
+      if (editingMission.test_datetime) {
+        const dateTime = new Date(editingMission.test_datetime);
+        const hours = dateTime.getHours().toString().padStart(2, '0');
+        const minutes = dateTime.getMinutes().toString().padStart(2, '0');
+        if (hours !== '00' || minutes !== '00') {
+          missionTime = `${hours}:${minutes}`;
+        }
+      } else if (editingMission.description) {
+        const timeMatch = editingMission.description.match(/\d{1,2}:\d{2}/);
+        missionTime = timeMatch ? timeMatch[0] : '';
+      }
+      
+      // Get title - fallback to module/chapter info
+      const missionTitle = editingMission.title || 
+        (editingMission.module_name && editingMission.chapter_title 
+          ? `${editingMission.module_name} - ${editingMission.chapter_title}` 
+          : editingMission.module_name || '');
       
       setFormData({
-        title: editingMission.title || '',
+        title: missionTitle,
         testDate: missionDate,
         testTime: missionTime,
         duration: editingMission.duration?.toString() || '',
         notification: false // This might not be stored, defaulting to false
       });
       
-      // Set selected subject and class
+      // Set selected subject and class - handle different response structures
       if (editingMission.subject) {
         const subjectId = editingMission.subject?.id || editingMission.subject?.uuid || editingMission.subject;
         setSelectedSubject(subjectId);
@@ -202,21 +219,25 @@ const TestsQuizzes = () => {
     setSubmitting(true);
 
     try {
-      // Combine date and time into a datetime string
-      const missionDate = formData.testDate; // Just the date, backend expects date only
+      // Combine date and time into a datetime string for Test API
+      const testDateTime = formData.testTime 
+        ? `${formData.testDate}T${formData.testTime}:00`
+        : `${formData.testDate}T00:00:00`;
       
       if (isEditMode && editingMission) {
-        // Update existing mission
+        // Update existing mission/test
         const missionId = editingMission.id || editingMission.uuid;
+        
+        // Payload for updating mission
         const missionPayload = {
-          title: formData.title,
+          title: formData.title.trim(),
           description: `Test scheduled for ${formData.testDate}${formData.testTime ? ` at ${formData.testTime}` : ''}`,
-          mission_date: missionDate,
+          mission_date: formData.testDate,
           duration: parseInt(formData.duration),
           subject: selectedSubject,
-          class_group: selectedClasses[0], // In edit mode, we only update the single class
-          exp_multiplier: editingMission.exp_multiplier || '1.00',
+          class_group: selectedClasses[0],
           base_exp: editingMission.base_exp || 10,
+          exp_multiplier: editingMission.exp_multiplier || '1.00',
           is_active: editingMission.is_active !== undefined ? editingMission.is_active : true
         };
         
@@ -247,22 +268,17 @@ const TestsQuizzes = () => {
         }, 1500);
       } else {
         // Create one mission per selected class
-        // Build description with date and time info
-        const descriptionText = formData.testTime 
-          ? `Test scheduled for ${formData.testDate} at ${formData.testTime}`
-          : `Test scheduled for ${formData.testDate}`;
-        
         const missionPromises = selectedClasses.map(classId => {
-          // Payload matching MissionCreateSerializer fields exactly
+          // Payload matching backend API
           const missionPayload = {
             title: formData.title.trim(),
-            description: descriptionText,
-            mission_date: missionDate,
+            description: `Test scheduled for ${formData.testDate}${formData.testTime ? ` at ${formData.testTime}` : ''}`,
+            mission_date: formData.testDate,
             duration: parseInt(formData.duration),
-            subject: selectedSubject || null, // Can be null per model
+            subject: selectedSubject,
             class_group: classId,
-            exp_multiplier: '1.00',
             base_exp: 10,
+            exp_multiplier: '1.00',
             is_active: true
           };
           
@@ -427,20 +443,30 @@ const TestsQuizzes = () => {
             </div>
           ) : (
             missions.map((mission, index) => {
-              // Format mission date
-              const missionDate = mission.mission_date 
-                ? new Date(mission.mission_date).toLocaleDateString('en-US', { 
+              // Format mission date - handle both mission_date and test_datetime
+              const dateValue = mission.mission_date || mission.test_datetime;
+              const missionDate = dateValue 
+                ? new Date(dateValue).toLocaleDateString('en-US', { 
                     year: 'numeric', 
                     month: 'long', 
                     day: 'numeric' 
                   })
                 : 'N/A';
               
-              // Get class name
-              const className = mission.class_group?.name || mission.class_group || 'N/A';
+              // Get class name - handle different API response structures
+              const className = mission.class_group_name || mission.class_group?.name || mission.class_group || 'N/A';
               
-              // Get subject name
-              const subjectName = mission.subject?.name || mission.subject || 'N/A';
+              // Get subject name - handle different API response structures
+              const subjectName = mission.subject_name || mission.subject?.name || mission.subject || 'N/A';
+              
+              // Get title - fallback to module/chapter info if title doesn't exist
+              const missionTitle = mission.title || 
+                (mission.module_name && mission.chapter_title 
+                  ? `${mission.module_name} - ${mission.chapter_title}` 
+                  : mission.module_name || 'Untitled Mission');
+              
+              // Get question count - handle both formats
+              const questionCount = mission.question_count || mission.questions?.length || 0;
               
               return (
             <div 
@@ -450,7 +476,7 @@ const TestsQuizzes = () => {
             >
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-800">{mission.title}</h3>
+                  <h3 className="text-xl font-semibold text-gray-800">{missionTitle}</h3>
                   <p className="text-gray-600">{className} / {subjectName} | Mission Date: {missionDate}</p>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -487,7 +513,7 @@ const TestsQuizzes = () => {
                   <div className="text-sm text-gray-600">EXP Multiplier</div>
                 </div>
                 <div className="text-center transform hover:scale-105 transition-all duration-300 animate-count-up" style={{animationDelay: '0.5s'}}>
-                  <div className="text-2xl font-bold text-gray-800">{mission.questions?.length || 0}</div>
+                  <div className="text-2xl font-bold text-gray-800">{questionCount}</div>
                   <div className="text-sm text-gray-600">Questions</div>
                 </div>
               </div>
@@ -499,6 +525,18 @@ const TestsQuizzes = () => {
                     <span className="text-primary-500 transform transition-transform duration-200 hover:rotate-12">📝</span>
                     <span className="text-sm font-medium text-primary-800">
                       {mission.description}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Module/Chapter Info - only show if available and different from title */}
+              {(mission.module_name || mission.chapter_title) && !mission.title && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.7s'}}>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-blue-500">📚</span>
+                    <span className="text-sm font-medium text-blue-800">
+                      {mission.module_name}{mission.chapter_title ? ` / ${mission.chapter_title}` : ''}
                     </span>
                   </div>
                 </div>
@@ -883,13 +921,27 @@ const TestView = ({
     }
   };
 
-  const missionDate = mission.mission_date 
-    ? new Date(mission.mission_date).toLocaleDateString('en-US', { 
+  // Handle both mission_date and test_datetime
+  const dateValue = mission.mission_date || mission.test_datetime;
+  const missionDate = dateValue 
+    ? new Date(dateValue).toLocaleDateString('en-US', { 
         year: 'numeric', 
         month: 'long', 
         day: 'numeric' 
       })
     : 'N/A';
+  
+  // Get class name - handle different API response structures
+  const className = mission.class_group_name || mission.class_group?.name || mission.class_group || 'N/A';
+  
+  // Get subject name - handle different API response structures
+  const subjectName = mission.subject_name || mission.subject?.name || mission.subject || 'N/A';
+  
+  // Get title - fallback to module/chapter info if title doesn't exist
+  const missionTitle = mission.title || 
+    (mission.module_name && mission.chapter_title 
+      ? `${mission.module_name} - ${mission.chapter_title}` 
+      : mission.module_name || 'Untitled Mission');
 
   return (
     <div className="space-y-6">
@@ -897,9 +949,9 @@ const TestView = ({
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">{mission.title}</h2>
+            <h2 className="text-2xl font-bold text-gray-800">{missionTitle}</h2>
             <p className="text-gray-600 mt-1">
-              {mission.class_group?.name || 'N/A'} / {mission.subject?.name || 'N/A'} | {missionDate}
+              {className} / {subjectName} | {missionDate}
             </p>
           </div>
           <button
@@ -923,11 +975,15 @@ const TestView = ({
               }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
-              {createdMissions.map((m) => (
-                <option key={m.id || m.uuid} value={m.id || m.uuid}>
-                  {m.title} - {m.class_group?.name || 'N/A'}
-                </option>
-              ))}
+              {createdMissions.map((m) => {
+                const mTitle = m.title || m.module_name || 'Mission';
+                const mClassName = m.class_group_name || m.class_group?.name || 'N/A';
+                return (
+                  <option key={m.id || m.uuid} value={m.id || m.uuid}>
+                    {mTitle} - {mClassName}
+                  </option>
+                );
+              })}
             </select>
           </div>
         )}

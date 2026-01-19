@@ -5,7 +5,7 @@ import { logoutUser } from '../features/auth/authSlice';
 class ApiService {
   constructor() {
     this.baseURL = import.meta.env.VITE_API_URL || import.meta.env.REACT_APP_API_URL || 'http://localhost:8000/api';
-    this.timeout = import.meta.env.VITE_API_TIMEOUT || import.meta.env.REACT_APP_API_TIMEOUT || 15000; // Increased to 15 seconds for slower connections
+    this.timeout = import.meta.env.VITE_API_TIMEOUT || import.meta.env.REACT_APP_API_TIMEOUT || 60000; // Increased to 60 seconds for slower connections and large requests
     this.isLoggingOut = false; // Flag to prevent multiple logout attempts
   }
 

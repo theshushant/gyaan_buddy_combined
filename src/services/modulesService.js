@@ -31,7 +31,7 @@ class ModulesService {
   // Get chapters for a specific module
   async getModuleChapters(moduleId) {
     try {
-      return await apiService.get(`/modules/${moduleId}/module_chapters/`);
+      return await apiService.get(`/modules/${moduleId}/module_chapters/`, { timeout: 120000 });
     } catch (error) {
       throw new Error(`Failed to fetch module chapters: ${error.message}`);
     }
@@ -184,7 +184,7 @@ class ModulesService {
         if (chapterData.is_important !== undefined) payload.is_important = chapterData.is_important;
       }
       
-      const response = await apiService.post('/module_chapters/', payload, { isFormData: hasFile });
+      const response = await apiService.post('/module_chapters/', payload, { isFormData: hasFile, timeout: 120000 });
       
       // Handle response structure: { success: true, data: {...}, message: "..." }
       // The backend returns: { success: true, data: {...}, message: "..." }
@@ -230,7 +230,7 @@ class ModulesService {
         if (chapterData.is_due !== undefined) payload.is_due = chapterData.is_due;
       }
       
-      return await apiService.put(`/module_chapters/${chapterId}/`, payload, { isFormData: hasFile });
+      return await apiService.put(`/module_chapters/${chapterId}/`, payload, { isFormData: hasFile, timeout: 120000 });
     } catch (error) {
       throw new Error(`Failed to update chapter: ${error.message}`);
     }
@@ -239,7 +239,7 @@ class ModulesService {
   // Delete a chapter
   async deleteChapter(chapterId) {
     try {
-      return await apiService.delete(`/module_chapters/${chapterId}/`);
+      return await apiService.delete(`/module_chapters/${chapterId}/`, { timeout: 120000 });
     } catch (error) {
       throw new Error(`Failed to delete chapter: ${error.message}`);
     }
@@ -248,7 +248,7 @@ class ModulesService {
   // Get module content (questions) for a chapter
   async getChapterQuestions(chapterId) {
     try {
-      return await apiService.get(`/module_chapters/${chapterId}/module_questions/`);
+      return await apiService.get(`/module_chapters/${chapterId}/module_questions/`, { timeout: 120000 });
     } catch (error) {
       throw new Error(`Failed to fetch chapter questions: ${error.message}`);
     }
@@ -257,7 +257,7 @@ class ModulesService {
   // Get module content for a chapter (questions and theories)
   async getChapterModuleContent(chapterId) {
     try {
-      return await apiService.get(`/module_chapters/${chapterId}/module_content/`);
+      return await apiService.get(`/module_chapters/${chapterId}/module_content/`, { timeout: 120000 });
     } catch (error) {
       throw new Error(`Failed to fetch chapter module content: ${error.message}`);
     }
@@ -277,7 +277,7 @@ class ModulesService {
         payload.theory = contentData.theory;
       }
       
-      const response = await apiService.post(`/module_chapters/${chapterId}/module_content/`, payload);
+      const response = await apiService.post(`/module_chapters/${chapterId}/module_content/`, payload, { timeout: 120000 });
       return response;
     } catch (error) {
       throw new Error(`Failed to create module content: ${error.message}`);

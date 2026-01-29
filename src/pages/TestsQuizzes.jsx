@@ -124,7 +124,7 @@ const TestsQuizzes = () => {
     }
     setLoadingChapters(true);
     try {
-      const response = await subjectsService.getAllChapters({module:moduleId});
+      const response = await subjectsService.getChapters(moduleId);
       const chaptersData = response.data || response || [];
       const chaptersList = chaptersData.map(chapter => ({
         id: chapter.id || chapter.uuid,
@@ -1071,19 +1071,19 @@ const TestsQuizzes = () => {
           <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
             {generatedQuestions.length > 0 ? (
               // Show Done button when questions are generated
-              <button
-                type="button"
+            <button
+              type="button"
                 onClick={handleDone}
                 className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2"
                 style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
               >
                 <CheckCircle2 className="h-5 w-5" />
                 <span>Done</span>
-              </button>
+            </button>
             ) : (
               // Show Back and Generate buttons when no questions generated yet
               <>
-                <button
+            <button
                   type="button"
                   onClick={handleBackToForm}
                   className="px-8 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
@@ -1097,17 +1097,17 @@ const TestsQuizzes = () => {
                   style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
                 >
                   {generatingQuestions ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
                       <span>Generating...</span>
-                    </>
-                  ) : (
-                    <>
+                </>
+              ) : (
+                <>
                       <Sparkles className="h-5 w-5" />
                       <span>Generate Questions</span>
-                    </>
-                  )}
-                </button>
+                </>
+              )}
+            </button>
               </>
             )}
           </div>

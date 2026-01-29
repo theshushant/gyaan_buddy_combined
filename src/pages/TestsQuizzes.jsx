@@ -7,52 +7,67 @@ import {
   Loader2,
   X,
   Trash2,
-  Edit
+  Edit,
+  Sparkles,
+  BookOpen,
+  FileText,
+  Clock,
+  Users
 } from 'lucide-react';
 import classesService from '../services/classesService';
 import subjectsService from '../services/subjectsService';
 import testsService from '../services/testsService';
+import aiService from '../services/aiService';
 
 const TestsQuizzes = () => {
   const [activeTab, setActiveTab] = useState('tests');
   const [classes, setClasses] = useState([]);
   const [subjects, setSubjects] = useState([]);
+  const [modules, setModules] = useState([]);
+  const [chapters, setChapters] = useState([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
-  const [missions, setMissions] = useState([]);
-  const [loadingMissions, setLoadingMissions] = useState(false);
-  const [selectedClasses, setSelectedClasses] = useState([]);
+  const [loadingModules, setLoadingModules] = useState(false);
+  const [loadingChapters, setLoadingChapters] = useState(false);
+  const [tests, setTests] = useState([]);
+  const [loadingTests, setLoadingTests] = useState(false);
+  const [selectedClass, setSelectedClass] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedModule, setSelectedModule] = useState('');
+  const [selectedChapter, setSelectedChapter] = useState('');
   const [formData, setFormData] = useState({
-    title: '',
     testDate: '',
     testTime: '',
     duration: '',
-    notification: false
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const [createdMissions, setCreatedMissions] = useState([]);
-  const [selectedMission, setSelectedMission] = useState(null);
-  const [showQuestionForm, setShowQuestionForm] = useState(false);
-  const [creatingQuestion, setCreatingQuestion] = useState(false);
-  const [questionError, setQuestionError] = useState(null);
-  const [missionQuestions, setMissionQuestions] = useState([]);
-  const [editingMission, setEditingMission] = useState(null);
+  const [selectedTest, setSelectedTest] = useState(null);
+  const [showQuestionGenerator, setShowQuestionGenerator] = useState(false);
+  const [generatingQuestions, setGeneratingQuestions] = useState(false);
+  const [generationError, setGenerationError] = useState(null);
+  const [generatedQuestions, setGeneratedQuestions] = useState([]);
+  const [editingTest, setEditingTest] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  
+  // AI Generation form state
+  const [aiFormData, setAiFormData] = useState({
+    number_of_questions: 10,
+    level: 3,
+    question_type: 'mcq_single',
+    add_image: false
+  });
 
   const fetchClasses = useCallback(async () => {
     setLoadingClasses(true);
     try {
       const response = await classesService.getClasses();
-      // Extract data array from response
       const classesData = response.data || response || [];
-      // Store full class objects (with id and name)
       const classesList = classesData.map(cls => ({
         id: cls.id || cls.uuid,
         name: cls.name || `${cls.grade || ''} ${cls.section || ''}`.trim() || cls
-      })).filter(cls => cls.id && cls.name); // Filter out invalid entries
+      })).filter(cls => cls.id && cls.name);
       setClasses(classesList);
     } catch (error) {
       console.error('Failed to fetch classes:', error);
@@ -66,13 +81,11 @@ const TestsQuizzes = () => {
     setLoadingSubjects(true);
     try {
       const response = await subjectsService.getSubjects();
-      // Extract data array from response
       const subjectsData = response.data || response || [];
-      // Store full subject objects (with id and name)
       const subjectsList = subjectsData.map(subject => ({
         id: subject.id || subject.uuid,
         name: subject.name || subject
-      })).filter(subject => subject.id && subject.name); // Filter out invalid entries
+      })).filter(subject => subject.id && subject.name);
       setSubjects(subjectsList);
     } catch (error) {
       console.error('Failed to fetch subjects:', error);
@@ -82,29 +95,72 @@ const TestsQuizzes = () => {
     }
   }, []);
 
-  const fetchMissions = useCallback(async () => {
-    setLoadingMissions(true);
+  const fetchModules = useCallback(async (subjectId) => {
+    if (!subjectId) {
+      setModules([]);
+      return;
+    }
+    setLoadingModules(true);
     try {
-      const response = await testsService.getMissions();
-      // Extract data array from response
-      const missionsData = response.data || response || [];
-      setMissions(missionsData);
+      const response = await subjectsService.getModules(subjectId);
+      const modulesData = response.data || response || [];
+      const modulesList = modulesData.map(module => ({
+        id: module.id || module.uuid,
+        name: module.name || module
+      })).filter(module => module.id && module.name);
+      setModules(modulesList);
     } catch (error) {
-      console.error('Failed to fetch missions:', error);
-      setMissions([]);
+      console.error('Failed to fetch modules:', error);
+      setModules([]);
     } finally {
-      setLoadingMissions(false);
+      setLoadingModules(false);
     }
   }, []);
 
-  // Fetch missions when component loads or when tests tab is active
+  const fetchChapters = useCallback(async (moduleId) => {
+    if (!moduleId) {
+      setChapters([]);
+      return;
+    }
+    setLoadingChapters(true);
+    try {
+      const response = await subjectsService.getAllChapters({module:moduleId});
+      const chaptersData = response.data || response || [];
+      const chaptersList = chaptersData.map(chapter => ({
+        id: chapter.id || chapter.uuid,
+        title: chapter.title || chapter
+      })).filter(chapter => chapter.id && chapter.title);
+      setChapters(chaptersList);
+    } catch (error) {
+      console.error('Failed to fetch chapters:', error);
+      setChapters([]);
+    } finally {
+      setLoadingChapters(false);
+    }
+  }, []);
+
+  const fetchTests = useCallback(async () => {
+    setLoadingTests(true);
+    try {
+      const response = await testsService.getTests();
+      const testsData = response.data || response || [];
+      setTests(testsData);
+    } catch (error) {
+      console.error('Failed to fetch tests:', error);
+      setTests([]);
+    } finally {
+      setLoadingTests(false);
+    }
+  }, []);
+
+  // Fetch tests when component loads or when tests tab is active
   useEffect(() => {
     if (activeTab === 'tests') {
-      fetchMissions();
+      fetchTests();
     }
-  }, [activeTab, fetchMissions]);
+  }, [activeTab, fetchTests]);
 
-  // Fetch classes and subjects when create tab is active or when editing
+  // Fetch classes and subjects when create tab is active
   useEffect(() => {
     if (activeTab === 'create' || isEditMode) {
       fetchClasses();
@@ -112,80 +168,99 @@ const TestsQuizzes = () => {
     }
   }, [activeTab, isEditMode, fetchClasses, fetchSubjects]);
 
-  // Pre-fill form when editing a mission
+  // Fetch modules when subject changes
   useEffect(() => {
-    if (editingMission && isEditMode) {
-      // Extract date from mission_date or test_datetime
-      const dateValue = editingMission.mission_date || editingMission.test_datetime;
-      const missionDate = dateValue 
+    if (selectedSubject) {
+      fetchModules(selectedSubject);
+      setSelectedModule('');
+      setSelectedChapter('');
+    } else {
+      setModules([]);
+      setSelectedModule('');
+      setSelectedChapter('');
+    }
+  }, [selectedSubject, fetchModules]);
+
+  // Fetch chapters when module changes
+  useEffect(() => {
+    if (selectedModule) {
+      fetchChapters(selectedModule);
+      setSelectedChapter('');
+    } else {
+      setChapters([]);
+      setSelectedChapter('');
+    }
+  }, [selectedModule, fetchChapters]);
+
+  // Pre-fill form when editing a test
+  useEffect(() => {
+    if (editingTest && isEditMode) {
+      const dateValue = editingTest.test_datetime;
+      const testDate = dateValue 
         ? new Date(dateValue).toISOString().split('T')[0]
         : '';
       
-      // Extract time from test_datetime or description
-      let missionTime = '';
-      if (editingMission.test_datetime) {
-        const dateTime = new Date(editingMission.test_datetime);
+      let testTime = '';
+      if (editingTest.test_datetime) {
+        const dateTime = new Date(editingTest.test_datetime);
         const hours = dateTime.getHours().toString().padStart(2, '0');
         const minutes = dateTime.getMinutes().toString().padStart(2, '0');
         if (hours !== '00' || minutes !== '00') {
-          missionTime = `${hours}:${minutes}`;
+          testTime = `${hours}:${minutes}`;
         }
-      } else if (editingMission.description) {
-        const timeMatch = editingMission.description.match(/\d{1,2}:\d{2}/);
-        missionTime = timeMatch ? timeMatch[0] : '';
       }
       
-      // Get title - fallback to module/chapter info
-      const missionTitle = editingMission.title || 
-        (editingMission.module_name && editingMission.chapter_title 
-          ? `${editingMission.module_name} - ${editingMission.chapter_title}` 
-          : editingMission.module_name || '');
-      
       setFormData({
-        title: missionTitle,
-        testDate: missionDate,
-        testTime: missionTime,
-        duration: editingMission.duration?.toString() || '',
-        notification: false // This might not be stored, defaulting to false
+        testDate,
+        testTime,
+        duration: editingTest.duration?.toString() || '',
       });
       
-      // Set selected subject and class - handle different response structures
-      if (editingMission.subject) {
-        const subjectId = editingMission.subject?.id || editingMission.subject?.uuid || editingMission.subject;
+      if (editingTest.subject) {
+        const subjectId = editingTest.subject?.id || editingTest.subject?.uuid || editingTest.subject;
         setSelectedSubject(subjectId);
       }
       
-      if (editingMission.class_group) {
-        const classId = editingMission.class_group?.id || editingMission.class_group?.uuid || editingMission.class_group;
-        setSelectedClasses([classId]);
+      if (editingTest.class_group) {
+        const classId = editingTest.class_group?.id || editingTest.class_group?.uuid || editingTest.class_group;
+        setSelectedClass(classId);
+      }
+
+      if (editingTest.module) {
+        const moduleId = editingTest.module?.id || editingTest.module?.uuid || editingTest.module;
+        setSelectedModule(moduleId);
+      }
+
+      if (editingTest.module_chapter) {
+        const chapterId = editingTest.module_chapter?.id || editingTest.module_chapter?.uuid || editingTest.module_chapter;
+        setSelectedChapter(chapterId);
       }
     } else if (!isEditMode) {
-      // Reset form when not in edit mode
       setFormData({
-        title: '',
         testDate: '',
         testTime: '',
         duration: '',
-        notification: false
       });
+      setSelectedClass('');
       setSelectedSubject('');
-      setSelectedClasses([]);
+      setSelectedModule('');
+      setSelectedChapter('');
     }
-  }, [editingMission, isEditMode]);
-
-  const handleClassToggle = (classId) => {
-    setSelectedClasses(prev => 
-      prev.includes(classId)
-        ? prev.filter(id => id !== classId)
-        : [...prev, classId]
-    );
-  };
+  }, [editingTest, isEditMode]);
 
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: value
+    }));
+  };
+
+  const handleAIGenerationChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setAiFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : (type === 'number' ? parseInt(value) : value)
     }));
   };
 
@@ -195,16 +270,20 @@ const TestsQuizzes = () => {
     setSuccess(false);
 
     // Validation
-    if (!formData.title.trim()) {
-      setError('Test title is required');
-      return;
-    }
     if (!selectedSubject) {
       setError('Please select a subject');
       return;
     }
-    if (selectedClasses.length === 0) {
-      setError('Please select at least one class');
+    if (!selectedClass) {
+      setError('Please select a class');
+      return;
+    }
+    if (!selectedModule) {
+      setError('Please select a module');
+      return;
+    }
+    if (!selectedChapter) {
+      setError('Please select a chapter');
       return;
     }
     if (!formData.testDate) {
@@ -219,122 +298,89 @@ const TestsQuizzes = () => {
     setSubmitting(true);
 
     try {
-      // Combine date and time into a datetime string for Test API
       const testDateTime = formData.testTime 
         ? `${formData.testDate}T${formData.testTime}:00`
         : `${formData.testDate}T00:00:00`;
       
-      if (isEditMode && editingMission) {
-        // Update existing mission/test
-        const missionId = editingMission.id || editingMission.uuid;
-        
-        // Payload for updating mission
-        const missionPayload = {
-          title: formData.title.trim(),
-          description: `Test scheduled for ${formData.testDate}${formData.testTime ? ` at ${formData.testTime}` : ''}`,
-          mission_date: formData.testDate,
+      if (isEditMode && editingTest) {
+        const testId = editingTest.id || editingTest.uuid;
+        const testPayload = {
+          test_datetime: testDateTime,
           duration: parseInt(formData.duration),
+          class_group: selectedClass,
           subject: selectedSubject,
-          class_group: selectedClasses[0],
-          base_exp: editingMission.base_exp || 10,
-          exp_multiplier: editingMission.exp_multiplier || '1.00',
-          is_active: editingMission.is_active !== undefined ? editingMission.is_active : true
+          module: selectedModule,
+          module_chapter: selectedChapter,
         };
         
-        const updatedMission = await testsService.updateMission(missionId, missionPayload);
-        const missionData = updatedMission.data || updatedMission;
+        const updatedTest = await testsService.updateTest(testId, testPayload);
+        const testData = updatedTest.data || updatedTest;
         
         setSuccess(true);
         setIsEditMode(false);
-        setEditingMission(null);
-        
-        // Reset form
+        setEditingTest(null);
         setFormData({
-          title: '',
           testDate: '',
           testTime: '',
           duration: '',
-          notification: false
         });
+        setSelectedClass('');
         setSelectedSubject('');
-        setSelectedClasses([]);
+        setSelectedModule('');
+        setSelectedChapter('');
         
-        // Refresh missions list
-        await fetchMissions();
+        await fetchTests();
         
-        // Switch back to tests tab after a short delay
         setTimeout(() => {
           setActiveTab('tests');
         }, 1500);
       } else {
-        // Create one mission per selected class
-        const missionPromises = selectedClasses.map(classId => {
-          // Payload matching backend API
-          const missionPayload = {
-            title: formData.title.trim(),
-            description: `Test scheduled for ${formData.testDate}${formData.testTime ? ` at ${formData.testTime}` : ''}`,
-            mission_date: formData.testDate,
+        const testPayload = {
+          test_datetime: testDateTime,
             duration: parseInt(formData.duration),
+          class_group: selectedClass,
             subject: selectedSubject,
-            class_group: classId,
-            base_exp: 10,
-            exp_multiplier: '1.00',
-            is_active: true
-          };
-          
-          console.log('Creating mission with payload:', missionPayload);
-          return testsService.createMission(missionPayload);
-        });
-
-        const createdMissionsData = await Promise.all(missionPromises);
+          module: selectedModule,
+          module_chapter: selectedChapter,
+        };
         
-        // Extract mission data from responses
-        const missions = createdMissionsData.map(res => {
-          const missionData = res.data || res;
-          console.log('Mission created successfully:', missionData);
-          return missionData;
-        });
-        setCreatedMissions(missions);
+        const createdTest = await testsService.createTest(testPayload);
+        const testData = createdTest.data || createdTest;
         
-        // If only one mission was created, automatically select it
-        if (missions.length === 1) {
-          setSelectedMission(missions[0]);
-          setShowQuestionForm(true);
-        } else if (missions.length > 1) {
-          // If multiple missions created, show success and let user select
-          setSelectedMission(missions[0]);
-          setShowQuestionForm(true);
-        }
+        // Store the IDs before resetting - we need them for question generation
+        const testSubjectId = testData.subject?.id || testData.subject?.uuid || testData.subject || selectedSubject;
+        const testModuleId = testData.module?.id || testData.module?.uuid || testData.module || selectedModule;
+        const testChapterId = testData.module_chapter?.id || testData.module_chapter?.uuid || testData.module_chapter || selectedChapter;
         
+        // Store these in the testData object for later use
+        testData._subjectId = testSubjectId;
+        testData._moduleId = testModuleId;
+        testData._chapterId = testChapterId;
+        
+        setSelectedTest(testData);
+        setShowQuestionGenerator(true);
         setSuccess(true);
         setError(null);
         
-        // Reset form
+        // Don't reset subject/module/chapter yet - we need them for question generation
+        // Keep them until we're done with question generation
         setFormData({
-          title: '',
           testDate: '',
           testTime: '',
           duration: '',
-          notification: false
         });
-        setSelectedSubject('');
-        setSelectedClasses([]);
-        
-        // Don't redirect, stay on create tab to add questions
+        setSelectedClass('');
       }
     } catch (error) {
-      console.error(`Failed to ${isEditMode ? 'update' : 'create'} mission:`, error);
+      console.error(`Failed to ${isEditMode ? 'update' : 'create'} test:`, error);
       
-      // Extract detailed error message from API response
-      let errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} mission. Please try again.`;
+      let errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} test. Please try again.`;
       
-      // Check for responseData (from apiService error structure)
       if (error.responseData) {
         const apiError = error.responseData;
         if (apiError.message) {
           errorMessage = apiError.message;
         } else if (apiError.errors) {
-          // Handle validation errors
           const errorMessages = Object.entries(apiError.errors)
             .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
             .join('; ');
@@ -345,7 +391,6 @@ const TestsQuizzes = () => {
           errorMessage = apiError;
         }
       } else if (error.response?.data) {
-        // Fallback for other error structures
         const apiError = error.response.data;
         if (apiError.message) {
           errorMessage = apiError.message;
@@ -365,40 +410,166 @@ const TestsQuizzes = () => {
     }
   };
 
-  const handleEdit = (mission) => {
-    setEditingMission(mission);
+  const handleGenerateQuestions = async () => {
+    if (!selectedTest) return;
+    
+    setGeneratingQuestions(true);
+    setGenerationError(null);
+    
+    try {
+      // Get IDs from selectedTest (stored when test was created) or from state
+      const subjectId = selectedTest._subjectId || selectedTest.subject?.id || selectedTest.subject?.uuid || selectedTest.subject || selectedSubject;
+      const moduleId = selectedTest._moduleId || selectedTest.module?.id || selectedTest.module?.uuid || selectedTest.module || selectedModule;
+      const chapterId = selectedTest._chapterId || selectedTest.module_chapter?.id || selectedTest.module_chapter?.uuid || selectedTest.module_chapter || selectedChapter;
+      
+      // Get names - try from test object first, then from state
+      let subjectName = selectedTest.subject_name || selectedTest.subject?.name || '';
+      let moduleName = selectedTest.module_name || selectedTest.module?.name || '';
+      let chapterName = selectedTest.chapter_title || selectedTest.module_chapter?.title || '';
+      
+      // If names not in test object, get from state
+      if (!subjectName && subjectId) {
+        subjectName = subjects.find(s => s.id === subjectId)?.name || '';
+      }
+      if (!moduleName && moduleId) {
+        // Need to fetch modules if not already loaded
+        if (modules.length === 0 && subjectId) {
+          await fetchModules(subjectId);
+        }
+        moduleName = modules.find(m => m.id === moduleId)?.name || '';
+      }
+      if (!chapterName && chapterId) {
+        // Need to fetch chapters if not already loaded
+        if (chapters.length === 0 && moduleId) {
+          await fetchChapters(moduleId);
+        }
+        chapterName = chapters.find(c => c.id === chapterId)?.title || '';
+      }
+      
+      // Validate that we have all required IDs
+      if (!subjectId || !moduleId || !chapterId) {
+        setGenerationError('Missing required information. Please ensure subject, module, and chapter are selected.');
+        return;
+      }
+      
+      // Get test ID
+      const testId = selectedTest.id || selectedTest.uuid;
+      
+      const requestData = {
+        subject_id: subjectId,
+        module_id: moduleId,
+        chapter_id: chapterId,
+        subject_name: subjectName,
+        module_name: moduleName,
+        chapter_name: chapterName,
+        number_of_questions: aiFormData.number_of_questions,
+        level: aiFormData.level,
+        question_type: aiFormData.question_type,
+        add_image: aiFormData.add_image,
+        for_test: true,
+        test_id: testId
+      };
+      
+      const response = await aiService.generateAIQuestionsGemini(requestData);
+      const responseData = response.data || response;
+      
+      if (responseData.questions && responseData.questions.length > 0) {
+        setGeneratedQuestions(responseData.questions);
+        setSuccess(true);
+        
+        // Refresh tests to get updated question count
+        await fetchTests();
+      } else {
+        setGenerationError('No questions were generated. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating questions:', error);
+      let errorMessage = 'Failed to generate questions. Please try again.';
+      
+      if (error.responseData) {
+        const apiError = error.responseData;
+        if (apiError.message) {
+          errorMessage = apiError.message;
+        } else if (apiError.error) {
+          errorMessage = apiError.error;
+        } else if (typeof apiError === 'string') {
+          errorMessage = apiError;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setGenerationError(errorMessage);
+    } finally {
+      setGeneratingQuestions(false);
+    }
+  };
+
+  const handleEdit = (test) => {
+    setEditingTest(test);
     setIsEditMode(true);
     setActiveTab('create');
     setError(null);
     setSuccess(false);
+    setShowQuestionGenerator(false);
   };
 
   const handleCancelEdit = () => {
     setIsEditMode(false);
-    setEditingMission(null);
+    setEditingTest(null);
     setFormData({
-      title: '',
       testDate: '',
       testTime: '',
       duration: '',
-      notification: false
     });
+    setSelectedClass('');
     setSelectedSubject('');
-    setSelectedClasses([]);
+    setSelectedModule('');
+    setSelectedChapter('');
     setError(null);
+    setShowQuestionGenerator(false);
+  };
+
+  const handleBackToForm = () => {
+    setShowQuestionGenerator(false);
+    setSelectedTest(null);
+    setGeneratedQuestions([]);
+    setGenerationError(null);
+    // Now we can reset the form fields
+    setSelectedSubject('');
+    setSelectedModule('');
+    setSelectedChapter('');
+  };
+
+  const handleDone = () => {
+    // Navigate to All Tests tab
+    setActiveTab('tests');
+    // Reset question generator state
+    setShowQuestionGenerator(false);
+    setSelectedTest(null);
+    setGeneratedQuestions([]);
+    setGenerationError(null);
+    setSuccess(false);
+    // Reset form fields
+    setSelectedSubject('');
+    setSelectedModule('');
+    setSelectedChapter('');
+    // Refresh tests list to show updated question counts
+    fetchTests();
   };
 
   return (
-    <div className="p-6 animate-fade-in">
+    <div className="p-6 animate-fade-in bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 animate-slide-down">Tests & Quizzes</h1>
+        <h1 className="text-4xl font-bold text-gray-800 animate-slide-down mb-2">Tests & Quizzes</h1>
+        <p className="text-gray-600">Create and manage tests for your students</p>
       </div>
 
       {/* Tabs */}
       <div className="mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
+        <div className="border-b border-gray-200 bg-white rounded-t-lg shadow-sm">
+          <nav className="-mb-px flex space-x-8 px-6">
             <button
               onClick={() => {
                 if (isEditMode) {
@@ -406,12 +577,16 @@ const TestsQuizzes = () => {
                 }
                 setActiveTab('tests');
               }}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-300 transform hover:scale-105 ${
-                activeTab !== 'tests' ? 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' : ''
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
+                activeTab === 'tests' 
+                  ? 'border-primary-500 text-primary-600' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
-              style={activeTab === 'tests' ? { borderColor: '#00167a', color: '#00167a' } : {}}
             >
-              All Tests
+              <div className="flex items-center space-x-2">
+                <FileText className="h-5 w-5" />
+                <span>All Tests</span>
+              </div>
             </button>
             <button
               onClick={() => {
@@ -420,12 +595,16 @@ const TestsQuizzes = () => {
                 }
                 setActiveTab('create');
               }}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-300 transform hover:scale-105 ${
-                activeTab !== 'create' ? 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' : ''
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
+                activeTab === 'create' 
+                  ? 'border-primary-500 text-primary-600' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
-              style={activeTab === 'create' ? { borderColor: '#00167a', color: '#00167a' } : {}}
             >
-              Create New Test
+              <div className="flex items-center space-x-2">
+                <Plus className="h-5 w-5" />
+                <span>Create New Test</span>
+              </div>
             </button>
           </nav>
         </div>
@@ -433,114 +612,93 @@ const TestsQuizzes = () => {
 
       {activeTab === 'tests' && (
         <div className="space-y-6">
-          {loadingMissions ? (
-            <div className="text-center py-8">
-              <div className="text-gray-500">Loading missions...</div>
+          {loadingTests ? (
+            <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+              <Loader2 className="h-8 w-8 animate-spin text-primary-500 mx-auto mb-4" />
+              <div className="text-gray-500">Loading tests...</div>
             </div>
-          ) : missions.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-gray-500">No past missions found.</div>
+          ) : tests.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <div className="text-gray-500">No tests found. Create your first test!</div>
             </div>
           ) : (
-            missions.map((mission, index) => {
-              // Format mission date - handle both mission_date and test_datetime
-              const dateValue = mission.mission_date || mission.test_datetime;
-              const missionDate = dateValue 
+            tests.map((test, index) => {
+              const dateValue = test.test_datetime;
+              const testDate = dateValue 
                 ? new Date(dateValue).toLocaleDateString('en-US', { 
                     year: 'numeric', 
                     month: 'long', 
-                    day: 'numeric' 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
                   })
                 : 'N/A';
               
-              // Get class name - handle different API response structures
-              const className = mission.class_group_name || mission.class_group?.name || mission.class_group || 'N/A';
-              
-              // Get subject name - handle different API response structures
-              const subjectName = mission.subject_name || mission.subject?.name || mission.subject || 'N/A';
-              
-              // Get title - fallback to module/chapter info if title doesn't exist
-              const missionTitle = mission.title || 
-                (mission.module_name && mission.chapter_title 
-                  ? `${mission.module_name} - ${mission.chapter_title}` 
-                  : mission.module_name || 'Untitled Mission');
-              
-              // Get question count - handle both formats
-              const questionCount = mission.question_count || mission.questions?.length || 0;
+              const className = test.class_group_name || test.class_group?.name || 'N/A';
+              const subjectName = test.subject_name || test.subject?.name || 'N/A';
+              const moduleName = test.module_name || test.module?.name || '';
+              const chapterTitle = test.chapter_title || test.module_chapter?.title || '';
+              const questionCount = test.question_count || 0;
               
               return (
             <div 
-              key={mission.id || mission.uuid || index} 
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up"
-              style={{animationDelay: `${0.1 + index * 0.1}s`}}
+                  key={test.id || test.uuid || index} 
+                  className="bg-white rounded-xl shadow-md border border-gray-200 p-6 transform hover:scale-[1.01] transition-all duration-300 hover:shadow-xl"
             >
               <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800">{missionTitle}</h3>
-                  <p className="text-gray-600">{className} / {subjectName} | Mission Date: {missionDate}</p>
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                        {moduleName && chapterTitle ? `${moduleName} - ${chapterTitle}` : moduleName || 'Test'}
+                      </h3>
+                      <div className="flex items-center space-x-4 text-gray-600 text-sm">
+                        <div className="flex items-center space-x-1">
+                          <Users className="h-4 w-4" />
+                          <span>{className}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <BookOpen className="h-4 w-4" />
+                          <span>{subjectName}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Clock className="h-4 w-4" />
+                          <span>{testDate}</span>
+                        </div>
+                      </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => handleEdit(mission)}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg"
+                        onClick={() => handleEdit(test)}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105"
                   >
                     <Edit className="h-4 w-4" />
-                    <span>Edit Test</span>
+                        <span>Edit</span>
                   </button>
                   <Link 
-                    to={`/tests/performance/${mission.id}`}
-                    className="text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg"
+                        to={`/tests/performance/${test.id || test.uuid}`}
+                        className="text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2 transform hover:scale-105"
                     style={{ backgroundColor: '#00167a' }}
                   >
-                    <span className="transform transition-transform duration-200 hover:rotate-12">📊</span>
+                        <span>📊</span>
                     <span>View Results</span>
                   </Link>
                 </div>
               </div>
 
-              {/* Mission Details */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="text-center transform hover:scale-105 transition-all duration-300 animate-count-up" style={{animationDelay: '0.2s'}}>
-                  <div className="text-2xl font-bold" style={{ color: '#00167a' }}>{mission.duration || 'N/A'}</div>
-                  <div className="text-sm text-gray-600">Duration (min)</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                    <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+                      <div className="text-3xl font-bold text-blue-600">{test.duration || 'N/A'}</div>
+                      <div className="text-sm text-gray-600 mt-1">Duration (min)</div>
                 </div>
-                <div className="text-center transform hover:scale-105 transition-all duration-300 animate-count-up" style={{animationDelay: '0.3s'}}>
-                  <div className="text-2xl font-bold text-green-600">{mission.base_exp || 0}</div>
-                  <div className="text-sm text-gray-600">Base EXP</div>
+                    <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
+                      <div className="text-3xl font-bold text-green-600">{questionCount}</div>
+                      <div className="text-sm text-gray-600 mt-1">Questions</div>
                 </div>
-                <div className="text-center transform hover:scale-105 transition-all duration-300 animate-count-up" style={{animationDelay: '0.4s'}}>
-                  <div className="text-2xl font-bold text-purple-600">{mission.exp_multiplier || '1.00'}</div>
-                  <div className="text-sm text-gray-600">EXP Multiplier</div>
+                    <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+                      <div className="text-3xl font-bold text-purple-600">{className}</div>
+                      <div className="text-sm text-gray-600 mt-1">Class</div>
                 </div>
-                <div className="text-center transform hover:scale-105 transition-all duration-300 animate-count-up" style={{animationDelay: '0.5s'}}>
-                  <div className="text-2xl font-bold text-gray-800">{questionCount}</div>
-                  <div className="text-sm text-gray-600">Questions</div>
                 </div>
-              </div>
-
-              {/* Mission Description */}
-              {mission.description && (
-                <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-4 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.6s'}}>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-primary-500 transform transition-transform duration-200 hover:rotate-12">📝</span>
-                    <span className="text-sm font-medium text-primary-800">
-                      {mission.description}
-                    </span>
-                  </div>
-                </div>
-              )}
-              
-              {/* Module/Chapter Info - only show if available and different from title */}
-              {(mission.module_name || mission.chapter_title) && !mission.title && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.7s'}}>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-blue-500">📚</span>
-                    <span className="text-sm font-medium text-blue-800">
-                      {mission.module_name}{mission.chapter_title ? ` / ${mission.chapter_title}` : ''}
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
               );
             })
@@ -548,7 +706,7 @@ const TestsQuizzes = () => {
         </div>
       )}
 
-      {activeTab === 'create' && !showQuestionForm && (
+      {activeTab === 'create' && !showQuestionGenerator && (
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           {/* Header Section */}
           <div className="px-8 py-6 text-white" style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}>
@@ -556,7 +714,7 @@ const TestsQuizzes = () => {
               {isEditMode ? '✏️ Edit Test' : '➕ Create New Test'}
             </h2>
             <p className="text-accent-500/50">
-              {isEditMode ? 'Update the details for this test mission.' : 'Fill in the details below to create a new test mission for your students.'}
+              {isEditMode ? 'Update the details for this test.' : 'Fill in the details below to create a new test for your students.'}
             </p>
           </div>
 
@@ -579,34 +737,19 @@ const TestsQuizzes = () => {
                   <div>
                     <p className="text-sm font-semibold text-green-800">Success!</p>
                     <p className="text-sm text-green-700 mt-1">
-                      {isEditMode ? 'Test updated successfully!' : 'Test created successfully! You can now add questions.'}
+                      {isEditMode ? 'Test updated successfully!' : 'Test created successfully! You can now generate questions.'}
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* Basic Information Section */}
+              {/* Subject and Class Selection */}
               <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
-                  <span className="text-primary-500">📋</span>
-                  <span>Basic Information</span>
+                  <span className="text-primary-500">📚</span>
+                  <span>Subject & Class</span>
                 </h3>
-                <div className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Test Title <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 'Modern Physics - Chapter 1 Test'"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
-                      required
-                    />
-                  </div>
-
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Subject <span className="text-red-500">*</span>
@@ -625,59 +768,74 @@ const TestsQuizzes = () => {
                       ))}
                     </select>
                   </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Class <span className="text-red-500">*</span>
+                    </label>
+                    <select 
+                      value={selectedClass}
+                      onChange={(e) => setSelectedClass(e.target.value)}
+                      disabled={loadingClasses || isEditMode}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    >
+                      <option value="">{loadingClasses ? 'Loading classes...' : 'Select Class'}</option>
+                      {classes.map((cls) => (
+                        <option key={cls.id} value={cls.id}>
+                          {cls.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              {/* Assignment Section */}
+              {/* Module and Chapter Selection */}
+              {selectedSubject && (
               <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
-                  <span className="text-green-600">👥</span>
-                  <span>Class Assignment</span>
+                    <span className="text-blue-500">📖</span>
+                    <span>Module & Chapter</span>
                 </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">
-                    Select Class(es) <span className="text-red-500">*</span>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Module <span className="text-red-500">*</span>
                   </label>
-                  <div className="border-2 border-gray-200 rounded-xl p-4 max-h-48 overflow-y-auto bg-white">
-                    {loadingClasses ? (
-                      <div className="text-center text-gray-500 py-4 flex items-center justify-center space-x-2">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <span>Loading classes...</span>
-                      </div>
-                    ) : classes.length === 0 ? (
-                      <div className="text-center text-gray-500 py-4">No classes available</div>
-                    ) : (
-                      <div className="space-y-2">
-                        {classes.map((cls) => (
-                          <label 
-                            key={cls.id} 
-                            className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                              selectedClasses.includes(cls.id)
-                                ? 'bg-primary-500/10 border-2 border-primary-500'
-                                : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
-                            }`}
-                          >
-                            <input 
-                              type="checkbox" 
-                              checked={selectedClasses.includes(cls.id)}
-                              onChange={() => handleClassToggle(cls.id)}
-                              disabled={isEditMode}
-                              className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded cursor-pointer" 
-                            />
-                            <span className={`font-medium ${selectedClasses.includes(cls.id) ? 'text-primary-800' : 'text-gray-700'}`}>
-                              {cls.name}
-                            </span>
-                          </label>
+                      <select 
+                        value={selectedModule}
+                        onChange={(e) => setSelectedModule(e.target.value)}
+                        disabled={loadingModules}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      >
+                        <option value="">{loadingModules ? 'Loading modules...' : 'Select Module'}</option>
+                        {modules.map((module) => (
+                          <option key={module.id} value={module.id}>
+                            {module.name}
+                          </option>
                         ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Chapter <span className="text-red-500">*</span>
+                          </label>
+                      <select 
+                        value={selectedChapter}
+                        onChange={(e) => setSelectedChapter(e.target.value)}
+                        disabled={loadingChapters || !selectedModule}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      >
+                        <option value="">{loadingChapters ? 'Loading chapters...' : selectedModule ? 'Select Chapter' : 'Select Module First'}</option>
+                        {chapters.map((chapter) => (
+                          <option key={chapter.id} value={chapter.id}>
+                            {chapter.title}
+                          </option>
+                        ))}
+                      </select>
                       </div>
-                    )}
                   </div>
-                  <p className="text-sm text-gray-500 mt-3 flex items-center space-x-1">
-                    <span>💡</span>
-                    <span>{isEditMode ? 'Class cannot be changed when editing a test.' : 'You can select multiple classes to assign this test to.'}</span>
-                  </p>
                 </div>
-              </div>
+              )}
 
               {/* Schedule Section */}
               <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
@@ -685,7 +843,7 @@ const TestsQuizzes = () => {
                   <span className="text-purple-600">📅</span>
                   <span>Schedule & Duration</span>
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Test Date <span className="text-red-500">*</span>
@@ -711,10 +869,9 @@ const TestsQuizzes = () => {
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
                     />
                   </div>
-                </div>
-                <div className="mt-5">
+                  <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Duration (in minutes) <span className="text-red-500">*</span>
+                      Duration (minutes) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -727,26 +884,6 @@ const TestsQuizzes = () => {
                     required
                   />
                 </div>
-              </div>
-
-              {/* Notification Section */}
-              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
-                  <span className="text-orange-600">🔔</span>
-                  <span>Notifications</span>
-                </h3>
-                <div className="flex items-center space-x-3 p-4 bg-white rounded-lg border-2 border-gray-200">
-                  <input 
-                    type="checkbox" 
-                    id="notification" 
-                    name="notification"
-                    checked={formData.notification}
-                    onChange={handleInputChange}
-                    className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded cursor-pointer" 
-                  />
-                  <label htmlFor="notification" className="text-sm font-medium text-gray-700 cursor-pointer flex-1">
-                    Send 30-minute prior auto-notification to students
-                  </label>
                 </div>
               </div>
 
@@ -754,22 +891,7 @@ const TestsQuizzes = () => {
               <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
                 <button
                   type="button"
-                  onClick={() => {
-                    if (isEditMode) {
-                      handleCancelEdit();
-                    } else {
-                      setFormData({
-                        title: '',
-                        testDate: '',
-                        testTime: '',
-                        duration: '',
-                        notification: false
-                      });
-                      setSelectedSubject('');
-                      setSelectedClasses([]);
-                      setError(null);
-                    }
-                  }}
+                  onClick={handleCancelEdit}
                   disabled={submitting}
                   className="px-8 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -784,11 +906,11 @@ const TestsQuizzes = () => {
                   {submitting ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      <span>{isEditMode ? 'Updating...' : 'Creating Mission...'}</span>
+                      <span>{isEditMode ? 'Updating...' : 'Creating...'}</span>
                     </>
                   ) : (
                     <>
-                      <span>{isEditMode ? 'Update Test' : 'Create Mission'}</span>
+                      <span>{isEditMode ? 'Update Test' : 'Create Test'}</span>
                       <span className="text-xl">→</span>
                     </>
                   )}
@@ -799,435 +921,199 @@ const TestsQuizzes = () => {
         </div>
       )}
 
-      {activeTab === 'create' && showQuestionForm && selectedMission && (
-        <TestView 
-          mission={selectedMission}
-          createdMissions={createdMissions}
-          onBack={() => {
-            setShowQuestionForm(false);
-            setSelectedMission(null);
-            setCreatedMissions([]);
-            setMissionQuestions([]);
-            setQuestionError(null);
-          }}
-          onMissionSelect={(mission) => {
-            setSelectedMission(mission);
-            setQuestionError(null);
-          }}
-          onCreateQuestion={async (questionData) => {
-            setCreatingQuestion(true);
-            setQuestionError(null);
-            try {
-              const missionId = selectedMission.id || selectedMission.uuid;
-              const response = await testsService.createMissionQuestion(missionId, questionData);
-              
-              // Add the question to the list
-              const newQuestion = response.data?.question || response.question;
-              setMissionQuestions(prev => [...prev, newQuestion]);
-              
-              // Reset form will be handled by CreateQuestionForm
-              return true;
-            } catch (error) {
-              console.error('Error creating question:', error);
-              setQuestionError(error.message || 'Failed to create question. Please try again.');
-              return false;
-            } finally {
-              setCreatingQuestion(false);
-            }
-          }}
-          creatingQuestion={creatingQuestion}
-          questionError={questionError}
-          missionQuestions={missionQuestions}
-        />
-      )}
-    </div>
-  );
-};
-
-// Test View Component for adding questions
-const TestView = ({ 
-  mission, 
-  createdMissions, 
-  onBack, 
-  onMissionSelect, 
-  onCreateQuestion,
-  creatingQuestion,
-  questionError,
-  missionQuestions
-}) => {
-  const [formData, setFormData] = useState({
-    question_text: '',
-    question_type: 'mcq_single',
-    difficulty_level: 'medium',
-    exp_points: 10,
-    explanation: '',
-    is_active: true,
-    options: [
-      { option_text: '', is_correct: false, order: 1 },
-      { option_text: '', is_correct: false, order: 2 },
-      { option_text: '', is_correct: false, order: 3 },
-      { option_text: '', is_correct: false, order: 4 },
-    ],
-  });
-
-  const handleFieldChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleOptionChange = (index, field, value) => {
-    setFormData(prev => {
-      const newOptions = [...prev.options];
-      newOptions[index] = { ...newOptions[index], [field]: value };
-      return { ...prev, options: newOptions };
-    });
-  };
-
-  const addOption = () => {
-    setFormData(prev => ({
-      ...prev,
-      options: [...prev.options, { option_text: '', is_correct: false, order: prev.options.length + 1 }]
-    }));
-  };
-
-  const removeOption = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      options: prev.options.filter((_, i) => i !== index).map((opt, idx) => ({ ...opt, order: idx + 1 }))
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const validOptions = formData.options.filter(opt => opt.option_text.trim() !== '');
-    const questionData = { ...formData, options: validOptions };
-    
-    const success = await onCreateQuestion(questionData);
-    if (success) {
-      // Reset form
-      setFormData({
-        question_text: '',
-        question_type: 'mcq_single',
-        difficulty_level: 'medium',
-        exp_points: 10,
-        explanation: '',
-        is_active: true,
-        options: [
-          { option_text: '', is_correct: false, order: 1 },
-          { option_text: '', is_correct: false, order: 2 },
-          { option_text: '', is_correct: false, order: 3 },
-          { option_text: '', is_correct: false, order: 4 },
-        ],
-      });
-    }
-  };
-
-  // Handle both mission_date and test_datetime
-  const dateValue = mission.mission_date || mission.test_datetime;
-  const missionDate = dateValue 
-    ? new Date(dateValue).toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      })
-    : 'N/A';
-  
-  // Get class name - handle different API response structures
-  const className = mission.class_group_name || mission.class_group?.name || mission.class_group || 'N/A';
-  
-  // Get subject name - handle different API response structures
-  const subjectName = mission.subject_name || mission.subject?.name || mission.subject || 'N/A';
-  
-  // Get title - fallback to module/chapter info if title doesn't exist
-  const missionTitle = mission.title || 
-    (mission.module_name && mission.chapter_title 
-      ? `${mission.module_name} - ${mission.chapter_title}` 
-      : mission.module_name || 'Untitled Mission');
-
-  return (
-    <div className="space-y-6">
+      {activeTab === 'create' && showQuestionGenerator && selectedTest && (
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
+          <div className="px-8 py-6 text-white" style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}>
+            <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">{missionTitle}</h2>
-            <p className="text-gray-600 mt-1">
-              {className} / {subjectName} | {missionDate}
+                <h2 className="text-3xl font-bold mb-2 flex items-center space-x-2">
+                  <Sparkles className="h-8 w-8" />
+                  <span>Generate Questions with AI</span>
+                </h2>
+                <p className="text-accent-500/50">
+                  Use Vertex AI to automatically generate questions for your test
             </p>
           </div>
           <button
-            onClick={onBack}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                onClick={handleBackToForm}
+                className="text-white hover:text-gray-200 transition-colors"
           >
-            <X className="h-4 w-4" />
-            <span>Back</span>
+                <X className="h-6 w-6" />
           </button>
         </div>
-
-        {/* Mission selector if multiple missions */}
-        {createdMissions.length > 1 && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Mission</label>
-            <select
-              value={mission.id || mission.uuid}
-              onChange={(e) => {
-                const selected = createdMissions.find(m => (m.id || m.uuid) === e.target.value);
-                if (selected) onMissionSelect(selected);
-              }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            >
-              {createdMissions.map((m) => {
-                const mTitle = m.title || m.module_name || 'Mission';
-                const mClassName = m.class_group_name || m.class_group?.name || 'N/A';
-                return (
-                  <option key={m.id || m.uuid} value={m.id || m.uuid}>
-                    {mTitle} - {mClassName}
-                  </option>
-                );
-              })}
-            </select>
           </div>
-        )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-primary-500">{mission.duration || 'N/A'}</div>
-            <div className="text-sm text-gray-600">Duration (min)</div>
+          {/* Form Section */}
+          <div className="p-8">
+            {generationError && (
+              <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-start space-x-3 mb-6">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-red-800">Error</p>
+                  <p className="text-sm text-red-700 mt-1">{generationError}</p>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{missionQuestions.length}</div>
-            <div className="text-sm text-gray-600">Questions Added</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{mission.base_exp || 10}</div>
-            <div className="text-sm text-gray-600">Base EXP</div>
-          </div>
-        </div>
-      </div>
+            )}
 
-      {/* Question Form */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="mb-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-2">Add Question</h3>
-          <p className="text-gray-600">Create a new question for this test.</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {questionError && (
-            <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-start space-x-3">
-              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            {success && generatedQuestions.length > 0 && (
+              <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 flex items-start space-x-3 mb-6">
+                <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-red-800">Error</p>
-                <p className="text-sm text-red-700 mt-1">{questionError}</p>
+                  <p className="text-sm font-semibold text-green-800">Success!</p>
+                  <p className="text-sm text-green-700 mt-1">
+                    Successfully generated {generatedQuestions.length} questions!
+                  </p>
               </div>
             </div>
           )}
 
-          <div className="bg-white rounded-xl p-6 border border-gray-200">
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Question Text <span className="text-red-500">*</span>
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200 mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                <Sparkles className="h-5 w-5 text-blue-600" />
+                <span>AI Generation Settings</span>
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Number of Questions <span className="text-red-500">*</span>
             </label>
-            <textarea
-              value={formData.question_text}
-              onChange={(e) => handleFieldChange('question_text', e.target.value)}
-              required
-              rows={4}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 resize-none"
-              placeholder="Enter the question text..."
-              disabled={creatingQuestion}
+                  <input
+                    type="number"
+                    name="number_of_questions"
+                    value={aiFormData.number_of_questions}
+                    onChange={handleAIGenerationChange}
+                    min="1"
+                    max="50"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
             />
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Question Type <span className="text-red-500">*</span>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Difficulty Level <span className="text-red-500">*</span>
               </label>
               <select
-                value={formData.question_type}
-                onChange={(e) => handleFieldChange('question_type', e.target.value)}
-                required
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
-                disabled={creatingQuestion}
-              >
-                <option value="mcq_single">MCQ - Single Correct Answer</option>
-                <option value="mcq_multiple">MCQ - Multiple Correct Answers</option>
-                <option value="short_answer">Short Answer Question</option>
+                    name="level"
+                    value={aiFormData.level}
+                    onChange={handleAIGenerationChange}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
+                  >
+                    <option value={1}>Level 1 - Basic</option>
+                    <option value={2}>Level 2 - Easy</option>
+                    <option value={3}>Level 3 - Medium</option>
+                    <option value={4}>Level 4 - Hard</option>
+                    <option value={5}>Level 5 - HOTS (Advanced)</option>
               </select>
             </div>
-
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Difficulty Level <span className="text-red-500">*</span>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Question Type <span className="text-red-500">*</span>
               </label>
               <select
-                value={formData.difficulty_level}
-                onChange={(e) => handleFieldChange('difficulty_level', e.target.value)}
-                required
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
-                disabled={creatingQuestion}
-              >
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
+                    name="question_type"
+                    value={aiFormData.question_type}
+                    onChange={handleAIGenerationChange}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
+                  >
+                    <option value="mcq_single">MCQ - Single Correct Answer</option>
+                    <option value="mcq_multiple">MCQ - Multiple Correct Answers</option>
+                    <option value="short_answer">Short Answer Question</option>
+                    <option value="rearrange">Re-arrange/Ordering</option>
               </select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Experience Points
-              </label>
-              <input
-                type="number"
-                value={formData.exp_points}
-                onChange={(e) => handleFieldChange('exp_points', parseInt(e.target.value) || 10)}
-                min="1"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
-                disabled={creatingQuestion}
-              />
-            </div>
-
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Status
-              </label>
-              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3 pt-8">
                 <input
                   type="checkbox"
-                  id="is_active"
-                  checked={formData.is_active}
-                  onChange={(e) => handleFieldChange('is_active', e.target.checked)}
+                    id="add_image"
+                    name="add_image"
+                    checked={aiFormData.add_image}
+                    onChange={handleAIGenerationChange}
                   className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
-                  disabled={creatingQuestion}
                 />
-                <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
-                  Active
+                  <label htmlFor="add_image" className="text-sm font-medium text-gray-700">
+                    Generate images for questions
                 </label>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 border border-gray-200">
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Explanation
-            </label>
-            <textarea
-              value={formData.explanation}
-              onChange={(e) => handleFieldChange('explanation', e.target.value)}
-              rows={3}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 resize-none"
-              placeholder="Enter explanation for the correct answer..."
-              disabled={creatingQuestion}
-            />
+            {/* Generated Questions Preview */}
+            {generatedQuestions.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Generated Questions Preview</h3>
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {generatedQuestions.map((question, index) => (
+                    <div key={question.id || index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="text-sm font-semibold text-gray-600">Question {index + 1}</span>
+                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                          {question.question_type}
+                        </span>
           </div>
-
-          {/* Options Section */}
-          {(formData.question_type === 'mcq_single' || formData.question_type === 'mcq_multiple') && (
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <label className="block text-sm font-semibold text-gray-700">
-                  Options <span className="text-red-500">*</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={addOption}
-                  className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-primary-500 hover:text-primary-500 hover:bg-primary-500/10 rounded-lg transition-colors"
-                  disabled={creatingQuestion}
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Add Option</span>
-                </button>
+                      <p className="text-gray-800 mb-2">{question.question_text}</p>
+                      {question.options && question.options.length > 0 && (
+                        <div className="ml-4 space-y-1">
+                          {question.options.map((option, optIndex) => (
+                            <div key={optIndex} className={`text-sm ${option.is_correct ? 'text-green-700 font-semibold' : 'text-gray-600'}`}>
+                              {option.is_correct && '✓ '}
+                              {option.option_text}
               </div>
-              <div className="space-y-3">
-                {formData.options.map((option, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        value={option.option_text}
-                        onChange={(e) => handleOptionChange(index, 'option_text', e.target.value)}
-                        placeholder={`Option ${index + 1}`}
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
-                        disabled={creatingQuestion}
-                      />
+                          ))}
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer">
-                        <input
-                          type={formData.question_type === 'mcq_single' ? 'radio' : 'checkbox'}
-                          name="correct_answer"
-                          checked={option.is_correct}
-                          onChange={(e) => {
-                            if (formData.question_type === 'mcq_single') {
-                              setFormData(prev => ({
-                                ...prev,
-                                options: prev.options.map((opt, idx) => ({
-                                  ...opt,
-                                  is_correct: idx === index
-                                }))
-                              }));
-                            } else {
-                              handleOptionChange(index, 'is_correct', e.target.checked);
-                            }
-                          }}
-                          className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300"
-                          disabled={creatingQuestion}
-                        />
-                        <span>Correct</span>
-                      </label>
-                      {formData.options.length > 2 && (
-                        <button
-                          type="button"
-                          onClick={() => removeOption(index)}
-                          className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                          disabled={creatingQuestion}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
                       )}
-                    </div>
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-3">
-                {formData.question_type === 'mcq_single' 
-                  ? 'Select exactly one correct answer'
-                  : 'Select one or more correct answers'}
-              </p>
             </div>
           )}
 
+            {/* Action Buttons */}
           <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onBack}
-              className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={creatingQuestion}
-            >
-              Done
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-              style={{ backgroundColor: '#00167a' }}
-              disabled={creatingQuestion}
-            >
-              {creatingQuestion ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Creating...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-5 w-5" />
-                  <span>Add Question</span>
-                </>
-              )}
-            </button>
+            {generatedQuestions.length > 0 ? (
+              // Show Done button when questions are generated
+              <button
+                type="button"
+                onClick={handleDone}
+                className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2"
+                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
+              >
+                <CheckCircle2 className="h-5 w-5" />
+                <span>Done</span>
+              </button>
+            ) : (
+              // Show Back and Generate buttons when no questions generated yet
+              <>
+                <button
+                  type="button"
+                  onClick={handleBackToForm}
+                  className="px-8 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleGenerateQuestions}
+                  disabled={generatingQuestions || !selectedTest}
+                  className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
+                >
+                  {generatingQuestions ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5" />
+                      <span>Generate Questions</span>
+                    </>
+                  )}
+                </button>
+              </>
+            )}
           </div>
-        </form>
       </div>
+        </div>
+      )}
     </div>
   );
 };

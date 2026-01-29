@@ -166,6 +166,73 @@ class SubjectsService {
       throw new Error(`Failed to delete subject: ${error.message}`)
     }
   }
+
+  // Get modules for a subject
+  async getModules(subjectId, filters = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      if (filters.search) queryParams.append('search', filters.search);
+      if (filters.page) queryParams.append('page', filters.page);
+      if (filters.limit) queryParams.append('limit', filters.limit);
+
+      const endpoint = `/subjects/${subjectId}/modules${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      return await apiService.get(endpoint);
+    } catch (error) {
+      throw new Error(`Failed to fetch modules: ${error.message}`);
+    }
+  }
+
+  // Get all modules (with optional subject filter)
+  async getAllModules(filters = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      if (filters.subject) queryParams.append('subject', filters.subject);
+      if (filters.search) queryParams.append('search', filters.search);
+      if (filters.page) queryParams.append('page', filters.page);
+      if (filters.limit) queryParams.append('limit', filters.limit);
+
+      const endpoint = `/modules${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      return await apiService.get(endpoint);
+    } catch (error) {
+      throw new Error(`Failed to fetch modules: ${error.message}`);
+    }
+  }
+
+  // Get chapters for a module
+  async getChapters(moduleId, filters = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      if (filters.search) queryParams.append('search', filters.search);
+      if (filters.page) queryParams.append('page', filters.page);
+      if (filters.limit) queryParams.append('limit', filters.limit);
+
+      // Use the module_chapters action endpoint
+      const endpoint = `/modules/${moduleId}/module_chapters${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      return await apiService.get(endpoint);
+    } catch (error) {
+      throw new Error(`Failed to fetch chapters: ${error.message}`);
+    }
+  }
+
+  // Get all chapters (with optional module filter)
+  async getAllChapters(filters = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      if (filters.module) queryParams.append('module', filters.module);
+      if (filters.search) queryParams.append('search', filters.search);
+      if (filters.page) queryParams.append('page', filters.page);
+      if (filters.limit) queryParams.append('limit', filters.limit);
+
+      const endpoint = `/module_chapters${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      return await apiService.get(endpoint);
+    } catch (error) {
+      throw new Error(`Failed to fetch chapters: ${error.message}`);
+    }
+  }
 }
 
 export default new SubjectsService();

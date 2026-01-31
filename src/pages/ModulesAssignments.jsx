@@ -1171,6 +1171,8 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
   const [numberOfQuestions, setNumberOfQuestions] = useState('5');
   const [level, setLevel] = useState('1');
   const [questionType, setQuestionType] = useState('mcq_single');
+  const [addImage, setAddImage] = useState(false);
+  const [useMatplot, setUseMatplot] = useState(false);
   const [aiProvider, setAiProvider] = useState('gemini'); // 'chatgpt' or 'gemini' - defaulting to gemini for now
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
@@ -1229,6 +1231,8 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
         number_of_questions: parseInt(numberOfQuestions),
         level: parseInt(level),
         question_type: questionType,
+        add_image: addImage,
+        use_matplot: useMatplot,
       };
 
       // Call the appropriate API based on selected provider
@@ -1302,6 +1306,8 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
     setNumberOfQuestions('5');
     setLevel('1');
     setQuestionType('mcq_single');
+    setAddImage(false);
+    setUseMatplot(false);
     setAiProvider('gemini');
     setError(null);
     setSuccess(null);
@@ -1486,6 +1492,35 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                       </div>
                     </div>
                   )}
+
+                  {/* Generate images & Use matplotlib (Gemini only) */}
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="add_image_mod"
+                        checked={addImage}
+                        onChange={(e) => setAddImage(e.target.checked)}
+                        className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="add_image_mod" className="text-sm font-medium text-gray-700">
+                        Generate images for questions
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-3 pl-1">
+                      <input
+                        type="checkbox"
+                        id="use_matplot_mod"
+                        checked={useMatplot}
+                        onChange={(e) => setUseMatplot(e.target.checked)}
+                        disabled={!addImage}
+                        className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded disabled:opacity-50"
+                      />
+                      <label htmlFor="use_matplot_mod" className="text-sm font-medium text-gray-700">
+                        Use matplotlib (Vertex Gemini code)
+                      </label>
+                    </div>
+                  </div>
 
                   {/* Action Buttons */}
                   <div className="flex items-center justify-end space-x-4 pt-4 border-t border-gray-200">

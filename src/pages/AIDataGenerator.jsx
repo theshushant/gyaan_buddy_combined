@@ -39,6 +39,8 @@ const AIDataGenerator = () => {
   const [numberOfQuestions, setNumberOfQuestions] = useState('5');
   const [level, setLevel] = useState('1');
   const [questionType, setQuestionType] = useState('mcq_single');
+  const [addImage, setAddImage] = useState(false);
+  const [useMatplot, setUseMatplot] = useState(false);
 
   // Loading states
   const [loadingClasses, setLoadingClasses] = useState(true);
@@ -221,9 +223,14 @@ const AIDataGenerator = () => {
         number_of_questions: parseInt(numberOfQuestions),
         level: parseInt(level),
         question_type: questionType,
+        add_image: addImage,
+        use_matplot: useMatplot,
       };
 
-      const response = await aiService.generateAIQuestions(requestData);
+      // Use Vertex Gemini when use_matplot is enabled (matplotlib images); otherwise ChatGPT
+      const response = useMatplot
+        ? await aiService.generateAIQuestionsGemini(requestData)
+        : await aiService.generateAIQuestions(requestData);
       
       // API returns data wrapped in 'data' property
       const responseData = response.data || response;
@@ -601,6 +608,35 @@ const AIDataGenerator = () => {
                   </div>
                 </div>
               )}
+
+              {/* Generate images & Use matplotlib */}
+              <div className="space-y-2">
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="add_image_ai"
+                    checked={addImage}
+                    onChange={(e) => setAddImage(e.target.checked)}
+                    className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="add_image_ai" className="text-sm font-medium text-gray-700">
+                    Generate images for questions
+                  </label>
+                </div>
+                <div className="flex items-center space-x-3 pl-1">
+                  <input
+                    type="checkbox"
+                    id="use_matplot_ai"
+                    checked={useMatplot}
+                    onChange={(e) => setUseMatplot(e.target.checked)}
+                    disabled={!addImage}
+                    className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded disabled:opacity-50"
+                  />
+                  <label htmlFor="use_matplot_ai" className="text-sm font-medium text-gray-700">
+                    Use matplotlib (Vertex Gemini) – uses Gemini when enabled
+                  </label>
+                </div>
+              </div>
 
               {/* Summary Preview */}
               {isFormValid && (

@@ -145,6 +145,16 @@ class AIService {
     }
   }
 
+  // Execute matplotlib code (from Vertex Gemini) and return image as base64
+  async executeMatplotlibImage(matplotlibCode) {
+    try {
+      const response = await apiService.post('/ai/execute-matplotlib-image/', { matplotlib_code: matplotlibCode }, { timeout: 60000 });
+      return response.data || response;
+    } catch (error) {
+      throw new Error(`Failed to execute matplotlib code: ${error.message}`);
+    }
+  }
+
   // Deactivate AI-generated questions that are not in the provided list
   // This marks questions as inactive (is_active=False)
   async deactivateAIQuestions(questionIdsToKeep, moduleChapterId) {

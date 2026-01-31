@@ -56,7 +56,8 @@ const TestsQuizzes = () => {
     number_of_questions: 10,
     level: 3,
     question_type: 'mcq_single',
-    add_image: false
+    add_image: false,
+    use_matplot: false
   });
 
   const fetchClasses = useCallback(async () => {
@@ -466,6 +467,7 @@ const TestsQuizzes = () => {
         level: aiFormData.level,
         question_type: aiFormData.question_type,
         add_image: aiFormData.add_image,
+        use_matplot: aiFormData.use_matplot,
         for_test: true,
         test_id: testId
       };
@@ -1033,6 +1035,20 @@ const TestsQuizzes = () => {
                   <label htmlFor="add_image" className="text-sm font-medium text-gray-700">
                     Generate images for questions
                 </label>
+              </div>
+                <div className="flex items-center space-x-3 pt-2">
+                <input
+                  type="checkbox"
+                  id="use_matplot"
+                  name="use_matplot"
+                  checked={aiFormData.use_matplot}
+                  onChange={handleAIGenerationChange}
+                  disabled={!aiFormData.add_image}
+                  className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded disabled:opacity-50"
+                />
+                  <label htmlFor="use_matplot" className="text-sm font-medium text-gray-700">
+                    Use matplotlib (Vertex Gemini code)
+                  </label>
               </div>
             </div>
           </div>

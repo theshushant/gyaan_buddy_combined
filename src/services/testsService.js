@@ -206,23 +206,33 @@ class TestsService {
     }
   }
 
-  // Create a new test
+  // Create a new test.
+  // Accepts either:
+  // - module_chapters: [{ module: uuid, chapters: [uuid] }] (new format), or
+  // - module + module_chapter: single module and chapter (legacy format).
   async createTest(testData) {
     try {
       console.log('TestsService: Creating test with data:', testData);
-      
-      // Transform frontend data to match backend TestCreateSerializer
+
       const payload = {
         test_datetime: testData.test_datetime,
         duration: parseInt(testData.duration),
         class_group: testData.class_group,
         subject: testData.subject,
       };
-      
-      // Add optional fields if provided
-      if (testData.module) payload.module = testData.module;
-      if (testData.module_chapter) payload.module_chapter = testData.module_chapter;
-      
+
+      const hasModuleChapters = testData.module_chapters && Array.isArray(testData.module_chapters) && testData.module_chapters.length > 0;
+      const hasLegacy = testData.module && testData.module_chapter;
+
+      if (hasModuleChapters) {
+        payload.module_chapters = testData.module_chapters;
+      } else if (hasLegacy) {
+        payload.module = testData.module;
+        payload.module_chapter = testData.module_chapter;
+      } else {
+        throw new Error('Provide either module_chapters (array of { module, chapters }) or module and module_chapter.');
+      }
+
       console.log('TestsService: Transformed test payload:', payload);
       const response = await apiService.post('/tests/', payload);
       console.log('TestsService: Test created successfully:', response);
@@ -233,20 +243,29 @@ class TestsService {
     }
   }
 
-  // Update an existing test
+  // Update an existing test.
+  // Accepts either module_chapters: [{ module, chapters }] or legacy module + module_chapter.
   async updateTest(testId, testData) {
     try {
       console.log('TestsService: Updating test with data:', testData);
-      
+
       const payload = {};
-      
+
       if (testData.test_datetime) payload.test_datetime = testData.test_datetime;
       if (testData.duration !== undefined) payload.duration = parseInt(testData.duration);
       if (testData.class_group) payload.class_group = testData.class_group;
       if (testData.subject) payload.subject = testData.subject;
-      if (testData.module) payload.module = testData.module;
-      if (testData.module_chapter) payload.module_chapter = testData.module_chapter;
-      
+
+      const hasModuleChapters = testData.module_chapters && Array.isArray(testData.module_chapters);
+      const hasLegacy = testData.module && testData.module_chapter;
+
+      if (hasModuleChapters) {
+        payload.module_chapters = testData.module_chapters;
+      } else if (hasLegacy) {
+        payload.module = testData.module;
+        payload.module_chapter = testData.module_chapter;
+      }
+
       console.log('TestsService: Transformed test update payload:', payload);
       const response = await apiService.put(`/tests/${testId}/`, payload);
       console.log('TestsService: Test updated successfully:', response);
@@ -305,6 +324,19 @@ class TestsService {
     }
   }
 
+  // Remove questions from a test; deselected questions are removed and (if ai_generated) marked inactive
+  async removeTestQuestions(testId, questionIds) {
+    try {
+      const response = await apiService.post(`/tests/${testId}/remove-questions/`, {
+        question_ids: Array.isArray(questionIds) ? questionIds : [questionIds]
+      });
+      return response;
+    } catch (error) {
+      console.error('TestsService: Failed to remove test questions:', error);
+      throw new Error(`Failed to remove test questions: ${error.message}`);
+    }
+  }
+
   // Check answer for a test question
   async checkTestAnswer(testId, answerData) {
     try {
@@ -322,7 +354,7 @@ class TestsService {
   async getTestStudentsPerformance(testId) {
     try {
       console.log('TestsService: Fetching students performance for test:', testId);
-      const response = await apiService.get(`/tests/${testId}/students_performance/`);
+      const response = await apiService.get(`/tests/${testId}/students-performance/`);
       console.log('TestsService: Test students performance fetched successfully:', response);
       return response;
     } catch (error) {

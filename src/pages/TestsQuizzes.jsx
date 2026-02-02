@@ -24,17 +24,16 @@ const TestsQuizzes = () => {
   const [classes, setClasses] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [modules, setModules] = useState([]);
-  const [chapters, setChapters] = useState([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [loadingModules, setLoadingModules] = useState(false);
-  const [loadingChapters, setLoadingChapters] = useState(false);
   const [tests, setTests] = useState([]);
   const [loadingTests, setLoadingTests] = useState(false);
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
-  const [selectedModule, setSelectedModule] = useState('');
-  const [selectedChapter, setSelectedChapter] = useState('');
+  // Multi module & chapter: [{ moduleId, moduleName, chapterIds: [], chapters: [] }]
+  const [selectedModulesChapters, setSelectedModulesChapters] = useState([]);
+  const [chaptersLoadingFor, setChaptersLoadingFor] = useState(null);
   const [formData, setFormData] = useState({
     testDate: '',
     testTime: '',
@@ -48,14 +47,18 @@ const TestsQuizzes = () => {
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
   const [generationError, setGenerationError] = useState(null);
   const [generatedQuestions, setGeneratedQuestions] = useState([]);
+  // IDs of generated questions selected to keep in the test (deselected will be removed and marked inactive)
+  const [selectedGeneratedQuestionIds, setSelectedGeneratedQuestionIds] = useState(new Set());
   const [editingTest, setEditingTest] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [editTestQuestions, setEditTestQuestions] = useState([]);
+  const [loadingEditQuestions, setLoadingEditQuestions] = useState(false);
+  const [removingQuestionId, setRemovingQuestionId] = useState(null);
+  const [loadingTestForEdit, setLoadingTestForEdit] = useState(false);
   
-  // AI Generation form state
+  // AI Generation form state (mix of types/levels - no level/question_type sent)
   const [aiFormData, setAiFormData] = useState({
     number_of_questions: 10,
-    level: 3,
-    question_type: 'mcq_single',
     add_image: false,
     use_matplot: false
   });
@@ -118,25 +121,18 @@ const TestsQuizzes = () => {
     }
   }, []);
 
-  const fetchChapters = useCallback(async (moduleId) => {
-    if (!moduleId) {
-      setChapters([]);
-      return;
-    }
-    setLoadingChapters(true);
+  const fetchChaptersForModule = useCallback(async (moduleId) => {
+    if (!moduleId) return [];
     try {
       const response = await subjectsService.getChapters(moduleId);
       const chaptersData = response.data || response || [];
-      const chaptersList = chaptersData.map(chapter => ({
+      return chaptersData.map(chapter => ({
         id: chapter.id || chapter.uuid,
         title: chapter.title || chapter
       })).filter(chapter => chapter.id && chapter.title);
-      setChapters(chaptersList);
     } catch (error) {
-      console.error('Failed to fetch chapters:', error);
-      setChapters([]);
-    } finally {
-      setLoadingChapters(false);
+      console.error('Failed to fetch chapters for module:', error);
+      return [];
     }
   }, []);
 
@@ -169,29 +165,16 @@ const TestsQuizzes = () => {
     }
   }, [activeTab, isEditMode, fetchClasses, fetchSubjects]);
 
-  // Fetch modules when subject changes
+  // Fetch modules when subject changes (don't clear module/chapter selection when pre-filling for edit)
   useEffect(() => {
     if (selectedSubject) {
       fetchModules(selectedSubject);
-      setSelectedModule('');
-      setSelectedChapter('');
+      if (!isEditMode) setSelectedModulesChapters([]);
     } else {
       setModules([]);
-      setSelectedModule('');
-      setSelectedChapter('');
+      if (!isEditMode) setSelectedModulesChapters([]);
     }
-  }, [selectedSubject, fetchModules]);
-
-  // Fetch chapters when module changes
-  useEffect(() => {
-    if (selectedModule) {
-      fetchChapters(selectedModule);
-      setSelectedChapter('');
-    } else {
-      setChapters([]);
-      setSelectedChapter('');
-    }
-  }, [selectedModule, fetchChapters]);
+  }, [selectedSubject, fetchModules, isEditMode]);
 
   // Pre-fill form when editing a test
   useEffect(() => {
@@ -227,14 +210,16 @@ const TestsQuizzes = () => {
         setSelectedClass(classId);
       }
 
-      if (editingTest.module) {
-        const moduleId = editingTest.module?.id || editingTest.module?.uuid || editingTest.module;
-        setSelectedModule(moduleId);
-      }
-
-      if (editingTest.module_chapter) {
-        const chapterId = editingTest.module_chapter?.id || editingTest.module_chapter?.uuid || editingTest.module_chapter;
-        setSelectedChapter(chapterId);
+      const mc = editingTest.module_chapters;
+      if (mc && Array.isArray(mc) && mc.length > 0) {
+        setSelectedModulesChapters(mc.map(({ module_id, module_name, chapters: chList }) => ({
+          moduleId: module_id,
+          moduleName: module_name || '',
+          chapterIds: (chList || []).map(c => c.id || c.uuid),
+          chapters: (chList || []).map(c => ({ id: c.id || c.uuid, title: c.title || '' }))
+        })));
+      } else {
+        setSelectedModulesChapters([]);
       }
     } else if (!isEditMode) {
       setFormData({
@@ -244,8 +229,7 @@ const TestsQuizzes = () => {
       });
       setSelectedClass('');
       setSelectedSubject('');
-      setSelectedModule('');
-      setSelectedChapter('');
+      setSelectedModulesChapters([]);
     }
   }, [editingTest, isEditMode]);
 
@@ -270,7 +254,10 @@ const TestsQuizzes = () => {
     setError(null);
     setSuccess(false);
 
-    // Validation
+    const moduleChaptersPayload = selectedModulesChapters
+      .filter(m => m.chapterIds && m.chapterIds.length > 0)
+      .map(m => ({ module: m.moduleId, chapters: m.chapterIds }));
+
     if (!selectedSubject) {
       setError('Please select a subject');
       return;
@@ -279,12 +266,8 @@ const TestsQuizzes = () => {
       setError('Please select a class');
       return;
     }
-    if (!selectedModule) {
-      setError('Please select a module');
-      return;
-    }
-    if (!selectedChapter) {
-      setError('Please select a chapter');
+    if (!moduleChaptersPayload.length) {
+      setError('Please add at least one module and select at least one chapter');
       return;
     }
     if (!formData.testDate) {
@@ -310,8 +293,7 @@ const TestsQuizzes = () => {
           duration: parseInt(formData.duration),
           class_group: selectedClass,
           subject: selectedSubject,
-          module: selectedModule,
-          module_chapter: selectedChapter,
+          module_chapters: moduleChaptersPayload,
         };
         
         const updatedTest = await testsService.updateTest(testId, testPayload);
@@ -327,8 +309,7 @@ const TestsQuizzes = () => {
         });
         setSelectedClass('');
         setSelectedSubject('');
-        setSelectedModule('');
-        setSelectedChapter('');
+        setSelectedModulesChapters([]);
         
         await fetchTests();
         
@@ -338,25 +319,22 @@ const TestsQuizzes = () => {
       } else {
         const testPayload = {
           test_datetime: testDateTime,
-            duration: parseInt(formData.duration),
+          duration: parseInt(formData.duration),
           class_group: selectedClass,
-            subject: selectedSubject,
-          module: selectedModule,
-          module_chapter: selectedChapter,
+          subject: selectedSubject,
+          module_chapters: moduleChaptersPayload,
         };
         
         const createdTest = await testsService.createTest(testPayload);
         const testData = createdTest.data || createdTest;
         
-        // Store the IDs before resetting - we need them for question generation
-        const testSubjectId = testData.subject?.id || testData.subject?.uuid || testData.subject || selectedSubject;
-        const testModuleId = testData.module?.id || testData.module?.uuid || testData.module || selectedModule;
-        const testChapterId = testData.module_chapter?.id || testData.module_chapter?.uuid || testData.module_chapter || selectedChapter;
-        
-        // Store these in the testData object for later use
-        testData._subjectId = testSubjectId;
-        testData._moduleId = testModuleId;
-        testData._chapterId = testChapterId;
+        // Store first module/chapter for AI question generation (optional)
+        const firstMc = moduleChaptersPayload[0];
+        const firstChapterId = firstMc?.chapters?.[0];
+        testData._subjectId = testData.subject?.id || testData.subject?.uuid || testData.subject || selectedSubject;
+        testData._moduleId = firstMc?.module;
+        testData._chapterId = firstChapterId;
+        testData._moduleChapters = moduleChaptersPayload;
         
         setSelectedTest(testData);
         setShowQuestionGenerator(true);
@@ -418,54 +396,51 @@ const TestsQuizzes = () => {
     setGenerationError(null);
     
     try {
-      // Get IDs from selectedTest (stored when test was created) or from state
       const subjectId = selectedTest._subjectId || selectedTest.subject?.id || selectedTest.subject?.uuid || selectedTest.subject || selectedSubject;
-      const moduleId = selectedTest._moduleId || selectedTest.module?.id || selectedTest.module?.uuid || selectedTest.module || selectedModule;
-      const chapterId = selectedTest._chapterId || selectedTest.module_chapter?.id || selectedTest.module_chapter?.uuid || selectedTest.module_chapter || selectedChapter;
-      
-      // Get names - try from test object first, then from state
       let subjectName = selectedTest.subject_name || selectedTest.subject?.name || '';
-      let moduleName = selectedTest.module_name || selectedTest.module?.name || '';
-      let chapterName = selectedTest.chapter_title || selectedTest.module_chapter?.title || '';
+      if (!subjectName && subjectId) subjectName = subjects.find(s => s.id === subjectId)?.name || '';
       
-      // If names not in test object, get from state
-      if (!subjectName && subjectId) {
-        subjectName = subjects.find(s => s.id === subjectId)?.name || '';
-      }
-      if (!moduleName && moduleId) {
-        // Need to fetch modules if not already loaded
-        if (modules.length === 0 && subjectId) {
-          await fetchModules(subjectId);
+      // Prefer API response format (module_chapters with id/title) over create payload (_moduleChapters with module + chapter IDs only)
+      const mcList = (selectedTest.module_chapters && selectedTest.module_chapters.length > 0)
+        ? selectedTest.module_chapters
+        : (selectedTest._moduleChapters || []);
+      
+      const module_chapters = [];
+      for (const mc of mcList) {
+        const moduleId = mc.module_id || mc.moduleId || mc.module;
+        const moduleName = mc.module_name || mc.moduleName || '';
+        const chapters = mc.chapters || [];
+        for (const ch of chapters) {
+          // ch can be object { id, title } (from API) or a string chapter id (from create payload)
+          const chapterId = typeof ch === 'object' && ch !== null ? (ch.id || ch.uuid) : ch;
+          const chapterName = typeof ch === 'object' && ch !== null ? (ch.title || ch.chapter_name || '') : '';
+          if (moduleId && chapterId) {
+            module_chapters.push({
+              module_id: moduleId,
+              chapter_id: chapterId,
+              module_name: moduleName,
+              chapter_name: chapterName
+            });
+          }
         }
-        moduleName = modules.find(m => m.id === moduleId)?.name || '';
-      }
-      if (!chapterName && chapterId) {
-        // Need to fetch chapters if not already loaded
-        if (chapters.length === 0 && moduleId) {
-          await fetchChapters(moduleId);
-        }
-        chapterName = chapters.find(c => c.id === chapterId)?.title || '';
       }
       
-      // Validate that we have all required IDs
-      if (!subjectId || !moduleId || !chapterId) {
-        setGenerationError('Missing required information. Please ensure subject, module, and chapter are selected.');
+      if (!subjectId || !subjectName) {
+        setGenerationError('Missing subject information.');
+        return;
+      }
+      if (module_chapters.length === 0) {
+        setGenerationError('Test has no modules/chapters selected. Edit the test to add at least one module and chapter.');
         return;
       }
       
-      // Get test ID
       const testId = selectedTest.id || selectedTest.uuid;
       
       const requestData = {
         subject_id: subjectId,
-        module_id: moduleId,
-        chapter_id: chapterId,
         subject_name: subjectName,
-        module_name: moduleName,
-        chapter_name: chapterName,
+        module_chapters,
         number_of_questions: aiFormData.number_of_questions,
-        level: aiFormData.level,
-        question_type: aiFormData.question_type,
         add_image: aiFormData.add_image,
         use_matplot: aiFormData.use_matplot,
         for_test: true,
@@ -476,7 +451,9 @@ const TestsQuizzes = () => {
       const responseData = response.data || response;
       
       if (responseData.questions && responseData.questions.length > 0) {
-        setGeneratedQuestions(responseData.questions);
+        const questions = responseData.questions;
+        setGeneratedQuestions(questions);
+        setSelectedGeneratedQuestionIds(new Set(questions.map(q => String(q.id || q.uuid)).filter(Boolean)));
         setSuccess(true);
         
         // Refresh tests to get updated question count
@@ -507,27 +484,43 @@ const TestsQuizzes = () => {
     }
   };
 
-  const handleEdit = (test) => {
-    setEditingTest(test);
-    setIsEditMode(true);
-    setActiveTab('create');
+  const handleEdit = async (test) => {
     setError(null);
     setSuccess(false);
     setShowQuestionGenerator(false);
+    setEditTestQuestions([]);
+    const testId = test.id || test.uuid;
+    setLoadingTestForEdit(true);
+    try {
+      setLoadingEditQuestions(true);
+      const [fullTestRes, questionsRes] = await Promise.all([
+        testsService.getTestById(testId),
+        testsService.getTestQuestions(testId).catch(() => ({ data: [] })),
+      ]);
+      const testData = fullTestRes.data || fullTestRes;
+      const questionsList = Array.isArray(questionsRes?.data) ? questionsRes.data : (Array.isArray(questionsRes) ? questionsRes : []);
+      setEditingTest(testData);
+      setEditTestQuestions(questionsList);
+      setIsEditMode(true);
+      setActiveTab('create');
+    } catch (err) {
+      console.error('Failed to load test for edit:', err);
+      setError('Failed to load test details.');
+    } finally {
+      setLoadingEditQuestions(false);
+      setLoadingTestForEdit(false);
+    }
   };
 
   const handleCancelEdit = () => {
     setIsEditMode(false);
     setEditingTest(null);
-    setFormData({
-      testDate: '',
-      testTime: '',
-      duration: '',
-    });
+    setEditTestQuestions([]);
+    setLoadingTestForEdit(false);
+    setFormData({ testDate: '', testTime: '', duration: '' });
     setSelectedClass('');
     setSelectedSubject('');
-    setSelectedModule('');
-    setSelectedChapter('');
+    setSelectedModulesChapters([]);
     setError(null);
     setShowQuestionGenerator(false);
   };
@@ -536,28 +529,109 @@ const TestsQuizzes = () => {
     setShowQuestionGenerator(false);
     setSelectedTest(null);
     setGeneratedQuestions([]);
+    setSelectedGeneratedQuestionIds(new Set());
     setGenerationError(null);
-    // Now we can reset the form fields
     setSelectedSubject('');
-    setSelectedModule('');
-    setSelectedChapter('');
+    setSelectedModulesChapters([]);
   };
 
-  const handleDone = () => {
-    // Navigate to All Tests tab
+  const toggleGeneratedQuestionSelection = (questionId) => {
+    const id = String(questionId);
+    setSelectedGeneratedQuestionIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllGeneratedQuestions = (selected) => {
+    if (selected) {
+      setSelectedGeneratedQuestionIds(new Set(generatedQuestions.map(q => String(q.id || q.uuid)).filter(Boolean)));
+    } else {
+      setSelectedGeneratedQuestionIds(new Set());
+    }
+  };
+
+  const handleRemoveEditQuestion = async (questionId) => {
+    if (!editingTest || !questionId) return;
+    const testId = editingTest.id || editingTest.uuid;
+    setRemovingQuestionId(questionId);
+    setError(null);
+    try {
+      await testsService.removeTestQuestions(testId, [questionId]);
+      setEditTestQuestions(prev => prev.filter(q => String(q.id || q.uuid) !== String(questionId)));
+      if (editingTest.question_count != null) {
+        setEditingTest(prev => prev ? { ...prev, question_count: Math.max(0, (prev.question_count ?? 0) - 1) } : null);
+      }
+    } catch (err) {
+      console.error('Failed to remove question:', err);
+      setError(err.message || 'Failed to remove question from test.');
+    } finally {
+      setRemovingQuestionId(null);
+    }
+  };
+
+  const handleDone = async () => {
+    const testId = selectedTest?.id || selectedTest?.uuid;
+    const generatedIds = (generatedQuestions || []).map(q => String(q.id || q.uuid)).filter(Boolean);
+    const deselectedIds = generatedIds.filter(id => !selectedGeneratedQuestionIds.has(id));
+    if (testId && deselectedIds.length > 0) {
+      try {
+        await testsService.removeTestQuestions(testId, deselectedIds);
+      } catch (err) {
+        console.error('Failed to remove deselected questions:', err);
+        setGenerationError(err.message || 'Failed to remove deselected questions.');
+        return;
+      }
+    }
     setActiveTab('tests');
-    // Reset question generator state
     setShowQuestionGenerator(false);
     setSelectedTest(null);
     setGeneratedQuestions([]);
+    setSelectedGeneratedQuestionIds(new Set());
     setGenerationError(null);
     setSuccess(false);
-    // Reset form fields
     setSelectedSubject('');
-    setSelectedModule('');
-    setSelectedChapter('');
-    // Refresh tests list to show updated question counts
+    setSelectedModulesChapters([]);
     fetchTests();
+  };
+
+  const addModule = async (moduleId) => {
+    if (!moduleId || selectedModulesChapters.some(m => m.moduleId === moduleId)) return;
+    const mod = modules.find(m => m.id === moduleId);
+    if (!mod) return;
+    setChaptersLoadingFor(moduleId);
+    const chaptersList = await fetchChaptersForModule(moduleId);
+    setChaptersLoadingFor(null);
+    setSelectedModulesChapters(prev => [...prev, {
+      moduleId: mod.id,
+      moduleName: mod.name,
+      chapterIds: [],
+      chapters: chaptersList
+    }]);
+  };
+
+  const removeModule = (moduleId) => {
+    setSelectedModulesChapters(prev => prev.filter(m => m.moduleId !== moduleId));
+  };
+
+  const toggleChapter = (moduleId, chapterId) => {
+    setSelectedModulesChapters(prev => prev.map(m => {
+      if (m.moduleId !== moduleId) return m;
+      const has = (m.chapterIds || []).includes(chapterId);
+      return {
+        ...m,
+        chapterIds: has ? (m.chapterIds || []).filter(id => id !== chapterId) : [...(m.chapterIds || []), chapterId]
+      };
+    }));
+  };
+
+  const selectAllChapters = (moduleId, select) => {
+    setSelectedModulesChapters(prev => prev.map(m => {
+      if (m.moduleId !== moduleId) return m;
+      return { ...m, chapterIds: select ? (m.chapters || []).map(c => c.id) : [] };
+    }));
   };
 
   return (
@@ -639,8 +713,12 @@ const TestsQuizzes = () => {
               
               const className = test.class_group_name || test.class_group?.name || 'N/A';
               const subjectName = test.subject_name || test.subject?.name || 'N/A';
-              const moduleName = test.module_name || test.module?.name || '';
-              const chapterTitle = test.chapter_title || test.module_chapter?.title || '';
+              const testName = test.name || `${subjectName} ${className}`.trim() || 'Test';
+              const scopeSummary = test.module_chapters_summary && Array.isArray(test.module_chapters_summary) && test.module_chapters_summary.length > 0
+                ? test.module_chapters_summary.join(' • ')
+                : (test.module_chapters && test.module_chapters.length > 0
+                  ? test.module_chapters.map(mc => `${mc.module_name}: ${(mc.chapters || []).map(c => c.title).join(', ')}`).join(' • ')
+                  : '');
               const questionCount = test.question_count || 0;
               
               return (
@@ -651,8 +729,11 @@ const TestsQuizzes = () => {
               <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">
                       <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                        {moduleName && chapterTitle ? `${moduleName} - ${chapterTitle}` : moduleName || 'Test'}
+                        {testName}
                       </h3>
+                      {scopeSummary ? (
+                        <p className="text-sm text-gray-500 mb-2">{scopeSummary}</p>
+                      ) : null}
                       <div className="flex items-center space-x-4 text-gray-600 text-sm">
                         <div className="flex items-center space-x-1">
                           <Users className="h-4 w-4" />
@@ -722,6 +803,12 @@ const TestsQuizzes = () => {
 
           {/* Form Section */}
           <div className="p-8">
+            {loadingTestForEdit ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-4 text-gray-500">
+                <Loader2 className="h-12 w-12 animate-spin text-primary-500" />
+                <p className="text-lg font-medium">Loading test details...</p>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Error/Success Messages */}
               {error && (
@@ -791,51 +878,99 @@ const TestsQuizzes = () => {
                 </div>
               </div>
 
-              {/* Module and Chapter Selection */}
+              {/* Multi Module & Chapter Selection */}
               {selectedSubject && (
-              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
                     <span className="text-blue-500">📖</span>
-                    <span>Module & Chapter</span>
-                </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Module <span className="text-red-500">*</span>
-                  </label>
-                      <select 
-                        value={selectedModule}
-                        onChange={(e) => setSelectedModule(e.target.value)}
+                    <span>Modules & Chapters</span>
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">Add one or more modules and select chapters for each. At least one chapter must be selected.</p>
+                  <div className="flex flex-wrap items-end gap-3 mb-6">
+                    <div className="flex-1 min-w-[200px]">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Add module</label>
+                      <select
+                        id="add-module-select"
                         disabled={loadingModules}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white disabled:bg-gray-100"
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v) addModule(v);
+                          e.target.value = '';
+                        }}
                       >
-                        <option value="">{loadingModules ? 'Loading modules...' : 'Select Module'}</option>
-                        {modules.map((module) => (
-                          <option key={module.id} value={module.id}>
-                            {module.name}
-                          </option>
-                        ))}
+                        <option value="">{loadingModules ? 'Loading...' : 'Select module to add'}</option>
+                        {modules
+                          .filter(m => !selectedModulesChapters.some(s => s.moduleId === m.id))
+                          .map(m => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                          ))}
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Chapter <span className="text-red-500">*</span>
-                          </label>
-                      <select 
-                        value={selectedChapter}
-                        onChange={(e) => setSelectedChapter(e.target.value)}
-                        disabled={loadingChapters || !selectedModule}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      >
-                        <option value="">{loadingChapters ? 'Loading chapters...' : selectedModule ? 'Select Chapter' : 'Select Module First'}</option>
-                        {chapters.map((chapter) => (
-                          <option key={chapter.id} value={chapter.id}>
-                            {chapter.title}
-                          </option>
-                        ))}
-                      </select>
-                      </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const sel = document.getElementById('add-module-select');
+                        if (sel?.value) addModule(sel.value);
+                        if (sel) sel.value = '';
+                      }}
+                      className="px-4 py-3 rounded-xl font-medium text-white transition-all"
+                      style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
+                    >
+                      Add module
+                    </button>
                   </div>
+                  {selectedModulesChapters.length > 0 && (
+                    <div className="space-y-4">
+                      {selectedModulesChapters.map(({ moduleId, moduleName, chapterIds, chapters }) => (
+                        <div key={moduleId} className="bg-white rounded-lg border border-gray-200 p-4">
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="font-semibold text-gray-800">{moduleName}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeModule(moduleId)}
+                              className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
+                            >
+                              <X className="h-4 w-4" /> Remove
+                            </button>
+                          </div>
+                          {chaptersLoadingFor === moduleId ? (
+                            <div className="flex items-center gap-2 text-gray-500 text-sm">
+                              <Loader2 className="h-4 w-4 animate-spin" /> Loading chapters...
+                            </div>
+                          ) : chapters && chapters.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={(chapterIds || []).length === (chapters || []).length}
+                                  onChange={(e) => selectAllChapters(moduleId, e.target.checked)}
+                                  className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                                />
+                                <span className="text-gray-600">Select all</span>
+                              </label>
+                              {(chapters || []).map(ch => (
+                                <label key={ch.id} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 cursor-pointer text-sm">
+                                  <input
+                                    type="checkbox"
+                                    checked={(chapterIds || []).includes(ch.id)}
+                                    onChange={() => toggleChapter(moduleId, ch.id)}
+                                    className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                                  />
+                                  <span>{ch.title}</span>
+                                </label>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500">No chapters in this module.</p>
+                          )}
+                          {(chapterIds || []).length > 0 && (
+                            <p className="text-xs text-green-600 mt-2">{chapterIds.length} chapter(s) selected</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -889,6 +1024,86 @@ const TestsQuizzes = () => {
                 </div>
               </div>
 
+              {/* Questions in this test (edit mode only) */}
+              {isEditMode && editingTest && (
+                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <span className="text-green-600">📝</span>
+                    <span>Questions in this test</span>
+                    {(editingTest.question_count ?? editTestQuestions.length) > 0 && (
+                      <span className="text-sm font-normal text-gray-500">
+                        ({(editingTest.question_count ?? editTestQuestions.length)})
+                      </span>
+                    )}
+                  </h3>
+                  {loadingEditQuestions ? (
+                    <div className="flex items-center justify-center py-8 gap-2 text-gray-500">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <span>Loading questions...</span>
+                    </div>
+                  ) : editTestQuestions.length === 0 ? (
+                    <p className="text-sm text-gray-500 py-4">No questions yet. Use &quot;Generate more questions&quot; below to add questions with AI.</p>
+                  ) : (
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {editTestQuestions.map((q, index) => {
+                        const qId = q.id || q.uuid;
+                        const isRemoving = removingQuestionId === qId;
+                        return (
+                          <div key={qId || index} className="bg-white rounded-lg border border-gray-200 p-3 flex items-start gap-3">
+                            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-sm font-semibold">
+                              {index + 1}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm text-gray-800 line-clamp-2">{q.question_text}</p>
+                              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                                  {q.question_type?.replace('_', ' ') || 'MCQ'}
+                                </span>
+                                {q.difficulty_level && (
+                                  <span className="text-xs px-2 py-0.5 rounded bg-amber-50 text-amber-700">
+                                    {q.difficulty_level}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveEditQuestion(qId)}
+                              disabled={isRemoving}
+                              className="flex-shrink-0 p-2 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              title="Remove question from test"
+                            >
+                              {isRemoving ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-5 w-5" />
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {isEditMode && editingTest && !loadingEditQuestions && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const testData = editingTest;
+                        testData._subjectId = testData.subject?.id || testData.subject?.uuid || testData.subject;
+                        testData._moduleChapters = testData.module_chapters;
+                        setSelectedTest(testData);
+                        setShowQuestionGenerator(true);
+                      }}
+                      className="mt-4 px-4 py-2 rounded-lg font-medium text-white flex items-center gap-2"
+                      style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      Generate more questions
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
                 <button
@@ -919,6 +1134,7 @@ const TestsQuizzes = () => {
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}
@@ -975,11 +1191,14 @@ const TestsQuizzes = () => {
                 <Sparkles className="h-5 w-5 text-blue-600" />
                 <span>AI Generation Settings</span>
               </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Questions will be generated with a <strong>mix of question types</strong> (MCQ single/multiple, short answer, rearrange) and a <strong>mix of difficulty levels</strong> (1–5) across all selected modules and chapters.
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Number of Questions <span className="text-red-500">*</span>
-            </label>
+                  </label>
                   <input
                     type="number"
                     name="number_of_questions"
@@ -988,41 +1207,8 @@ const TestsQuizzes = () => {
                     min="1"
                     max="50"
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
-            />
-          </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Difficulty Level <span className="text-red-500">*</span>
-              </label>
-              <select
-                    name="level"
-                    value={aiFormData.level}
-                    onChange={handleAIGenerationChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
-                  >
-                    <option value={1}>Level 1 - Basic</option>
-                    <option value={2}>Level 2 - Easy</option>
-                    <option value={3}>Level 3 - Medium</option>
-                    <option value={4}>Level 4 - Hard</option>
-                    <option value={5}>Level 5 - HOTS (Advanced)</option>
-              </select>
-            </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Question Type <span className="text-red-500">*</span>
-              </label>
-              <select
-                    name="question_type"
-                    value={aiFormData.question_type}
-                    onChange={handleAIGenerationChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
-                  >
-                    <option value="mcq_single">MCQ - Single Correct Answer</option>
-                    <option value="mcq_multiple">MCQ - Multiple Correct Answers</option>
-                    <option value="short_answer">Short Answer Question</option>
-                    <option value="rearrange">Re-arrange/Ordering</option>
-              </select>
-            </div>
+                  />
+                </div>
                 <div className="flex items-center space-x-3 pt-8">
                 <input
                   type="checkbox"
@@ -1053,35 +1239,78 @@ const TestsQuizzes = () => {
             </div>
           </div>
 
-            {/* Generated Questions Preview */}
+            {/* Generated Questions Preview - select/deselect which to keep in test */}
             {generatedQuestions.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Generated Questions Preview</h3>
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                  <h3 className="text-lg font-semibold text-gray-800">Generated Questions — select which to keep</h3>
+                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedGeneratedQuestionIds.size === generatedQuestions.length}
+                      onChange={(e) => selectAllGeneratedQuestions(e.target.checked)}
+                      className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                    />
+                    <span>Select all</span>
+                  </label>
+                </div>
+                <p className="text-sm text-gray-500 mb-3">
+                  Deselected questions will be removed from the test and marked inactive (they will not be given to students).
+                </p>
                 <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {generatedQuestions.map((question, index) => (
-                    <div key={question.id || index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <div className="flex items-start justify-between mb-2">
-                        <span className="text-sm font-semibold text-gray-600">Question {index + 1}</span>
-                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                          {question.question_type}
-                        </span>
-          </div>
-                      <p className="text-gray-800 mb-2">{question.question_text}</p>
-                      {question.options && question.options.length > 0 && (
-                        <div className="ml-4 space-y-1">
-                          {question.options.map((option, optIndex) => (
-                            <div key={optIndex} className={`text-sm ${option.is_correct ? 'text-green-700 font-semibold' : 'text-gray-600'}`}>
-                              {option.is_correct && '✓ '}
-                              {option.option_text}
+                  {generatedQuestions.map((question, index) => {
+                    const qId = String(question.id || question.uuid || '');
+                    const isSelected = qId && selectedGeneratedQuestionIds.has(qId);
+                    return (
+                      <div
+                        key={question.id || index}
+                        className={`rounded-lg p-4 border-2 transition-colors ${isSelected ? 'bg-gray-50 border-gray-200' : 'bg-gray-100 border-gray-300 opacity-75'}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <label className="flex-shrink-0 mt-0.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleGeneratedQuestionSelection(question.id || question.uuid)}
+                              className="h-5 w-5 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                            />
+                          </label>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between mb-2 flex-wrap gap-2">
+                              <span className="text-sm font-semibold text-gray-600">Question {index + 1}</span>
+                              <div className="flex items-center gap-2">
+                                {question.level != null && (
+                                  <span className="text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded">
+                                    Level {question.level}
+                                  </span>
+                                )}
+                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                                  {question.question_type?.replace('_', ' ') || 'MCQ'}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-gray-800 mb-2">{question.question_text}</p>
+                            {question.options && question.options.length > 0 && (
+                              <div className="ml-0 space-y-1">
+                                {question.options.map((option, optIndex) => (
+                                  <div key={optIndex} className={`text-sm ${option.is_correct ? 'text-green-700 font-semibold' : 'text-gray-600'}`}>
+                                    {option.is_correct && '✓ '}
+                                    {option.option_text}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  {selectedGeneratedQuestionIds.size} of {generatedQuestions.length} selected to keep in test.
+                </p>
               </div>
-                          ))}
-                    </div>
-                      )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+            )}
 
             {/* Action Buttons */}
           <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">

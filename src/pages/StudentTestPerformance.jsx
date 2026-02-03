@@ -9,6 +9,7 @@ const StudentTestPerformance = () => {
   const [error, setError] = useState(null);
   const [missionData, setMissionData] = useState(null);
   const [students, setStudents] = useState([]);
+  const [questions, setQuestions] = useState([]);
   const [expandedStudentId, setExpandedStudentId] = useState(null);
 
   useEffect(() => {
@@ -37,6 +38,7 @@ const StudentTestPerformance = () => {
           average_percentage: data.average_percentage,
         });
         setStudents(data.students || []);
+        setQuestions(data.questions || []);
       } else if (response.data) {
         const data = response.data;
         setMissionData({
@@ -47,6 +49,7 @@ const StudentTestPerformance = () => {
           average_percentage: data.average_percentage,
         });
         setStudents(data.students || []);
+        setQuestions(data.questions || []);
       } else {
         setError('Failed to fetch performance data: Invalid response format');
       }
@@ -169,8 +172,8 @@ const StudentTestPerformance = () => {
         </button> */}
       </div>
 
-      {/* Class Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+      {/* Class Summary Cards - hidden for now */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8" style={{ display: 'none' }}>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
           <div className="text-2xl font-bold text-gray-800">{students.length}</div>
           <div className="text-sm text-gray-600">Total Students</div>
@@ -201,8 +204,57 @@ const StudentTestPerformance = () => {
         </div>
       </div>
 
-      {/* Students Table with Expandable Details */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      {/* Question-wise stats: title, module/chapter, level, difficulty, correct % */}
+      {questions.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-8">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 className="text-lg font-semibold text-gray-800">Question-wise Analysis</h2>
+            <p className="text-sm text-gray-500">Question title, module/chapter, level, difficulty, and how many students answered correctly.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-100 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">#</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Question</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Module / Chapter</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Level</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Difficulty</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Correct %</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Attempted / Correct</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {questions.map((q, index) => (
+                  <tr key={q.question_id || index} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm text-gray-600 font-medium">{q.order ?? index + 1}</td>
+                    <td className="px-4 py-3 text-sm text-gray-800 max-w-md">{q.question_title || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{q.module_chapter_name || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{q.level != null ? `Level ${q.level}` : '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 capitalize">{q.difficulty || '—'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`font-semibold ${
+                        (q.correct_percentage ?? 0) >= 70 ? 'text-green-600' :
+                        (q.correct_percentage ?? 0) >= 40 ? 'text-yellow-600' : 'text-red-600'
+                      }`}>
+                        {q.correct_percentage != null ? `${q.correct_percentage}%` : '—'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {q.students_attempted != null && q.students_correct != null
+                        ? `${q.students_correct} / ${q.students_attempted}`
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Students Table with Expandable Details - hidden for now */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" style={{ display: 'none' }}>
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <h2 className="text-lg font-semibold text-gray-800">Test Class Students</h2>
           <p className="text-sm text-gray-500">Average %, correct answers, wrong answers, total questions. Click a row to expand details.</p>

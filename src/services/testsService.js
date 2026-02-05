@@ -337,6 +337,30 @@ class TestsService {
     }
   }
 
+  // Add existing questions to a test by question IDs
+  async addTestQuestions(testId, questionIds) {
+    try {
+      const response = await apiService.post(`/tests/${testId}/add-questions/`, {
+        question_ids: Array.isArray(questionIds) ? questionIds : [questionIds]
+      });
+      return response;
+    } catch (error) {
+      console.error('TestsService: Failed to add test questions:', error);
+      throw new Error(`Failed to add test questions: ${error.message}`);
+    }
+  }
+
+  // Create a new question and add it to the test (manual question creation)
+  async createTestQuestion(testId, questionData) {
+    try {
+      const response = await apiService.post(`/tests/${testId}/add-question/`, questionData);
+      return response;
+    } catch (error) {
+      console.error('TestsService: Failed to create and add question to test:', error);
+      throw new Error(`Failed to create question: ${error.message}`);
+    }
+  }
+
   // Check answer for a test question
   async checkTestAnswer(testId, answerData) {
     try {

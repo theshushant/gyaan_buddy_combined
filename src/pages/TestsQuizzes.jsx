@@ -18,6 +18,7 @@ import classesService from '../services/classesService';
 import subjectsService from '../services/subjectsService';
 import testsService from '../services/testsService';
 import aiService from '../services/aiService';
+import questionsService from '../services/questionsService';
 
 const TestsQuizzes = () => {
   const [activeTab, setActiveTab] = useState('tests');
@@ -55,6 +56,27 @@ const TestsQuizzes = () => {
   const [loadingEditQuestions, setLoadingEditQuestions] = useState(false);
   const [removingQuestionId, setRemovingQuestionId] = useState(null);
   const [loadingTestForEdit, setLoadingTestForEdit] = useState(false);
+  // Manual question flow: 'ai' | 'manual'
+  const [questionAddMode, setQuestionAddMode] = useState('ai');
+  const [showCreateQuestionModal, setShowCreateQuestionModal] = useState(false);
+  const [manualQuestionForm, setManualQuestionForm] = useState({
+    question_text: '',
+    question_type: 'mcq_single',
+    difficulty_level: 'medium',
+    explanation: '',
+    options: [{ option_text: '', is_correct: false }, { option_text: '', is_correct: false }],
+  });
+  const [creatingQuestion, setCreatingQuestion] = useState(false);
+  const [manualQuestionError, setManualQuestionError] = useState(null);
+  // Add from question bank
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [bankQuestions, setBankQuestions] = useState([]);
+  const [loadingBankQuestions, setLoadingBankQuestions] = useState(false);
+  const [selectedBankQuestionIds, setSelectedBankQuestionIds] = useState(new Set());
+  const [addingBankToTest, setAddingBankToTest] = useState(false);
+  // Current test questions (when in manual mode) for display
+  const [manualModeTestQuestions, setManualModeTestQuestions] = useState([]);
+  const [loadingManualModeQuestions, setLoadingManualModeQuestions] = useState(false);
   
   // AI Generation form state (mix of types/levels - no level/question_type sent)
   const [aiFormData, setAiFormData] = useState({
@@ -175,6 +197,30 @@ const TestsQuizzes = () => {
       if (!isEditMode) setSelectedModulesChapters([]);
     }
   }, [selectedSubject, fetchModules, isEditMode]);
+
+  // Fetch test questions when in manual mode (for display)
+  const fetchManualModeTestQuestions = useCallback(async () => {
+    if (!selectedTest) return;
+    const testId = selectedTest.id || selectedTest.uuid;
+    setLoadingManualModeQuestions(true);
+    try {
+      const res = await testsService.getTestQuestions(testId);
+      const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+      setManualModeTestQuestions(list);
+    } catch (err) {
+      console.error('Failed to fetch test questions:', err);
+      setManualModeTestQuestions([]);
+    } finally {
+      setLoadingManualModeQuestions(false);
+    }
+  }, [selectedTest]);
+
+  // When in manual mode, fetch current test questions for display
+  useEffect(() => {
+    if (questionAddMode === 'manual' && selectedTest) {
+      fetchManualModeTestQuestions();
+    }
+  }, [questionAddMode, selectedTest, fetchManualModeTestQuestions]);
 
   // Pre-fill form when editing a test
   useEffect(() => {
@@ -533,6 +579,139 @@ const TestsQuizzes = () => {
     setGenerationError(null);
     setSelectedSubject('');
     setSelectedModulesChapters([]);
+    setQuestionAddMode('ai');
+    setShowCreateQuestionModal(false);
+    setShowBankModal(false);
+    setManualModeTestQuestions([]);
+  };
+
+  const openCreateQuestionModal = () => {
+    setManualQuestionForm({
+      question_text: '',
+      question_type: 'mcq_single',
+      difficulty_level: 'medium',
+      explanation: '',
+      options: [{ option_text: '', is_correct: false }, { option_text: '', is_correct: false }],
+    });
+    setManualQuestionError(null);
+    setShowCreateQuestionModal(true);
+  };
+
+  const handleCreateQuestionSubmit = async (e) => {
+    e.preventDefault();
+    setManualQuestionError(null);
+    if (!manualQuestionForm.question_text?.trim()) {
+      setManualQuestionError('Question text is required.');
+      return;
+    }
+    const needsOptions = ['mcq_single', 'mcq_multiple'].includes(manualQuestionForm.question_type);
+    if (needsOptions) {
+      const validOptions = (manualQuestionForm.options || []).filter(o => (o.option_text || '').trim());
+      if (validOptions.length < 2) {
+        setManualQuestionError('At least 2 options are required for MCQ.');
+        return;
+      }
+      const hasCorrect = validOptions.some(o => o.is_correct);
+      if (!hasCorrect) {
+        setManualQuestionError('Please mark at least one option as correct.');
+        return;
+      }
+    }
+    const testId = selectedTest?.id || selectedTest?.uuid;
+    if (!testId) return;
+    setCreatingQuestion(true);
+    try {
+      const payload = {
+        question_text: manualQuestionForm.question_text.trim(),
+        question_type: manualQuestionForm.question_type,
+        difficulty_level: manualQuestionForm.difficulty_level,
+        explanation: (manualQuestionForm.explanation || '').trim(),
+      };
+      if (needsOptions && manualQuestionForm.options?.length) {
+        payload.options = manualQuestionForm.options
+          .filter(o => (o.option_text || '').trim())
+          .map((o, i) => ({ option_text: o.option_text.trim(), is_correct: !!o.is_correct, order: i + 1 }));
+      }
+      await testsService.createTestQuestion(testId, payload);
+      setShowCreateQuestionModal(false);
+      await fetchManualModeTestQuestions();
+      await fetchTests();
+    } catch (err) {
+      setManualQuestionError(err.message || 'Failed to create question.');
+    } finally {
+      setCreatingQuestion(false);
+    }
+  };
+
+  const addManualOption = () => {
+    setManualQuestionForm(prev => ({
+      ...prev,
+      options: [...(prev.options || []), { option_text: '', is_correct: false }],
+    }));
+  };
+
+  const removeManualOption = (index) => {
+    setManualQuestionForm(prev => ({
+      ...prev,
+      options: (prev.options || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateManualOption = (index, field, value) => {
+    setManualQuestionForm(prev => {
+      const opts = [...(prev.options || [])];
+      if (!opts[index]) return prev;
+      opts[index] = { ...opts[index], [field]: value };
+      return { ...prev, options: opts };
+    });
+  };
+
+  const openBankModal = async () => {
+    setShowBankModal(true);
+    setBankQuestions([]);
+    setSelectedBankQuestionIds(new Set());
+    const subjectId = selectedTest?._subjectId || selectedTest?.subject?.id || selectedTest?.subject?.uuid || selectedTest?.subject;
+    setLoadingBankQuestions(true);
+    try {
+      const res = await questionsService.getQuestions(subjectId ? { subject: subjectId } : {});
+      const list = res?.data ?? res ?? [];
+      setBankQuestions(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error('Failed to fetch questions:', err);
+      setBankQuestions([]);
+    } finally {
+      setLoadingBankQuestions(false);
+    }
+  };
+
+  const toggleBankQuestion = (qId) => {
+    const id = String(qId);
+    setSelectedBankQuestionIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleAddBankToTest = async () => {
+    const ids = [...selectedBankQuestionIds];
+    if (!ids.length) return;
+    const testId = selectedTest?.id || selectedTest?.uuid;
+    if (!testId) return;
+    setAddingBankToTest(true);
+    setManualQuestionError(null);
+    try {
+      await testsService.addTestQuestions(testId, ids);
+      setShowBankModal(false);
+      setSelectedBankQuestionIds(new Set());
+      await fetchManualModeTestQuestions();
+      await fetchTests();
+    } catch (err) {
+      setManualQuestionError(err.message || 'Failed to add questions to test.');
+    } finally {
+      setAddingBankToTest(false);
+    }
   };
 
   const toggleGeneratedQuestionSelection = (questionId) => {
@@ -1147,10 +1326,12 @@ const TestsQuizzes = () => {
           <div>
                 <h2 className="text-3xl font-bold mb-2 flex items-center space-x-2">
                   <Sparkles className="h-8 w-8" />
-                  <span>Generate Questions with AI</span>
+                  <span>{questionAddMode === 'ai' ? 'Generate Questions with AI' : 'Add Questions Manually'}</span>
                 </h2>
                 <p className="text-accent-500/50">
-                  Use Vertex AI to automatically generate questions for your test
+                  {questionAddMode === 'ai'
+                    ? 'Use Vertex AI to automatically generate questions for your test'
+                    : 'Create new questions or add existing ones from the question bank'}
             </p>
           </div>
           <button
@@ -1160,11 +1341,36 @@ const TestsQuizzes = () => {
                 <X className="h-6 w-6" />
           </button>
         </div>
+            {/* Tabs: AI vs Manual */}
+            <div className="flex gap-2 mt-4">
+              <button
+                type="button"
+                onClick={() => setQuestionAddMode('ai')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${questionAddMode === 'ai' ? 'bg-white/20 text-white' : 'bg-white/10 text-white/80 hover:bg-white/15'}`}
+              >
+                <Sparkles className="h-4 w-4 inline mr-2" />
+                Generate with AI
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuestionAddMode('manual')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${questionAddMode === 'manual' ? 'bg-white/20 text-white' : 'bg-white/10 text-white/80 hover:bg-white/15'}`}
+              >
+                <FileText className="h-4 w-4 inline mr-2" />
+                Add manually
+              </button>
+            </div>
           </div>
 
           {/* Form Section */}
           <div className="p-8">
-            {generationError && (
+            {questionAddMode === 'manual' && manualQuestionError && (
+              <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-start space-x-3 mb-6">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700">{manualQuestionError}</p>
+              </div>
+            )}
+            {questionAddMode === 'ai' && generationError && (
               <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-start space-x-3 mb-6">
                 <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div>
@@ -1174,7 +1380,7 @@ const TestsQuizzes = () => {
           </div>
             )}
 
-            {success && generatedQuestions.length > 0 && (
+            {questionAddMode === 'ai' && success && generatedQuestions.length > 0 && (
               <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 flex items-start space-x-3 mb-6">
                 <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
               <div>
@@ -1186,6 +1392,7 @@ const TestsQuizzes = () => {
             </div>
           )}
 
+            {questionAddMode === 'ai' && (
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200 mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
                 <Sparkles className="h-5 w-5 text-blue-600" />
@@ -1238,9 +1445,60 @@ const TestsQuizzes = () => {
               </div>
             </div>
           </div>
+            )}
 
-            {/* Generated Questions Preview - select/deselect which to keep in test */}
-            {generatedQuestions.length > 0 && (
+            {/* Manual mode: Create new question + Add from bank + list */}
+            {questionAddMode === 'manual' && (
+              <div className="space-y-6 mb-6">
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={openCreateQuestionModal}
+                    className="px-4 py-2 rounded-lg font-medium text-white flex items-center gap-2"
+                    style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' }}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create new question
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openBankModal}
+                    className="px-4 py-2 rounded-lg font-medium border-2 border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    Add from question bank
+                  </button>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Questions in this test</h3>
+                  {loadingManualModeQuestions ? (
+                    <div className="flex items-center gap-2 text-gray-500 py-4">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Loading...
+                    </div>
+                  ) : manualModeTestQuestions.length === 0 ? (
+                    <p className="text-sm text-gray-500 py-4">No questions yet. Create one or add from the question bank.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {manualModeTestQuestions.map((q, index) => (
+                        <div key={q.id || q.uuid || index} className="bg-white rounded-lg border border-gray-200 p-3 flex items-start gap-3">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-sm font-semibold">
+                            {index + 1}
+                          </span>
+                          <p className="text-sm text-gray-800 line-clamp-2 flex-1">{q.question_text}</p>
+                          <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                            {q.question_type?.replace('_', ' ') || 'MCQ'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Generated Questions Preview - select/deselect which to keep in test (AI mode only) */}
+            {questionAddMode === 'ai' && generatedQuestions.length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                   <h3 className="text-lg font-semibold text-gray-800">Generated Questions — select which to keep</h3>
@@ -1314,21 +1572,29 @@ const TestsQuizzes = () => {
 
             {/* Action Buttons */}
           <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
-            {generatedQuestions.length > 0 ? (
-              // Show Done button when questions are generated
-            <button
-              type="button"
+            {questionAddMode === 'manual' ? (
+              <button
+                type="button"
                 onClick={handleDone}
                 className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2"
                 style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
               >
                 <CheckCircle2 className="h-5 w-5" />
                 <span>Done</span>
-            </button>
+              </button>
+            ) : generatedQuestions.length > 0 ? (
+              <button
+                type="button"
+                onClick={handleDone}
+                className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2"
+                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
+              >
+                <CheckCircle2 className="h-5 w-5" />
+                <span>Done</span>
+              </button>
             ) : (
-              // Show Back and Generate buttons when no questions generated yet
               <>
-            <button
+                <button
                   type="button"
                   onClick={handleBackToForm}
                   className="px-8 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
@@ -1342,21 +1608,184 @@ const TestsQuizzes = () => {
                   style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
                 >
                   {generatingQuestions ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
                       <span>Generating...</span>
-                </>
-              ) : (
-                <>
+                    </>
+                  ) : (
+                    <>
                       <Sparkles className="h-5 w-5" />
                       <span>Generate Questions</span>
-                </>
-              )}
-            </button>
+                    </>
+                  )}
+                </button>
               </>
             )}
           </div>
       </div>
+        </div>
+      )}
+
+      {/* Create new question modal (manual add) */}
+      {showCreateQuestionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => !creatingQuestion && setShowCreateQuestionModal(false)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-800">Create new question</h3>
+              <button type="button" onClick={() => !creatingQuestion && setShowCreateQuestionModal(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateQuestionSubmit} className="p-6 space-y-4">
+              {manualQuestionError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">{manualQuestionError}</div>
+              )}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Question text <span className="text-red-500">*</span></label>
+                <textarea
+                  value={manualQuestionForm.question_text}
+                  onChange={e => setManualQuestionForm(prev => ({ ...prev, question_text: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Enter the question..."
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Type</label>
+                  <select
+                    value={manualQuestionForm.question_type}
+                    onChange={e => setManualQuestionForm(prev => ({ ...prev, question_type: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="mcq_single">MCQ (Single)</option>
+                    <option value="mcq_multiple">MCQ (Multiple)</option>
+                    <option value="short_answer">Short Answer</option>
+                    <option value="rearrange">Rearrange</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Difficulty</label>
+                  <select
+                    value={manualQuestionForm.difficulty_level}
+                    onChange={e => setManualQuestionForm(prev => ({ ...prev, difficulty_level: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Explanation (optional)</label>
+                <textarea
+                  value={manualQuestionForm.explanation}
+                  onChange={e => setManualQuestionForm(prev => ({ ...prev, explanation: e.target.value }))}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="Explanation for the correct answer"
+                />
+              </div>
+              {['mcq_single', 'mcq_multiple'].includes(manualQuestionForm.question_type) && (
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-semibold text-gray-700">Options <span className="text-red-500">*</span></label>
+                    <button type="button" onClick={addManualOption} className="text-sm text-primary-600 hover:text-primary-700 font-medium">+ Add option</button>
+                  </div>
+                  <div className="space-y-2">
+                    {(manualQuestionForm.options || []).map((opt, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={opt.option_text}
+                          onChange={e => updateManualOption(index, 'option_text', e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                          placeholder={`Option ${index + 1}`}
+                        />
+                        <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={!!opt.is_correct}
+                            onChange={e => updateManualOption(index, 'is_correct', e.target.checked)}
+                            className="rounded border-gray-300 text-primary-500"
+                          />
+                          Correct
+                        </label>
+                        <button type="button" onClick={() => removeManualOption(index)} disabled={(manualQuestionForm.options || []).length <= 2} className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                <button type="button" onClick={() => !creatingQuestion && setShowCreateQuestionModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="submit" disabled={creatingQuestion} className="px-4 py-2 rounded-lg text-white font-medium disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' }}>
+                  {creatingQuestion ? <><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Creating...</> : 'Add to test'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add from question bank modal */}
+      {showBankModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => !addingBankToTest && setShowBankModal(false)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-800">Add from question bank</h3>
+              <button type="button" onClick={() => !addingBankToTest && setShowBankModal(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1">
+              {loadingBankQuestions ? (
+                <div className="flex items-center justify-center py-12 gap-2 text-gray-500">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  Loading questions...
+                </div>
+              ) : bankQuestions.length === 0 ? (
+                <p className="text-gray-500 py-8 text-center">No questions found. Create questions first or try another subject.</p>
+              ) : (
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {bankQuestions.map((q, index) => {
+                    const qId = String(q.id || q.uuid || '');
+                    const isSelected = selectedBankQuestionIds.has(qId);
+                    return (
+                      <div
+                        key={qId || index}
+                        className={`rounded-lg p-3 border-2 cursor-pointer transition-colors ${isSelected ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'}`}
+                        onClick={() => toggleBankQuestion(qId)}
+                      >
+                        <div className="flex items-start gap-2">
+                          <input type="checkbox" checked={isSelected} onChange={() => toggleBankQuestion(qId)} className="mt-1 rounded border-gray-300 text-primary-500" />
+                          <p className="text-sm text-gray-800 line-clamp-2 flex-1">{q.question_text}</p>
+                          <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 flex-shrink-0">{q.question_type?.replace('_', ' ') || 'MCQ'}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-200 flex justify-between items-center">
+              <span className="text-sm text-gray-600">{selectedBankQuestionIds.size} selected</span>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => !addingBankToTest && setShowBankModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleAddBankToTest} disabled={addingBankToTest || selectedBankQuestionIds.size === 0} className="px-4 py-2 rounded-lg text-white font-medium disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}>
+                  {addingBankToTest ? <><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Adding...</> : 'Add selected to test'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

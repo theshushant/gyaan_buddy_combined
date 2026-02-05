@@ -122,7 +122,7 @@ class AIService {
   }
 
   // Generate AI questions using ChatGPT
-  // This will create questions, module content entries, and chapter HOTS entries if level is 5
+  // This will create questions, module content entries, and topic HOTS entries if level is 5
   async generateAIQuestions(requestData) {
     try {
       // Use 2 minute timeout for AI generation (can take longer)
@@ -134,7 +134,7 @@ class AIService {
   }
 
   // Generate AI questions using Vertex AI
-  // This will create questions, module content entries, and chapter HOTS entries if level is 5
+  // This will create questions, module content entries, and topic HOTS entries if level is 5
   async generateAIQuestionsGemini(requestData) {
     try {
       // Use 2 minute timeout for AI generation (can take longer)

@@ -267,7 +267,7 @@ const TestsQuizzes = () => {
       return;
     }
     if (!moduleChaptersPayload.length) {
-      setError('Please add at least one module and select at least one chapter');
+      setError('Please add at least one module and select at least one topic');
       return;
     }
     if (!formData.testDate) {
@@ -430,7 +430,7 @@ const TestsQuizzes = () => {
         return;
       }
       if (module_chapters.length === 0) {
-        setGenerationError('Test has no modules/chapters selected. Edit the test to add at least one module and chapter.');
+        setGenerationError('Test has no modules/topics selected. Edit the test to add at least one module and topic.');
         return;
       }
       
@@ -878,14 +878,14 @@ const TestsQuizzes = () => {
                 </div>
               </div>
 
-              {/* Multi Module & Chapter Selection */}
+              {/* Multi Module & Topic Selection */}
               {selectedSubject && (
                 <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
                     <span className="text-blue-500">📖</span>
-                    <span>Modules & Chapters</span>
+                    <span>Modules & Topics</span>
                   </h3>
-                  <p className="text-sm text-gray-600 mb-4">Add one or more modules and select chapters for each. At least one chapter must be selected.</p>
+                  <p className="text-sm text-gray-600 mb-4">Add one or more modules and select topics for each. At least one topic must be selected.</p>
                   <div className="flex flex-wrap items-end gap-3 mb-6">
                     <div className="flex-1 min-w-[200px]">
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Add module</label>
@@ -936,7 +936,7 @@ const TestsQuizzes = () => {
                           </div>
                           {chaptersLoadingFor === moduleId ? (
                             <div className="flex items-center gap-2 text-gray-500 text-sm">
-                              <Loader2 className="h-4 w-4 animate-spin" /> Loading chapters...
+                              <Loader2 className="h-4 w-4 animate-spin" /> Loading topics...
                             </div>
                           ) : chapters && chapters.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
@@ -962,10 +962,10 @@ const TestsQuizzes = () => {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-sm text-gray-500">No chapters in this module.</p>
+                            <p className="text-sm text-gray-500">No topics in this module.</p>
                           )}
                           {(chapterIds || []).length > 0 && (
-                            <p className="text-xs text-green-600 mt-2">{chapterIds.length} chapter(s) selected</p>
+                            <p className="text-xs text-green-600 mt-2">{chapterIds.length} topic(s) selected</p>
                           )}
                         </div>
                       ))}
@@ -1192,7 +1192,7 @@ const TestsQuizzes = () => {
                 <span>AI Generation Settings</span>
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Questions will be generated with a <strong>mix of question types</strong> (MCQ single/multiple, short answer, rearrange) and a <strong>mix of difficulty levels</strong> (1–5) across all selected modules and chapters.
+                Questions will be generated with a <strong>mix of question types</strong> (MCQ single/multiple, short answer, rearrange) and a <strong>mix of difficulty levels</strong> (1–5) across all selected modules and topics.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>

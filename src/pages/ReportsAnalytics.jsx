@@ -41,7 +41,7 @@ const ReportsAnalytics = () => {
     ]
   };
 
-  // Reports tab data - Chapter-wise student proficiency
+  // Reports tab data - Topic-wise student proficiency
   const reportsData = {
     summary: {
       totalStudents: 120,
@@ -65,7 +65,7 @@ const ReportsAnalytics = () => {
     classes: ['Class 9', 'Class 10', 'Class 11', 'Class 12'],
     subjects: ['Mathematics', 'Science', 'English', 'Hindi', 'Social Studies'],
     modules: ['Module 1: Basics', 'Module 2: Intermediate', 'Module 3: Advanced', 'Module 4: Expert'],
-    chapters: ['Chapter 1', 'Chapter 2', 'Chapter 3', 'Chapter 4', 'Chapter 5']
+    chapters: ['Topic 1', 'Topic 2', 'Topic 3', 'Topic 4', 'Topic 5']
   };
 
   // Student proficiency data (shown after Apply)
@@ -342,18 +342,18 @@ const ReportsAnalytics = () => {
             </div>
           </div>
 
-          {/* Chapter Proficiency Table */}
+          {/* Topic Proficiency Table */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-slide-up" style={{animationDelay: '0.4s'}}>
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h3 className="text-lg font-semibold text-gray-800">Chapter-wise Student Proficiency</h3>
-              <p className="text-sm text-gray-500 mt-1">Performance breakdown by chapter</p>
+              <h3 className="text-lg font-semibold text-gray-800">Topic-wise Student Proficiency</h3>
+              <p className="text-sm text-gray-500 mt-1">Performance breakdown by topic</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">S.No</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Chapter Name</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Topic Name</th>
                     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         Proficient Students %
@@ -495,9 +495,9 @@ const ReportsAnalytics = () => {
                 </div>
               </div>
 
-              {/* Chapter Dropdown */}
+              {/* Topic Dropdown */}
               <div className="relative group">
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Chapter</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Topic</label>
                 <div className="relative">
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 p-1.5 bg-orange-100 rounded-lg">
                     <FileText className="h-4 w-4 text-orange-600" />
@@ -507,7 +507,7 @@ const ReportsAnalytics = () => {
                     onChange={(e) => setReportChapter(e.target.value)}
                     className="w-full pl-12 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-gray-700 font-medium appearance-none cursor-pointer focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all duration-200 hover:border-orange-300"
                   >
-                    <option value="">Select Chapter</option>
+                    <option value="">Select Topic</option>
                     {filterOptions.chapters.map((chap, idx) => (
                       <option key={idx} value={chap}>{chap}</option>
                     ))}
@@ -535,7 +535,7 @@ const ReportsAnalytics = () => {
               <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-secondary-500/10 to-primary-500/10">
                 <h3 className="text-lg font-semibold text-gray-800">Student Proficiency Results</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  Showing results for: {reportClass || 'All Classes'} • {reportSubject || 'All Subjects'} • {reportModule || 'All Modules'} • {reportChapter || 'All Chapters'}
+                  Showing results for: {reportClass || 'All Classes'} • {reportSubject || 'All Subjects'} • {reportModule || 'All Modules'} • {reportChapter || 'All Topics'}
                 </p>
               </div>
               <div className="overflow-x-auto">

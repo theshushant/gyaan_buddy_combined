@@ -29,7 +29,7 @@ const TeacherDashboard = () => {
     "My Students' Average Score": "Average Student Percentage",
     "Module Completed": "Module completion rate",
     "Students Engaged": "Last Module Student Engagement",
-    "Questions Created": "Chapters covered"
+    "Questions Created": "Topics covered"
   }
 
   // Function to get mapped label

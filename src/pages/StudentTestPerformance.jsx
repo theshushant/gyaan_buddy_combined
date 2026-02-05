@@ -94,12 +94,14 @@ const StudentTestPerformance = () => {
 
   if (loading) {
     return (
-      <div className="p-6 animate-fade-in">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="flex flex-col items-center space-y-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
-            <p className="text-gray-600">Loading performance data...</p>
+      <div className="min-h-[60vh] flex items-center justify-center p-6">
+        <div className="flex flex-col items-center space-y-6 animate-fade-in">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-4 border-primary-100 border-t-primary-500 animate-spin" />
+            <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-transparent border-b-accent-400/40 animate-spin" style={{ animationDuration: '1.5s', animationDirection: 'reverse' }} />
           </div>
+          <p className="text-gray-500 font-medium">Loading results...</p>
+          <p className="text-sm text-gray-400">Fetching test performance data</p>
         </div>
       </div>
     );
@@ -107,21 +109,20 @@ const StudentTestPerformance = () => {
 
   if (error) {
     return (
-      <div className="p-6 animate-fade-in">
-        <Link to="/tests" className="text-primary-500 hover:text-primary-600 flex items-center space-x-2 mb-4">
+      <div className="p-6 max-w-2xl mx-auto animate-fade-in">
+        <Link to="/tests" className="inline-flex items-center gap-2 text-primary-500 hover:text-primary-600 mb-6 transition-colors">
           <span>←</span>
           <span>Back to Tests</span>
         </Link>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <div className="text-red-600 text-xl mb-2">⚠️</div>
-          <h3 className="text-lg font-semibold text-red-800 mb-2">Error Loading Data</h3>
-          <p className="text-red-700 mb-4">{error}</p>
-          <p className="text-red-500 text-sm mb-4">Test ID: {testId || 'Not provided'}</p>
+        <div className="bg-white rounded-2xl shadow-lg border border-red-100 p-8 text-center">
+          <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4 text-2xl">⚠️</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">Couldn't load results</h3>
+          <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={fetchStudentsPerformance}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-300"
+            className="px-5 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all duration-200 shadow-md hover:shadow-lg"
           >
-            Try Again
+            Try again
           </button>
         </div>
       </div>
@@ -134,15 +135,15 @@ const StudentTestPerformance = () => {
 
   if (missionData && students.length === 0) {
     return (
-      <div className="p-6 animate-fade-in">
-        <Link to="/tests" className="text-primary-500 hover:text-primary-600 flex items-center space-x-2 mb-4">
+      <div className="p-6 max-w-2xl mx-auto animate-fade-in">
+        <Link to="/tests" className="inline-flex items-center gap-2 text-primary-500 hover:text-primary-600 mb-6 transition-colors">
           <span>←</span>
           <span>Back to Tests</span>
         </Link>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-          <div className="text-yellow-600 text-xl mb-2">📊</div>
-          <h3 className="text-lg font-semibold text-yellow-800 mb-2">No Students in Class</h3>
-          <p className="text-yellow-700">This test class has no enrolled students yet.</p>
+        <div className="bg-white rounded-2xl shadow-lg border border-amber-100 p-8 text-center">
+          <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4 text-2xl">📊</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">No students yet</h3>
+          <p className="text-gray-600">This test class has no enrolled students.</p>
         </div>
       </div>
     );
@@ -151,107 +152,92 @@ const StudentTestPerformance = () => {
   const selectedStudent = students.find(s => s.user_id === expandedStudentId);
 
   return (
-    <div className="p-6 animate-fade-in">
-      {/* Header */}
-      <div className="mb-8 flex justify-between items-center animate-slide-down">
-        <div>
-          <Link to="/tests" className="text-primary-500 hover:text-primary-600 flex items-center space-x-2 mb-4 transform transition-all duration-200 hover:scale-105 hover:-translate-x-1">
-            <span className="transform transition-transform duration-200 hover:-translate-x-1">←</span>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+        {/* Header */}
+        <div className="mb-10">
+          <Link
+            to="/tests"
+            className="inline-flex items-center gap-2 text-primary-500 hover:text-primary-600 mb-6 transition-all duration-200 group"
+          >
+            <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
             <span>Back to Tests</span>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-800">{missionData?.mission_title || 'Test'} - Results</h1>
-          <p className="text-gray-600 mt-2">
-            {missionData?.class_name} • {missionData?.subject_name} • {missionData?.total_questions} Questions
-          </p>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+              {missionData?.mission_title || 'Test'} — Results
+            </h1>
+            <p className="mt-2 text-gray-500 flex flex-wrap gap-x-2 gap-y-1">
+              <span>{missionData?.class_name}</span>
+              <span className="text-gray-300">•</span>
+              <span>{missionData?.subject_name}</span>
+              <span className="text-gray-300">•</span>
+              <span>{missionData?.total_questions} questions</span>
+            </p>
+          </div>
         </div>
-        {/* <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <span>Download Report</span>
-        </button> */}
-      </div>
 
-      {/* Class Summary Cards - hidden for now */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8" style={{ display: 'none' }}>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-          <div className="text-2xl font-bold text-gray-800">{students.length}</div>
-          <div className="text-sm text-gray-600">Total Students</div>
-        </div>
-        <div className="bg-green-50 rounded-lg border border-green-200 p-4 text-center">
-          <div className="text-2xl font-bold text-green-600">{students.filter(s => s.pass).length}</div>
-          <div className="text-sm text-green-700">Passed</div>
-        </div>
-        <div className="bg-red-50 rounded-lg border border-red-200 p-4 text-center">
-          <div className="text-2xl font-bold text-red-600">{students.filter(s => !s.pass).length}</div>
-          <div className="text-sm text-red-700">Failed</div>
-        </div>
-        <div className="bg-primary-500/10 rounded-lg border border-primary-500/30 p-4 text-center">
-          <div className="text-2xl font-bold text-primary-500">
-            {((students.filter(s => s.pass).length / students.length) * 100).toFixed(0)}%
-          </div>
-          <div className="text-sm text-primary-500">Pass Rate</div>
-        </div>
-        <div className="bg-purple-50 rounded-lg border border-purple-200 p-4 text-center">
-          <div className="text-2xl font-bold text-purple-600">
-            {missionData?.average_percentage != null
-              ? `${missionData.average_percentage}%`
-              : students.length
-                ? `${Math.round(students.reduce((sum, s) => sum + s.percentage, 0) / students.length)}%`
-                : '0%'}
-          </div>
-          <div className="text-sm text-purple-700">Avg. Score</div>
-        </div>
-      </div>
-
-      {/* Question-wise stats: title, module/chapter, level, difficulty, correct % */}
-      {questions.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-8">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-lg font-semibold text-gray-800">Question-wise Analysis</h2>
-            <p className="text-sm text-gray-500">Question title, module/chapter, level, difficulty, and how many students answered correctly.</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-100 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">#</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Question</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Module / Chapter</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Level</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Difficulty</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Correct %</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Attempted / Correct</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {questions.map((q, index) => (
-                  <tr key={q.question_id || index} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-600 font-medium">{q.order ?? index + 1}</td>
-                    <td className="px-4 py-3 text-sm text-gray-800 max-w-md">{q.question_title || '—'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{q.module_chapter_name || '—'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{q.level != null ? `Level ${q.level}` : '—'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 capitalize">{q.difficulty || '—'}</td>
-                    <td className="px-4 py-3">
-                      <span className={`font-semibold ${
-                        (q.correct_percentage ?? 0) >= 70 ? 'text-green-600' :
-                        (q.correct_percentage ?? 0) >= 40 ? 'text-yellow-600' : 'text-red-600'
-                      }`}>
-                        {q.correct_percentage != null ? `${q.correct_percentage}%` : '—'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {q.students_attempted != null && q.students_correct != null
-                        ? `${q.students_correct} / ${q.students_attempted}`
-                        : '—'}
-                    </td>
+        {/* Question-wise Analysis */}
+        {questions.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-10 transition-shadow hover:shadow-md">
+            <div className="px-6 py-5 border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-800">Question-wise analysis</h2>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Per-question correct rate, module/topic, level, and difficulty.
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px]">
+                <thead>
+                  <tr className="bg-gray-50/80 border-b border-gray-100">
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Question</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Module / Topic</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correct %</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correct / Attempted</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {questions.map((q, index) => {
+                    const pct = q.correct_percentage ?? 0;
+                    const pctColor = pct >= 70 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-400' : 'bg-red-400';
+                    return (
+                      <tr key={q.question_id || index} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-5 py-3.5 text-sm font-medium text-gray-500 tabular-nums">{q.order ?? index + 1}</td>
+                        <td className="px-5 py-3.5 text-sm text-gray-800 max-w-xs">{q.question_title || '—'}</td>
+                        <td className="px-5 py-3.5 text-sm text-gray-600">{q.module_chapter_name || '—'}</td>
+                        <td className="px-5 py-3.5 text-sm text-gray-600">{q.level != null ? `Level ${q.level}` : '—'}</td>
+                        <td className="px-5 py-3.5 text-sm text-gray-600 capitalize">{q.difficulty || '—'}</td>
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2 min-w-[100px]">
+                            <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${pctColor} transition-all duration-500`}
+                                style={{ width: `${Math.min(100, pct)}%` }}
+                              />
+                            </div>
+                            <span className={`text-sm font-semibold tabular-nums w-10 ${
+                              pct >= 70 ? 'text-emerald-600' : pct >= 40 ? 'text-amber-600' : 'text-red-600'
+                            }`}>
+                              {q.correct_percentage != null ? `${q.correct_percentage}%` : '—'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5 text-sm text-gray-600 tabular-nums">
+                          {q.students_attempted != null && q.students_correct != null
+                            ? `${q.students_correct} / ${q.students_attempted}`
+                            : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Students Table with Expandable Details - hidden for now */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" style={{ display: 'none' }}>
@@ -458,6 +444,7 @@ const StudentTestPerformance = () => {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );

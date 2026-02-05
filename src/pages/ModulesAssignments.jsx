@@ -35,7 +35,7 @@ import subjectsService from '../services/subjectsService';
 import questionsService from '../services/questionsService';
 import aiService from '../services/aiService';
 import CreateModuleModal from '../components/CreateModuleModal';
-import CreateChapterModal from '../components/CreateChapterModal';
+import CreateTopicModal from '../components/CreateTopicModal';
 import SuccessModal from '../components/SuccessModal';
 
 const ModulesAssignments = () => {
@@ -400,7 +400,7 @@ const ModulesAssignments = () => {
 
   const handleSaveQuestion = async (questionData) => {
     if (!selectedChapterForQuestion) {
-      setCreateQuestionError('No chapter selected');
+      setCreateQuestionError('No topic selected');
       return;
     }
 
@@ -882,9 +882,9 @@ const ModulesAssignments = () => {
           />
         )}
 
-        {/* Create/Edit Chapter Modal */}
+        {/* Create/Edit Topic Modal */}
         {showCreateChapterModal && (
-          <CreateChapterModal
+          <CreateTopicModal
             isOpen={showCreateChapterModal}
             onClose={() => {
               setShowCreateChapterModal(false);
@@ -1207,7 +1207,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
 
   const handleGenerate = async () => {
     if (!chapter?.id) {
-      setError('No chapter selected.');
+      setError('No topic selected.');
       return;
     }
 
@@ -1276,7 +1276,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
 
   const handleSave = async () => {
     if (!chapterId) {
-      setError('No chapter ID available. Please regenerate questions.');
+      setError('No topic ID available. Please regenerate questions.');
       return;
     }
 

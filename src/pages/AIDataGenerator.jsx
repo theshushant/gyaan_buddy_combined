@@ -202,7 +202,7 @@ const AIDataGenerator = () => {
   const handleGenerate = async () => {
     // Validation
     if (!selectedSubject || !selectedModule || !selectedChapter) {
-      setError('Please select subject, module, and chapter to generate questions.');
+      setError('Please select subject, module, and topic to generate questions.');
       return;
     }
 
@@ -279,7 +279,7 @@ const AIDataGenerator = () => {
   // Handle save - deactivate unselected questions
   const handleSave = async () => {
     if (!chapterId) {
-      setError('No chapter ID available. Please regenerate questions.');
+      setError('No topic ID available. Please regenerate questions.');
       return;
     }
 
@@ -349,7 +349,7 @@ const AIDataGenerator = () => {
                 AI Question Generator
               </h1>
               <p className="text-gray-600 mt-1">
-                Generate intelligent questions using AI for your modules and chapters
+                Generate intelligent questions using AI for your modules and topics
               </p>
             </div>
           </div>
@@ -365,7 +365,7 @@ const AIDataGenerator = () => {
                 <h2 className="text-xl font-bold text-gray-900">Configure Generation Parameters</h2>
               </div>
               <p className="text-sm text-gray-600 mt-2">
-                Select the target module and chapter, then specify how many questions to generate
+                Select the target module and topic, then specify how many questions to generate
               </p>
             </div>
 
@@ -486,11 +486,11 @@ const AIDataGenerator = () => {
                 </div>
               </div>
 
-              {/* Chapter Dropdown */}
+              {/* Topic Dropdown */}
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
                   <Hash className="h-4 w-4 text-primary-500" />
-                  <span>Module Chapter <span className="text-red-500">*</span></span>
+                  <span>Module Topic <span className="text-red-500">*</span></span>
                 </label>
                 <div className="relative">
                   <select
@@ -499,7 +499,7 @@ const AIDataGenerator = () => {
                     disabled={!selectedModule || loadingChapters}
                     className="w-full px-4 py-3 pl-11 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:border-gray-300"
                   >
-                    <option value="">{!selectedModule ? 'Select module first' : 'Select Chapter'}</option>
+                    <option value="">{!selectedModule ? 'Select module first' : 'Select Topic'}</option>
                     {chapters.map((chapter) => (
                       <option key={chapter.id} value={chapter.id}>
                         {chapter.title}
@@ -603,7 +603,7 @@ const AIDataGenerator = () => {
                     <p className="text-sm font-medium text-amber-800">HOTS Questions</p>
                     <p className="text-sm text-amber-700 mt-1">
                       Level 5 will generate Higher Order Thinking Skills (HOTS) questions. 
-                      These questions will also be added to the Chapter HOTS section.
+                      These questions will also be added to the Topic HOTS section.
                     </p>
                   </div>
                 </div>
@@ -652,7 +652,7 @@ const AIDataGenerator = () => {
                       <span className="ml-2 text-gray-900 font-medium">{getSelectedModuleName()}</span>
                     </div>
                     <div>
-                      <span className="text-gray-500">Chapter:</span>
+                      <span className="text-gray-500">Topic:</span>
                       <span className="ml-2 text-gray-900 font-medium">{getSelectedChapterName()}</span>
                     </div>
                     <div>

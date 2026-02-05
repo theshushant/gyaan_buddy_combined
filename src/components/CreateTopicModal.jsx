@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { X, Upload } from 'lucide-react'
 
-const CreateChapterModal = ({ 
+const CreateTopicModal = ({ 
   isOpen, 
   onClose, 
   onSave, 
@@ -122,11 +122,11 @@ const CreateChapterModal = ({
     switch (name) {
       case 'title':
         if (!value.trim()) {
-          error = 'Chapter title is required'
+          error = 'Topic title is required'
         } else if (value.trim().length < 2) {
-          error = 'Chapter title must be at least 2 characters'
+          error = 'Topic title must be at least 2 characters'
         } else if (value.trim().length > 200) {
-          error = 'Chapter title must be 200 characters or less'
+          error = 'Topic title must be 200 characters or less'
         }
         break
       case 'order':
@@ -219,7 +219,7 @@ const CreateChapterModal = ({
       return newErrors
     })
     // Reset file input
-    const fileInput = document.getElementById('chapter-logo-upload')
+    const fileInput = document.getElementById('topic-logo-upload')
     if (fileInput) {
       fileInput.value = ''
     }
@@ -256,7 +256,7 @@ const CreateChapterModal = ({
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                {isEditMode ? 'Edit Chapter' : 'Create New Chapter'}
+                {isEditMode ? 'Edit Topic' : 'Create New Topic'}
               </h3>
               {selectedModule && (
                 <p className="text-sm text-gray-500 mt-1">
@@ -281,13 +281,13 @@ const CreateChapterModal = ({
               </div>
             )}
 
-            {/* Chapter Information */}
+            {/* Topic Information */}
             <div>
-              <h4 className="text-md font-semibold text-gray-900 mb-4">Chapter Information</h4>
+              <h4 className="text-md font-semibold text-gray-900 mb-4">Topic Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Chapter Title <span className="text-red-500">*</span>
+                    Topic Title <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -317,7 +317,7 @@ const CreateChapterModal = ({
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                       touched.description && errors.description ? 'border-red-300' : 'border-gray-300'
                     }`}
-                    placeholder="Brief description of the chapter..."
+                    placeholder="Brief description of the topic..."
                     disabled={loading}
                   />
                   {touched.description && errors.description && (
@@ -345,7 +345,7 @@ const CreateChapterModal = ({
                     <p className="mt-1 text-sm text-red-600">{errors.order}</p>
                   )}
                   <p className="mt-1 text-xs text-gray-500">
-                    Order determines the sequence of chapters within the module
+                    Order determines the sequence of topics within the module
                   </p>
                 </div>
               </div>
@@ -353,12 +353,12 @@ const CreateChapterModal = ({
 
             {/* Logo/Image Upload Field */}
             <div>
-              <h4 className="text-md font-semibold text-gray-900 mb-4">Chapter Logo</h4>
+              <h4 className="text-md font-semibold text-gray-900 mb-4">Topic Logo</h4>
               <div className="space-y-4">
                 {/* File Input */}
                 <div className="flex items-center space-x-4">
                   <input
-                    id="chapter-logo-upload"
+                    id="topic-logo-upload"
                     type="file"
                     accept="image/*"
                     onChange={handleLogoChange}
@@ -366,7 +366,7 @@ const CreateChapterModal = ({
                     disabled={loading}
                   />
                   <label
-                    htmlFor="chapter-logo-upload"
+                    htmlFor="topic-logo-upload"
                     className={`flex items-center px-4 py-2 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
                       errors.logo
                         ? 'border-red-300 bg-red-50'
@@ -403,14 +403,14 @@ const CreateChapterModal = ({
                   <p className="mt-1 text-sm text-red-600">{errors.logo}</p>
                 )}
                 <p className="text-xs text-gray-500">
-                  Upload an image for the chapter logo (optional). Max size: 5MB
+                  Upload an image for the topic logo (optional). Max size: 5MB
                 </p>
               </div>
             </div>
 
-            {/* Chapter Settings */}
+            {/* Topic Settings */}
             <div>
-              <h4 className="text-md font-semibold text-gray-900 mb-4">Chapter Settings</h4>
+              <h4 className="text-md font-semibold text-gray-900 mb-4">Topic Settings</h4>
               
               <div className="space-y-4">
                 <div className="flex items-center">
@@ -461,7 +461,7 @@ const CreateChapterModal = ({
               >
                 {loading 
                   ? (isEditMode ? 'Updating...' : 'Creating...') 
-                  : (isEditMode ? 'Update Chapter' : 'Create Chapter')}
+                  : (isEditMode ? 'Update Topic' : 'Create Topic')}
               </button>
             </div>
           </form>
@@ -471,4 +471,4 @@ const CreateChapterModal = ({
   )
 }
 
-export default CreateChapterModal
+export default CreateTopicModal

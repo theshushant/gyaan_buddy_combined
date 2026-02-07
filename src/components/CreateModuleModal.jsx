@@ -251,11 +251,11 @@ const CreateModuleModal = ({
     switch (name) {
       case 'name':
         if (!value.trim()) {
-          error = 'Module name is required'
+          error = 'Chapter name is required'
         } else if (value.trim().length < 2) {
-          error = 'Module name must be at least 2 characters'
+          error = 'Chapter name must be at least 2 characters'
         } else if (value.trim().length > 100) {
-          error = 'Module name must be 100 characters or less'
+          error = 'Chapter name must be 100 characters or less'
         }
         break
       case 'subject':
@@ -359,10 +359,10 @@ const CreateModuleModal = ({
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold text-white">
-                    {isEditMode ? 'Edit Module' : 'Create New Module'}
+                    {isEditMode ? 'Edit Chapter' : 'Create New Chapter'}
                   </h3>
                   <p className="text-sm text-primary-200 mt-0.5">
-                    {isEditMode ? 'Update module details' : 'Fill in the details to create a new module'}
+                    {isEditMode ? 'Update chapter details' : 'Fill in the details to create a new chapter'}
                   </p>
                 </div>
               </div>
@@ -411,7 +411,7 @@ const CreateModuleModal = ({
                 <div className="p-2 bg-primary-100 rounded-lg">
                   <FileText className="h-5 w-5 text-primary-500" />
                 </div>
-                <h4 className="text-lg font-semibold text-gray-900">Module Information</h4>
+                <h4 className="text-lg font-semibold text-gray-900">Chapter Information</h4>
               </div>
               
               <div className="space-y-6">
@@ -463,7 +463,7 @@ const CreateModuleModal = ({
                 <div>
                   <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
                     <FileText className="h-4 w-4 text-gray-500" />
-                    <span>Module Name <span className="text-red-500">*</span></span>
+                    <span>Chapter Name <span className="text-red-500">*</span></span>
                   </label>
                   <div className="relative">
                     <input
@@ -512,7 +512,7 @@ const CreateModuleModal = ({
                         ? 'border-red-300 bg-red-50' 
                         : 'border-gray-200 hover:border-gray-300 bg-white'
                     } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
-                    placeholder="Brief description of what this module covers..."
+                    placeholder="Brief description of what this chapter covers..."
                     disabled={loading}
                   />
                   <div className="flex justify-between items-center mt-2">
@@ -628,7 +628,7 @@ const CreateModuleModal = ({
                     </p>
                   )}
                   <p className="mt-2 text-xs text-gray-500 flex items-center space-x-1">
-                    <span>Order determines the sequence of modules within the subject</span>
+                    <span>Order determines the sequence of chapters within the subject</span>
                   </p>
                 </div>
               </div>
@@ -640,7 +640,7 @@ const CreateModuleModal = ({
                 <div className="p-2 bg-indigo-100 rounded-lg">
                   <ToggleRight className="h-5 w-5 text-indigo-600" />
                 </div>
-                <h4 className="text-lg font-semibold text-gray-900">Module Settings</h4>
+                <h4 className="text-lg font-semibold text-gray-900">Chapter Settings</h4>
               </div>
               
               <div className="space-y-5">
@@ -659,7 +659,7 @@ const CreateModuleModal = ({
                         Active
                       </label>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Module will be visible and accessible
+                        Chapter will be visible and accessible
                       </p>
                     </div>
                   </div>
@@ -694,7 +694,7 @@ const CreateModuleModal = ({
                         Enabled
                       </label>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Module will be enabled for students
+                        Chapter will be enabled for students
                       </p>
                     </div>
                   </div>
@@ -741,7 +741,7 @@ const CreateModuleModal = ({
                 ) : (
                   <>
                     <CheckCircle2 className="h-5 w-5" />
-                    <span>{isEditMode ? 'Update Module' : 'Create Module'}</span>
+                    <span>{isEditMode ? 'Update Chapter' : 'Create Chapter'}</span>
                   </>
                 )}
               </button>

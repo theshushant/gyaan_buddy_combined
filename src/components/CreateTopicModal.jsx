@@ -260,7 +260,7 @@ const CreateTopicModal = ({
               </h3>
               {selectedModule && (
                 <p className="text-sm text-gray-500 mt-1">
-                  Module: {selectedModule.title || selectedModule.name}
+                  Chapter: {selectedModule.title || selectedModule.name}
                 </p>
               )}
             </div>
@@ -345,7 +345,7 @@ const CreateTopicModal = ({
                     <p className="mt-1 text-sm text-red-600">{errors.order}</p>
                   )}
                   <p className="mt-1 text-xs text-gray-500">
-                    Order determines the sequence of topics within the module
+                    Order determines the sequence of topics within the chapter
                   </p>
                 </div>
               </div>

@@ -313,7 +313,7 @@ const TestsQuizzes = () => {
       return;
     }
     if (!moduleChaptersPayload.length) {
-      setError('Please add at least one module and select at least one topic');
+      setError('Please add at least one chapter and select at least one topic');
       return;
     }
     if (!formData.testDate) {
@@ -476,7 +476,7 @@ const TestsQuizzes = () => {
         return;
       }
       if (module_chapters.length === 0) {
-        setGenerationError('Test has no modules/topics selected. Edit the test to add at least one module and topic.');
+        setGenerationError('Test has no chapters/topics selected. Edit the test to add at least one chapter and topic.');
         return;
       }
       
@@ -1057,17 +1057,17 @@ const TestsQuizzes = () => {
                 </div>
               </div>
 
-              {/* Multi Module & Topic Selection */}
+              {/* Multi Chapter & Topic Selection */}
               {selectedSubject && (
                 <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
                     <span className="text-blue-500">📖</span>
-                    <span>Modules & Topics</span>
+                    <span>Chapters & Topics</span>
                   </h3>
-                  <p className="text-sm text-gray-600 mb-4">Add one or more modules and select topics for each. At least one topic must be selected.</p>
+                  <p className="text-sm text-gray-600 mb-4">Add one or more chapters and select topics for each. At least one topic must be selected.</p>
                   <div className="flex flex-wrap items-end gap-3 mb-6">
                     <div className="flex-1 min-w-[200px]">
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">Add module</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Add chapter</label>
                       <select
                         id="add-module-select"
                         disabled={loadingModules}
@@ -1078,7 +1078,7 @@ const TestsQuizzes = () => {
                           e.target.value = '';
                         }}
                       >
-                        <option value="">{loadingModules ? 'Loading...' : 'Select module to add'}</option>
+                        <option value="">{loadingModules ? 'Loading chapters...' : 'Select chapter to add'}</option>
                         {modules
                           .filter(m => !selectedModulesChapters.some(s => s.moduleId === m.id))
                           .map(m => (
@@ -1096,7 +1096,7 @@ const TestsQuizzes = () => {
                       className="px-4 py-3 rounded-xl font-medium text-white transition-all"
                       style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
                     >
-                      Add module
+                      Add chapter
                     </button>
                   </div>
                   {selectedModulesChapters.length > 0 && (
@@ -1141,7 +1141,7 @@ const TestsQuizzes = () => {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-sm text-gray-500">No topics in this module.</p>
+                            <p className="text-sm text-gray-500">No topics in this chapter.</p>
                           )}
                           {(chapterIds || []).length > 0 && (
                             <p className="text-xs text-green-600 mt-2">{chapterIds.length} topic(s) selected</p>

@@ -97,7 +97,7 @@ const ModulesAssignments = () => {
             return {
               id: module.id,
               subjectId: module.subject || module.subject_id || module.subject?.id,
-              title: module.name || `Module ${module.order}`,
+              title: module.name || `Chapter ${module.order}`,
               completionRate: module.user_percentage || 0,
               isDue: module.status === 'due',
               // Store full module data for editing
@@ -119,7 +119,7 @@ const ModulesAssignments = () => {
             return {
               id: module.id,
               subjectId: module.subject || module.subject_id || module.subject?.id,
-              title: module.name || `Module ${module.order}`,
+              title: module.name || `Chapter ${module.order}`,
               completionRate: module.user_percentage || 0,
               isDue: module.status === 'due',
               // Store full module data for editing
@@ -139,7 +139,7 @@ const ModulesAssignments = () => {
       setAllModulesData(modulesWithChapters);
     } catch (err) {
       console.error('Error fetching modules:', err);
-      setError(err.message || 'Failed to load modules. Please try again.');
+      setError(err.message || 'Failed to load chapters. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -197,16 +197,16 @@ const ModulesAssignments = () => {
         setShowCreateModal(false);
         setEditingModule(null);
         setSuccessData({
-          title: 'Module Updated Successfully',
-          message: `Module "${moduleData.name}" has been updated successfully.`
+          title: 'Chapter Updated Successfully',
+          message: `Chapter "${moduleData.name}" has been updated successfully.`
         });
       } else {
         // Create new module
         await modulesService.createModule(moduleData);
         setShowCreateModal(false);
         setSuccessData({
-          title: 'Module Created Successfully',
-          message: `Module "${moduleData.name}" has been created successfully.`
+          title: 'Chapter Created Successfully',
+          message: `Chapter "${moduleData.name}" has been created successfully.`
         });
       }
       setShowSuccessModal(true);
@@ -214,7 +214,7 @@ const ModulesAssignments = () => {
     } catch (err) {
       console.error('Error saving module:', err);
       // Pass the full error object to preserve validation error structure
-      setCreateError(err.responseData || err.message || `Failed to ${editingModule ? 'update' : 'create'} module. Please try again.`);
+      setCreateError(err.responseData || err.message || `Failed to ${editingModule ? 'update' : 'create'} chapter. Please try again.`);
     } finally {
       setCreatingModule(false);
     }
@@ -228,7 +228,7 @@ const ModulesAssignments = () => {
 
   const handleCreateChapter = async (chapterData) => {
     if (!selectedModuleForChapter && !editingChapter) {
-      setCreateChapterError('No module selected');
+      setCreateChapterError('No chapter selected');
       return;
     }
 
@@ -545,9 +545,9 @@ const ModulesAssignments = () => {
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                  Modules & Assignments
+                  Chapters & Assignments
                 </h1>
-                <p className="text-gray-600 mt-1">Manage your learning modules and assignments</p>
+                <p className="text-gray-600 mt-1">Manage your learning chapters and assignments</p>
               </div>
             </div>
           </div>
@@ -557,7 +557,7 @@ const ModulesAssignments = () => {
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Total Modules</p>
+                  <p className="text-sm text-gray-600">Total Chapters</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">{chapters.length}</p>
                 </div>
                 <div className="p-3 bg-primary-100 rounded-lg">
@@ -635,7 +635,7 @@ const ModulesAssignments = () => {
                 disabled={!selectedSubject}
               >
                 <Plus className="h-5 w-5" />
-                <span>Create Module</span>
+                <span>Create Chapter</span>
               </button>
             </div>
           </div>

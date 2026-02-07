@@ -78,7 +78,7 @@ const Layout = ({ children }) => {
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'My Profile', href: '/profile', icon: UserCheck },
     { name: 'My Students', href: '/students', icon: GraduationCap },
-    { name: 'Modules & Assignments', href: '/modules', icon: BookOpen },
+    { name: 'Chapters & Assignments', href: '/modules', icon: BookOpen },
     { name: 'Tests & Quizzes', href: '/tests', icon: ClipboardList },
     { name: 'Reports & Analytics', href: '/reports', icon: BarChart3 },
     { name: 'Leaderboards', href: '/leaderboards', icon: Trophy },

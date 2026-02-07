@@ -20,7 +20,7 @@ const ModuleDetail = () => {
         <div className="flex items-center space-x-4">
           <Link to="/modules" className="text-primary-500 hover:text-primary-600 flex items-center space-x-2 transform transition-all duration-200 hover:scale-105 hover:-translate-x-1">
             <span className="transform transition-transform duration-200 hover:-translate-x-1">←</span>
-            <span>Back to Modules</span>
+            <span>Back to Chapters</span>
           </Link>
         </div>
         <div className="flex space-x-4">
@@ -37,7 +37,7 @@ const ModuleDetail = () => {
 
       {/* Module Title */}
       <div className="mb-8 animate-slide-right" style={{animationDelay: '0.1s'}}>
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Module 2.1: Suchak (Indicators)</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Chapter 2.1: Suchak (Indicators)</h1>
         <p className="text-lg text-gray-600">Vigyan (Science) - Adhyay 2: Aml, Ksharak evam Lavan</p>
       </div>
 

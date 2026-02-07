@@ -220,6 +220,7 @@ const StudentTestPerformance = () => {
                   <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial no</th>
                   <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student name</th>
                   <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% correct</th>
+                  <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-5 py-3.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                 </tr>
               </thead>
@@ -229,6 +230,7 @@ const StudentTestPerformance = () => {
                   const attempted = student.questions_attempted ?? (student.correct_answer_count ?? 0) + (student.wrong_answer_count ?? 0);
                   const correct = student.correct_answer_count ?? 0;
                   const wrong = student.wrong_answer_count ?? 0;
+                  const hasAttempted = attempted > 0 || (student.status && student.status !== 'not_started');
                   return (
                     <React.Fragment key={student.user_id}>
                       <tr className={`hover:bg-gray-50/50 transition-colors ${isExpanded ? 'bg-gray-50/80' : ''}`}>
@@ -237,6 +239,15 @@ const StudentTestPerformance = () => {
                         <td className="px-5 py-3.5">
                           <span className={`text-sm font-semibold tabular-nums ${getPercentageColor(student.percentage)}`}>
                             {student.percentage != null ? `${student.percentage}%` : '—'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                            hasAttempted
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                              : 'bg-gray-100 text-gray-600 border border-gray-200'
+                          }`}>
+                            {hasAttempted ? 'Attempted' : 'Not attempted'}
                           </span>
                         </td>
                         <td className="px-5 py-3.5 text-right">
@@ -259,8 +270,8 @@ const StudentTestPerformance = () => {
                       </tr>
                       {isExpanded && (
                         <tr>
-                          <td colSpan={4} className="px-5 py-0 bg-gray-50/50">
-                            <div className="py-4 px-5 border-t border-gray-100 animate-fade-in">
+                          <td colSpan={5} className="px-5 py-0 bg-gray-50/50">
+                            <div className="py-4 px-5 border-t border-gray-100 animate-fade-in space-y-4">
                               <div className="flex flex-wrap gap-6 text-sm">
                                 <div className="flex items-center gap-2">
                                   <span className="text-gray-500">Questions attempted:</span>
@@ -275,6 +286,27 @@ const StudentTestPerformance = () => {
                                   <span className="font-semibold text-red-600">{wrong}</span>
                                 </div>
                               </div>
+                              {student.answers && student.answers.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Question-wise result</p>
+                                  <ul className="space-y-2">
+                                    {student.answers.map((item, idx) => (
+                                      <li key={idx} className="flex items-center justify-between gap-3 py-2 px-3 bg-white rounded-lg border border-gray-100">
+                                        <span className="text-sm text-gray-800 flex-1 min-w-0 truncate">{item.question_title || '—'}</span>
+                                        <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                                          item.is_correct === true
+                                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                            : item.is_correct === false
+                                              ? 'bg-red-100 text-red-800 border border-red-200'
+                                              : 'bg-gray-100 text-gray-500 border border-gray-200'
+                                        }`}>
+                                          {item.is_correct === true ? 'Correct' : item.is_correct === false ? 'Incorrect' : 'Not attempted'}
+                                        </span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                             </div>
                           </td>
                         </tr>

@@ -169,6 +169,32 @@ const StudentTestPerformance = () => {
           </div>
         </div>
 
+        {/* Summary cards: Attempted/Total users, Avg correct % */}
+        {(() => {
+          const attemptedCount = students.filter(
+            s => (s.questions_attempted ?? 0) > 0 || (s.status && s.status !== 'not_started')
+          ).length;
+          const totalUsers = students.length;
+          const avgPct = missionData?.average_percentage ?? 0;
+          const avgColor = avgPct >= 70 ? 'text-emerald-600' : avgPct >= 40 ? 'text-amber-600' : 'text-red-600';
+          return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Attempted / Total users</p>
+                <p className="mt-1 text-2xl font-bold text-gray-900 tabular-nums">
+                  {attemptedCount} <span className="text-gray-400 font-normal">/</span> {totalUsers}
+                </p>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Avg correct %</p>
+                <p className={`mt-1 text-2xl font-bold tabular-nums ${avgColor}`}>
+                  {avgPct != null ? `${avgPct}%` : '—'}
+                </p>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Table 1: Question-wise — Serial no, Question title, Sub-topic, % correct */}
         {questions.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-10 transition-shadow hover:shadow-md">
@@ -286,27 +312,43 @@ const StudentTestPerformance = () => {
                                   <span className="font-semibold text-red-600">{wrong}</span>
                                 </div>
                               </div>
-                              {student.answers && student.answers.length > 0 && (
-                                <div>
-                                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Question-wise result</p>
-                                  <ul className="space-y-2">
-                                    {student.answers.map((item, idx) => (
-                                      <li key={idx} className="flex items-center justify-between gap-3 py-2 px-3 bg-white rounded-lg border border-gray-100">
-                                        <span className="text-sm text-gray-800 flex-1 min-w-0 truncate">{item.question_title || '—'}</span>
-                                        <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                                          item.is_correct === true
-                                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                            : item.is_correct === false
-                                              ? 'bg-red-100 text-red-800 border border-red-200'
-                                              : 'bg-gray-100 text-gray-500 border border-gray-200'
-                                        }`}>
-                                          {item.is_correct === true ? 'Correct' : item.is_correct === false ? 'Incorrect' : 'Not attempted'}
-                                        </span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
+                              <div>
+                                <p className="text-sm font-semibold text-gray-800 mb-3">Full list: which questions answered correctly / wrongly</p>
+                                {student.answers && student.answers.length > 0 ? (
+                                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                                    <table className="w-full min-w-[400px] text-sm">
+                                      <thead>
+                                        <tr className="bg-gray-50 border-b border-gray-200">
+                                          <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">#</th>
+                                          <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Question</th>
+                                          <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Result</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-gray-100 bg-white">
+                                        {student.answers.map((item, idx) => (
+                                          <tr key={idx} className="hover:bg-gray-50/50">
+                                            <td className="px-4 py-2.5 text-gray-500 font-medium tabular-nums">{idx + 1}</td>
+                                            <td className="px-4 py-2.5 text-gray-800">{item.question_title || '—'}</td>
+                                            <td className="px-4 py-2.5 text-right">
+                                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                                                item.is_correct === true
+                                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                                  : item.is_correct === false
+                                                    ? 'bg-red-100 text-red-800 border border-red-200'
+                                                    : 'bg-gray-100 text-gray-500 border border-gray-200'
+                                              }`}>
+                                                {item.is_correct === true ? 'Correct' : item.is_correct === false ? 'Wrong' : 'Not attempted'}
+                                              </span>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-gray-500 py-3">No question data available.</p>
+                                )}
+                              </div>
                             </div>
                           </td>
                         </tr>

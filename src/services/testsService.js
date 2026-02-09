@@ -190,9 +190,14 @@ class TestsService {
       const payload = {
         test_datetime: testData.test_datetime,
         duration: parseInt(testData.duration),
-        class_group: testData.class_group,
         subject: testData.subject,
       };
+      if (testData.class_groups && Array.isArray(testData.class_groups) && testData.class_groups.length > 0) {
+        payload.class_groups = testData.class_groups;
+        if (testData.class_groups.length === 1) payload.class_group = testData.class_groups[0];
+      } else if (testData.class_group) {
+        payload.class_group = testData.class_group;
+      }
 
       const hasModuleChapters = testData.module_chapters && Array.isArray(testData.module_chapters) && testData.module_chapters.length > 0;
       const hasLegacy = testData.module && testData.module_chapter;
@@ -224,7 +229,10 @@ class TestsService {
 
       if (testData.test_datetime) payload.test_datetime = testData.test_datetime;
       if (testData.duration !== undefined) payload.duration = parseInt(testData.duration);
-      if (testData.class_group) payload.class_group = testData.class_group;
+      if (testData.class_groups && Array.isArray(testData.class_groups) && testData.class_groups.length > 0) {
+        payload.class_groups = testData.class_groups;
+        if (testData.class_groups.length === 1) payload.class_group = testData.class_groups[0];
+      } else if (testData.class_group) payload.class_group = testData.class_group;
       if (testData.subject) payload.subject = testData.subject;
 
       const hasModuleChapters = testData.module_chapters && Array.isArray(testData.module_chapters);

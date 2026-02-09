@@ -25,13 +25,11 @@ import modulesService from '../services/modulesService';
 import aiService from '../services/aiService';
 
 const AIDataGenerator = () => {
-  // Dropdown data states
   const [classes, setClasses] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [modules, setModules] = useState([]);
   const [chapters, setChapters] = useState([]);
 
-  // Selected values
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedModule, setSelectedModule] = useState('');
@@ -42,25 +40,21 @@ const AIDataGenerator = () => {
   const [addImage, setAddImage] = useState(false);
   const [useMatplot, setUseMatplot] = useState(false);
 
-  // Loading states
   const [loadingClasses, setLoadingClasses] = useState(true);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [loadingModules, setLoadingModules] = useState(false);
   const [loadingChapters, setLoadingChapters] = useState(false);
   const [generating, setGenerating] = useState(false);
 
-  // Result states
   const [generationResult, setGenerationResult] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // Generated questions state
   const [generatedQuestions, setGeneratedQuestions] = useState([]);
   const [selectedQuestionIds, setSelectedQuestionIds] = useState(new Set());
   const [saving, setSaving] = useState(false);
   const [chapterId, setChapterId] = useState(null);
 
-  // Number of questions options
   const questionCountOptions = [
     { value: '3', label: '3 Questions' },
     { value: '5', label: '5 Questions' },
@@ -69,7 +63,6 @@ const AIDataGenerator = () => {
     { value: '20', label: '20 Questions' },
   ];
 
-  // Level options
   const levelOptions = [
     { value: '1', label: 'Level 1 - Basic' },
     { value: '2', label: 'Level 2 - Easy' },
@@ -78,7 +71,6 @@ const AIDataGenerator = () => {
     { value: '5', label: 'Level 5 - HOTS (Advanced)' },
   ];
 
-  // Question type options
   const questionTypeOptions = [
     { value: 'mcq_single', label: 'MCQ - Single Correct' },
     { value: 'mcq_multiple', label: 'MCQ - Multiple Correct' },
@@ -86,7 +78,6 @@ const AIDataGenerator = () => {
     { value: 'rearrange', label: 'Re-arrange' },
   ];
 
-  // Fetch classes on mount
   useEffect(() => {
     const fetchClasses = async () => {
       setLoadingClasses(true);
@@ -104,7 +95,6 @@ const AIDataGenerator = () => {
     fetchClasses();
   }, []);
 
-  // Fetch subjects when class changes
   useEffect(() => {
     const fetchSubjects = async () => {
       if (!selectedClass) {
@@ -132,7 +122,6 @@ const AIDataGenerator = () => {
     fetchSubjects();
   }, [selectedClass]);
 
-  // Fetch modules when subject changes
   useEffect(() => {
     const fetchModules = async () => {
       if (!selectedSubject) {
@@ -158,7 +147,6 @@ const AIDataGenerator = () => {
     fetchModules();
   }, [selectedSubject]);
 
-  // Fetch chapters when module changes
   useEffect(() => {
     const fetchChapters = async () => {
       if (!selectedModule) {
@@ -182,7 +170,6 @@ const AIDataGenerator = () => {
     fetchChapters();
   }, [selectedModule]);
 
-  // Get selected names for display
   const getSelectedSubjectName = () => {
     const subject = subjects.find(s => s.id?.toString() === selectedSubject?.toString());
     return subject?.name || '';
@@ -198,9 +185,7 @@ const AIDataGenerator = () => {
     return chapter?.title || '';
   };
 
-  // Handle generate button click
   const handleGenerate = async () => {
-    // Validation
     if (!selectedSubject || !selectedModule || !selectedChapter) {
       setError('Please select subject, module, and topic to generate questions.');
       return;
@@ -227,22 +212,18 @@ const AIDataGenerator = () => {
         use_matplot: useMatplot,
       };
 
-      // Use Vertex Gemini when use_matplot is enabled (matplotlib images); otherwise ChatGPT
       const response = useMatplot
         ? await aiService.generateAIQuestionsGemini(requestData)
         : await aiService.generateAIQuestions(requestData);
       
-      // API returns data wrapped in 'data' property
       const responseData = response.data || response;
       
       setGenerationResult(responseData);
       
-      // Store generated questions and chapter ID
       const questions = responseData.questions || [];
       setGeneratedQuestions(questions);
       setChapterId(responseData.chapter_id || selectedChapter);
       
-      // Select all questions by default
       setSelectedQuestionIds(new Set(questions.map(q => q.id)));
       
       setSuccess(`Successfully generated ${responseData.questions_created || numberOfQuestions} questions!`);
@@ -254,7 +235,6 @@ const AIDataGenerator = () => {
     }
   };
 
-  // Toggle question selection
   const toggleQuestionSelection = (questionId) => {
     setSelectedQuestionIds(prev => {
       const newSet = new Set(prev);
@@ -267,7 +247,6 @@ const AIDataGenerator = () => {
     });
   };
 
-  // Toggle all questions selection
   const toggleAllQuestions = () => {
     if (selectedQuestionIds.size === generatedQuestions.length) {
       setSelectedQuestionIds(new Set());
@@ -276,7 +255,6 @@ const AIDataGenerator = () => {
     }
   };
 
-  // Handle save - deactivate unselected questions
   const handleSave = async () => {
     if (!chapterId) {
       setError('No topic ID available. Please regenerate questions.');
@@ -291,12 +269,10 @@ const AIDataGenerator = () => {
       
       const response = await aiService.deactivateAIQuestions(questionIdsToKeep, chapterId);
       
-      // API returns data wrapped in 'data' property
       const result = response.data || response;
       
       setSuccess(`Successfully saved! ${result.deactivated_count || 0} unselected questions marked as inactive.`);
       
-      // Clear the questions list after successful save
       setGeneratedQuestions([]);
       setSelectedQuestionIds(new Set());
       setGenerationResult(null);
@@ -309,7 +285,6 @@ const AIDataGenerator = () => {
     }
   };
 
-  // Reset form
   const handleReset = () => {
     setSelectedClass('');
     setSelectedSubject('');
@@ -329,13 +304,11 @@ const AIDataGenerator = () => {
     setChapterId(null);
   };
 
-  // Check if form is valid
   const isFormValid = selectedSubject && selectedModule && selectedChapter;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gradient-start/10 to-gradient-end/10">
       <div className="p-6 lg:p-8">
-        {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">
             <div 
@@ -355,10 +328,8 @@ const AIDataGenerator = () => {
           </div>
         </div>
 
-        {/* Main Content Card */}
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Card Header */}
             <div className="border-b border-gray-200 px-8 py-6" style={{ background: 'linear-gradient(135deg, rgba(0,22,122,0.1) 0%, rgba(30,58,138,0.1) 100%)' }}>
               <div className="flex items-center space-x-3">
                 <Sparkles className="h-6 w-6 text-primary-500" />
@@ -369,9 +340,7 @@ const AIDataGenerator = () => {
               </p>
             </div>
 
-            {/* Form Content */}
             <div className="p-8 space-y-6">
-              {/* Error Alert */}
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start space-x-3">
                   <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -382,7 +351,6 @@ const AIDataGenerator = () => {
                 </div>
               )}
 
-              {/* Success Alert */}
               {success && (
                 <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start space-x-3">
                   <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -393,7 +361,6 @@ const AIDataGenerator = () => {
                 </div>
               )}
 
-              {/* Class Dropdown */}
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
                   <BookOpen className="h-4 w-4 text-primary-500" />
@@ -424,7 +391,6 @@ const AIDataGenerator = () => {
                 </div>
               </div>
 
-              {/* Subject Dropdown */}
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
                   <Layers className="h-4 w-4 text-primary-500" />
@@ -455,7 +421,6 @@ const AIDataGenerator = () => {
                 </div>
               </div>
 
-              {/* Module Dropdown */}
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
                   <FileText className="h-4 w-4 text-primary-500" />
@@ -486,7 +451,6 @@ const AIDataGenerator = () => {
                 </div>
               </div>
 
-              {/* Topic Dropdown */}
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
                   <Hash className="h-4 w-4 text-primary-500" />
@@ -517,7 +481,6 @@ const AIDataGenerator = () => {
                 </div>
               </div>
 
-              {/* Question Type Dropdown */}
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
                   <HelpCircle className="h-4 w-4 text-primary-500" />
@@ -542,9 +505,7 @@ const AIDataGenerator = () => {
                 </div>
               </div>
 
-              {/* Number of Questions & Level Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Number of Questions */}
                 <div className="space-y-2">
                   <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
                     <BarChart2 className="h-4 w-4 text-primary-500" />
@@ -569,7 +530,6 @@ const AIDataGenerator = () => {
                   </div>
                 </div>
 
-                {/* Level */}
                 <div className="space-y-2">
                   <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
                     <Zap className="h-4 w-4 text-primary-500" />
@@ -595,7 +555,6 @@ const AIDataGenerator = () => {
                 </div>
               </div>
 
-              {/* Level 5 Info */}
               {level === '5' && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start space-x-3">
                   <Zap className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -609,7 +568,6 @@ const AIDataGenerator = () => {
                 </div>
               )}
 
-              {/* Generate images & Use matplotlib */}
               <div className="space-y-2">
                 <div className="flex items-center space-x-3">
                   <input
@@ -638,7 +596,6 @@ const AIDataGenerator = () => {
                 </div>
               </div>
 
-              {/* Summary Preview */}
               {isFormValid && (
                 <div className="bg-primary-500/10 border border-primary-500/20 rounded-xl p-5 space-y-3">
                   <h3 className="text-sm font-bold text-primary-500 uppercase tracking-wider">Generation Summary</h3>
@@ -675,7 +632,6 @@ const AIDataGenerator = () => {
                 </div>
               )}
 
-              {/* Action Buttons */}
               <div className="flex items-center justify-end space-x-4 pt-4 border-t border-gray-200">
                 <button
                   onClick={handleReset}
@@ -707,7 +663,6 @@ const AIDataGenerator = () => {
             </div>
           </div>
 
-          {/* Generated Questions List */}
           {generatedQuestions.length > 0 && (
             <div className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="border-b border-gray-200 px-8 py-6" style={{ background: 'linear-gradient(135deg, rgba(0,22,122,0.1) 0%, rgba(30,58,138,0.1) 100%)' }}>
@@ -741,7 +696,6 @@ const AIDataGenerator = () => {
                 </p>
               </div>
 
-              {/* Questions List */}
               <div className="p-6 space-y-4 max-h-[600px] overflow-y-auto">
                 {generatedQuestions.map((question, index) => (
                   <div
@@ -754,7 +708,6 @@ const AIDataGenerator = () => {
                     onClick={() => toggleQuestionSelection(question.id)}
                   >
                     <div className="p-5">
-                      {/* Question Header */}
                       <div className="flex items-start space-x-4">
                         <div className="flex-shrink-0 mt-1">
                           {selectedQuestionIds.has(question.id) ? (
@@ -786,7 +739,6 @@ const AIDataGenerator = () => {
                             {question.question_text}
                           </p>
 
-                          {/* Options */}
                           {question.options && question.options.length > 0 && (
                             <div className="mt-4 space-y-2">
                               {question.options.map((option, optIdx) => (
@@ -818,7 +770,6 @@ const AIDataGenerator = () => {
                             </div>
                           )}
 
-                          {/* Explanation */}
                           {question.explanation && (
                             <div className="mt-4 p-3 bg-primary-500/10 border border-primary-500/30 rounded-lg">
                               <p className="text-xs font-semibold text-primary-500 uppercase tracking-wider mb-1">
@@ -836,7 +787,6 @@ const AIDataGenerator = () => {
                 ))}
               </div>
 
-              {/* Save Button */}
               <div className="bg-gray-50 border-t border-gray-200 px-8 py-6">
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-gray-600">

@@ -39,13 +39,11 @@ const Teachers = () => {
   const [teacherToDelete, setTeacherToDelete] = useState(null)
 
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = error.teachers !== null || error.stats !== null
     if (hasError) {
       return // Don't retry if there's already an error
     }
 
-    // Fetch teachers, stats, and subjects when component mounts
     const fetchData = async () => {
       try {
         await Promise.all([
@@ -61,9 +59,7 @@ const Teachers = () => {
     fetchData()
   }, [dispatch, error.teachers, error.stats])
 
-  // Update filters when search terms change
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = error.teachers !== null
     if (hasError) {
       return // Don't retry if there's already an error
@@ -132,7 +128,6 @@ const Teachers = () => {
       setShowSuccessModal(true)
     } catch (error) {
       console.error('Error deleting teacher:', error)
-      // Keep modal open on error so user can try again or cancel
     }
   }
 
@@ -159,48 +154,38 @@ const Teachers = () => {
 
   const getProgressBarColor = (percentage, type = 'usage') => {
     if (type === 'usage') {
-      // Dashboard Usage colors: green >= 80, orange >= 60, red < 60
       if (percentage >= 80) return 'bg-green-500'
       if (percentage >= 60) return 'bg-orange-500'
       return 'bg-red-500'
     } else {
-      // Overall Mastery colors: blue >= 80, orange >= 60, red < 60
       if (percentage >= 80) return 'bg-primary-500'
       if (percentage >= 60) return 'bg-orange-500'
       return 'bg-red-500'
     }
   }
   
-  // Format classes display (e.g., "9A, 10B")
   const formatClasses = (classes) => {
     if (!Array.isArray(classes) || classes.length === 0) {
       return 'No classes assigned'
     }
     return classes.map(cls => {
-      // Handle both string and object formats
       if (typeof cls === 'string') return cls
       return cls.name || cls.class_name || cls.toString()
     }).join(', ')
   }
   
-  // Get teacher's primary subject
   const getTeacherSubject = (teacher) => {
-    // Check if teacher has subjects array and it's not empty
     if (Array.isArray(teacher.subjects) && teacher.subjects.length > 0) {
       const firstSubject = teacher.subjects[0]
-      // Handle both object and string formats
       if (typeof firstSubject === 'object' && firstSubject !== null) {
         return firstSubject.name || firstSubject.subject_name || 'N/A'
       } else if (typeof firstSubject === 'string') {
-        // If it's a string (subject name), return it
         return firstSubject
       } else if (typeof firstSubject === 'number') {
-        // If it's a number (subject ID), try to find it in subjects array
         const subject = subjects.find(s => s.id === firstSubject)
         return subject?.name || subject?.subject_name || 'N/A'
       }
     }
-    // Fallback: check if teacher has a direct subject field
     if (teacher.subject) {
       if (typeof teacher.subject === 'string') {
         return teacher.subject
@@ -239,7 +224,6 @@ const Teachers = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Title and Add Button */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Teacher Management</h1>
@@ -254,7 +238,6 @@ const Teachers = () => {
         </button>
       </div>
 
-      {/* Search and Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1">
@@ -294,7 +277,6 @@ const Teachers = () => {
         </div>
       </div>
 
-      {/* Teachers Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -412,7 +394,6 @@ const Teachers = () => {
         </div>
       </div>
 
-      {/* Modals */}
       {showAddModal && (
         <AddTeacherModal
           isOpen={showAddModal}

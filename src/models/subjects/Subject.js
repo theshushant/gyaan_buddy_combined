@@ -1,8 +1,5 @@
 import TimeStampUUID from '../base/TimeStampUUID.js';
 
-/**
- * Model for managing subjects in the educational system.
- */
 export default class Subject extends TimeStampUUID {
   constructor(data = {}) {
     super(data);
@@ -15,10 +12,6 @@ export default class Subject extends TimeStampUUID {
     this.classes = data.classes || []; // Array of Class IDs or Class objects
   }
 
-  /**
-   * Validate subject data
-   * @returns {Object} Validation result with isValid and errors
-   */
   validate() {
     const errors = {};
 
@@ -40,26 +33,16 @@ export default class Subject extends TimeStampUUID {
     };
   }
 
-  /**
-   * Activate the subject
-   */
   activate() {
     this.is_active = true;
     this.touch();
   }
 
-  /**
-   * Deactivate the subject
-   */
   deactivate() {
     this.is_active = false;
     this.touch();
   }
 
-  /**
-   * Add a class to this subject
-   * @param {string|Object} classItem - Class ID or Class object
-   */
   addClass(classItem) {
     const classId = typeof classItem === 'object' ? classItem.id : classItem;
     if (!this.classes.includes(classId)) {
@@ -68,48 +51,27 @@ export default class Subject extends TimeStampUUID {
     }
   }
 
-  /**
-   * Remove a class from this subject
-   * @param {string|Object} classItem - Class ID or Class object
-   */
   removeClass(classItem) {
     const classId = typeof classItem === 'object' ? classItem.id : classItem;
     this.classes = this.classes.filter(id => id !== classId);
     this.touch();
   }
 
-  /**
-   * Check if subject has a specific class
-   * @param {string|Object} classItem - Class ID or Class object
-   * @returns {boolean} True if subject has the class
-   */
   hasClass(classItem) {
     const classId = typeof classItem === 'object' ? classItem.id : classItem;
     return this.classes.includes(classId);
   }
 
-  /**
-   * Get created by user ID
-   * @returns {string|null} User ID
-   */
   getCreatedById() {
     return typeof this.created_by === 'object' ? this.created_by.id : this.created_by;
   }
 
-  /**
-   * Get class IDs
-   * @returns {Array<string>} Array of class IDs
-   */
   getClassIds() {
     return this.classes.map(classItem => 
       typeof classItem === 'object' ? classItem.id : classItem
     );
   }
 
-  /**
-   * Convert to plain object
-   * @returns {Object} Plain object representation
-   */
   toJSON() {
     return {
       ...super.toJSON(),
@@ -123,10 +85,6 @@ export default class Subject extends TimeStampUUID {
     };
   }
 
-  /**
-   * String representation
-   * @returns {string} String representation
-   */
   toString() {
     return `${this.name} (${this.code})`;
   }

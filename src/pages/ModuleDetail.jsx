@@ -15,7 +15,6 @@ const ModuleDetail = () => {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
       <div className="mb-8 flex justify-between items-center animate-slide-down">
         <div className="flex items-center space-x-4">
           <Link to="/modules" className="text-primary-500 hover:text-primary-600 flex items-center space-x-2 transform transition-all duration-200 hover:scale-105 hover:-translate-x-1">
@@ -35,17 +34,14 @@ const ModuleDetail = () => {
         </div>
       </div>
 
-      {/* Module Title */}
       <div className="mb-8 animate-slide-right" style={{animationDelay: '0.1s'}}>
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Chapter 2.1: Suchak (Indicators)</h1>
         <p className="text-lg text-gray-600">Vigyan (Science) - Adhyay 2: Aml, Ksharak evam Lavan</p>
       </div>
 
-      {/* Mobile Phone Mockup */}
       <div className="flex justify-center mb-8 animate-slide-up" style={{animationDelay: '0.2s'}}>
         <div className="relative w-80 h-96 bg-gray-800 rounded-3xl p-4 shadow-2xl transform hover:scale-105 transition-all duration-500 hover:shadow-3xl">
           <div className="w-full h-full bg-white rounded-2xl overflow-hidden">
-            {/* Phone Content */}
             <div className="p-6 h-full flex flex-col">
               <h2 className="text-xl font-bold text-primary-500 mb-4 animate-slide-down">
                 What are Indicators? (Suchak kya hain?)
@@ -56,7 +52,6 @@ const ModuleDetail = () => {
                 on a paper strip to test a solution. What will she observe?
               </p>
               
-              {/* Slide Navigation */}
               <div className="mt-auto flex justify-center items-center space-x-4">
                 <button 
                   onClick={prevSlide} 
@@ -86,7 +81,6 @@ const ModuleDetail = () => {
         </div>
       </div>
 
-      {/* External Navigation */}
       <div className="flex justify-center items-center space-x-4 animate-slide-up" style={{animationDelay: '0.3s'}}>
         <button 
           onClick={prevSlide} 
@@ -112,7 +106,6 @@ const ModuleDetail = () => {
         </button>
       </div>
 
-      {/* Additional Module Information */}
       <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.4s'}}>
           <h3 className="text-lg font-semibold text-gray-800 mb-3">Learning Objectives</h3>

@@ -33,14 +33,12 @@ const StudentTestPerformance = () => {
         return;
       }
 
-      // Normalize: API can return { success, message, data } or the payload at top level
       const data = response.data !== undefined ? response.data : response;
       if (!data || typeof data !== 'object') {
         setError('Failed to fetch performance data: Invalid response format');
         return;
       }
 
-      // Accept both 'students' and 'Students' (backend may serialize differently)
       const studentsList = Array.isArray(data.students) ? data.students : (Array.isArray(data.Students) ? data.Students : []);
       const questionsList = Array.isArray(data.questions) ? data.questions : (Array.isArray(data.Questions) ? data.Questions : []);
 
@@ -146,7 +144,6 @@ const StudentTestPerformance = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-        {/* Header */}
         <div className="mb-10">
           <Link
             to="/tests"
@@ -169,7 +166,6 @@ const StudentTestPerformance = () => {
           </div>
         </div>
 
-        {/* Summary cards: Attempted/Total users, Avg correct % */}
         {(() => {
           const attemptedCount = students.filter(
             s => (s.questions_attempted ?? 0) > 0 || (s.status && s.status !== 'not_started')
@@ -195,7 +191,6 @@ const StudentTestPerformance = () => {
           );
         })()}
 
-        {/* Table 1: Question-wise — Serial no, Question title, Sub-topic, % correct */}
         {questions.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-10 transition-shadow hover:shadow-md">
             <div className="px-6 py-5 border-b border-gray-100">
@@ -233,7 +228,6 @@ const StudentTestPerformance = () => {
           </div>
         )}
 
-        {/* Table 2: Students — Serial no, Student name, % correct, View result (dropdown) */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-100">
             <h2 className="text-lg font-semibold text-gray-800">Student results</h2>

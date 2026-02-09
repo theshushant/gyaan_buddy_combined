@@ -9,7 +9,6 @@ const SuccessModal = ({ isOpen, onClose, type, title, message, detail, actions }
         <div className="fixed inset-0 bg-gray-900/5 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
         
         <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md">
-          {/* Close Icon */}
           <div className="absolute top-4 right-4">
             <button
               onClick={onClose}
@@ -21,21 +20,18 @@ const SuccessModal = ({ isOpen, onClose, type, title, message, detail, actions }
           </div>
 
           <div className="p-6">
-            {/* Success Icon */}
             <div className="flex items-center justify-center mb-4">
               <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
                 <Check className="h-8 w-8 text-green-600" />
               </div>
             </div>
             
-            {/* Content */}
             <div className="text-center mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
               <p className="text-gray-600 mb-2">{message}</p>
               {detail && <p className="text-sm text-gray-500">{detail}</p>}
             </div>
             
-            {/* Action Buttons */}
             <div className="flex flex-col space-y-3">
               {actions?.map((action, index) => (
                 <button
@@ -62,7 +58,6 @@ const SuccessModal = ({ isOpen, onClose, type, title, message, detail, actions }
                 </button>
               )}
 
-              {/* Default OK button when no actions are provided */}
               {(!actions || actions.length === 0) && (
                 <button
                   onClick={onClose}

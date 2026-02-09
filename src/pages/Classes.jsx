@@ -13,18 +13,14 @@ const Classes = () => {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingClass, setEditingClass] = useState(null)
 
-  // Fetch classes on component mount
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     if (error.classes) {
       return // Don't retry if there's already an error
     }
     dispatch(fetchClasses({}))
   }, [dispatch, error.classes])
 
-  // Handle filter changes
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     if (error.classes) {
       return // Don't retry if there's already an error
     }
@@ -35,7 +31,6 @@ const Classes = () => {
     }
     dispatch(setFilters(filters)) 
     
-    // Debounce search to avoid too many API calls
     const timeoutId = setTimeout(() => {
       dispatch(fetchClasses(filters))
     }, 300)
@@ -43,10 +38,8 @@ const Classes = () => {
     return () => clearTimeout(timeoutId)
   }, [searchTerm, dispatch, error.classes])
 
-  // Use API data only
   const displayClasses = classes || []
 
-  // Filter classes based on search term
   const filteredClasses = displayClasses.filter(cls => {
     const name = cls.name || cls.class_name || ''
     const teacherName = cls.teacher?.name || cls.class_teacher?.name || cls.classTeacher || ''
@@ -57,12 +50,10 @@ const Classes = () => {
     return matchesSearch
   })
   
-  // Helper function to get class name
   const getClassName = (classItem) => {
     return classItem.name || classItem.class_name || 'Unnamed Class'
   }
   
-  // Helper function to get teacher name
   const getTeacherName = (classItem) => {
     if (classItem.teacher) {
       const teacher = classItem.teacher
@@ -84,7 +75,6 @@ const Classes = () => {
     return 'N/A'
   }
   
-  // Helper function to get student count
   const getStudentCount = (classItem) => {
     return classItem.student_count || classItem.students || classItem.studentCount || 0
   }
@@ -105,13 +95,10 @@ const Classes = () => {
   const handleCreateClass = async (formData) => {
     try {
       await dispatch(createClass(formData)).unwrap()
-      // Close modal on success
       setShowAddModal(false)
       setEditingClass(null)
-      // Refresh classes list
       dispatch(fetchClasses({}))
     } catch (error) {
-      // Error is handled by Redux, modal will stay open
       console.error('Failed to create class:', error)
     }
   }
@@ -121,18 +108,14 @@ const Classes = () => {
     
     try {
       await dispatch(updateClass({ classId: editingClass.id || editingClass.uuid, classData: formData })).unwrap()
-      // Close modal on success
       setShowAddModal(false)
       setEditingClass(null)
-      // Refresh classes list
       dispatch(fetchClasses({}))
     } catch (error) {
-      // Error is handled by Redux, modal will stay open
       console.error('Failed to update class:', error)
     }
   }
 
-  // Show loading state
   if (loading.classes) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -141,7 +124,6 @@ const Classes = () => {
     )
   }
 
-  // Show error state
   if (error.classes && classes.length === 0) {
     return (
       <div className="space-y-6">
@@ -160,7 +142,6 @@ const Classes = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Classes</h1>
         <button 
@@ -172,7 +153,6 @@ const Classes = () => {
         </button>
       </div>
 
-      {/* Classes Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -233,7 +213,6 @@ const Classes = () => {
         </div>
       </div>
 
-      {/* Create/Edit Class Modal */}
       <CreateClassModal
         isOpen={showAddModal}
         onClose={() => {

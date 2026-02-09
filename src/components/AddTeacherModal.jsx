@@ -29,7 +29,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
   const [showCreateClassSubjectModal, setShowCreateClassSubjectModal] = useState(false)
   const [createClassSubjectType, setCreateClassSubjectType] = useState('class')
 
-  // Pre-fill form when editing a teacher
   useEffect(() => {
     if (isOpen && teacher) {
       console.log('AddTeacherModal: Teacher data received:', {
@@ -54,7 +53,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
       console.log('AddTeacherModal: Initial formData.assignments set to:', teacher.assignments || teacher.classes || [])
       setNewAssignment({ class: '', subjects: [] })
     } else if (isOpen && !teacher) {
-      // Reset form when adding new teacher
       setFormData({
         firstName: '',
         lastName: '',
@@ -70,7 +68,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
     setPasswordError('')
   }, [isOpen, teacher])
 
-  // Fetch classes and subjects from API when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchClasses()
@@ -78,13 +75,10 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
     }
   }, [isOpen])
 
-  // Normalize assignments when editing - map names to IDs after classes and subjects are loaded
   useEffect(() => {
     if (isOpen && teacher && classes.length > 0 && subjects.length > 0) {
-      // First, try to get assignments from teacher_assignments (backend format)
       let rawAssignments = teacher.assignments || teacher.classes || []
       
-      // If no assignments but we have teacher_assignments, convert them
       if (rawAssignments.length === 0 && teacher.teacher_assignments && teacher.teacher_assignments.length > 0) {
         const classSubjectMap = {}
         teacher.teacher_assignments.forEach(ta => {
@@ -107,7 +101,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
         rawAssignments = Object.values(classSubjectMap)
       }
       
-      // If still no assignments but we have class_id and subject_ids, create an assignment
       if (rawAssignments.length === 0 && teacher.class_id && teacher.subject_ids && teacher.subject_ids.length > 0) {
         rawAssignments = [{
           class: teacher.class_id,
@@ -118,15 +111,12 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
       if (rawAssignments.length === 0) return
 
       const normalizedAssignments = rawAssignments.map(assignment => {
-        // Find class by ID or name
         let classId = assignment.class
         if (typeof assignment.class === 'string' || typeof assignment.class === 'number') {
-          // Check if it's already an ID
           const foundClass = classes.find(c => c.id === assignment.class || c.id?.toString() === assignment.class?.toString())
           if (foundClass) {
             classId = foundClass.id
           } else {
-            // Try to find by name
             const foundByName = classes.find(c => c.name === assignment.class || c.name?.toString() === assignment.class?.toString())
             if (foundByName) {
               classId = foundByName.id
@@ -136,22 +126,18 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
           classId = assignment.class.id || assignment.class.class_id || assignment.class
         }
 
-        // Normalize subjects - handle both IDs and names
         const normalizedSubjects = []
         if (Array.isArray(assignment.subjects)) {
           assignment.subjects.forEach(subj => {
             if (typeof subj === 'string' || typeof subj === 'number') {
-              // Check if it's already an ID
               const foundSubject = subjects.find(s => s.id === subj || s.id?.toString() === subj?.toString())
               if (foundSubject) {
                 normalizedSubjects.push(foundSubject.id)
               } else {
-                // Try to find by name
                 const foundByName = subjects.find(s => s.name === subj || s.name?.toString() === subj?.toString())
                 if (foundByName) {
                   normalizedSubjects.push(foundByName.id)
                 } else {
-                  // Keep original if not found
                   normalizedSubjects.push(subj)
                 }
               }
@@ -175,7 +161,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
         }
       }).filter(assignment => assignment.class && assignment.subjects.length > 0)
 
-      // Only update if assignments were normalized
       console.log('AddTeacherModal: Normalized assignments:', normalizedAssignments)
       if (normalizedAssignments.length > 0) {
         setFormData(prev => ({
@@ -183,7 +168,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
           assignments: normalizedAssignments
         }))
 
-        // Auto-select the first assignment's class and subjects in the "Add New Assignment" section
         const firstAssignment = normalizedAssignments[0]
         if (firstAssignment && firstAssignment.class && firstAssignment.subjects.length > 0) {
           setNewAssignment({
@@ -199,9 +183,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
     setLoadingClasses(true)
     try {
       const response = await classesService.getClasses()
-      // Extract data array from response
       const classesData = response.data || response || []
-      // Store full class objects with IDs
       const classesWithIds = classesData.map(cls => ({
         id: cls.id,
         name: cls.name || cls
@@ -209,7 +191,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
       setClasses(classesWithIds)
     } catch (error) {
       console.error('Failed to fetch classes:', error)
-      // Fallback to empty array on error
       setClasses([])
     } finally {
       setLoadingClasses(false)
@@ -220,9 +201,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
     setLoadingSubjects(true)
     try {
       const response = await subjectsService.getSubjects()
-      // Extract data array from response
       const subjectsData = response.data || response || []
-      // Store full subject objects with IDs
       const subjectsWithIds = subjectsData.map(subject => ({
         id: subject.id,
         name: subject.name || subject
@@ -230,7 +209,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
       setSubjects(subjectsWithIds)
     } catch (error) {
       console.error('Failed to fetch subjects:', error)
-      // Fallback to empty array on error
       setSubjects([])
     } finally {
       setLoadingSubjects(false)
@@ -238,17 +216,14 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
   }
 
   const handleCreateClassSubjectSuccess = (type, createdId) => {
-    // Refresh the appropriate list after creation
     if (type === 'class') {
       fetchClasses().then(() => {
-        // Auto-select the newly created class
         if (createdId) {
           setNewAssignment(prev => ({ ...prev, class: createdId }))
         }
       })
     } else {
       fetchSubjects().then(() => {
-        // Auto-select the newly created subject
         if (createdId) {
           setNewAssignment(prev => ({
             ...prev,
@@ -264,7 +239,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    // Only validate password if it's provided (required for new teachers, optional for edits)
     if (formData.password || formData.confirmPassword) {
       if (formData.password !== formData.confirmPassword) {
         setPasswordError('Passwords do not match')
@@ -279,20 +253,16 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
     
     setPasswordError('')
     
-    // If editing and no password provided, don't include password in the data
     const submitData = { ...formData }
     if (teacher && !formData.password) {
       delete submitData.password
       delete submitData.confirmPassword
     }
     
-    // Ensure assignments are always included in the payload
-    // Use formData.assignments if they exist, otherwise try to preserve from original teacher data
     console.log('AddTeacherModal: formData.assignments before processing:', formData.assignments)
     console.log('AddTeacherModal: newAssignment before processing:', newAssignment)
     console.log('AddTeacherModal: submitData.assignments before processing:', submitData.assignments)
     
-    // If newAssignment has values but wasn't added to formData.assignments, include it
     let assignmentsToProcess = [...(submitData.assignments || [])]
     if (newAssignment.class && newAssignment.subjects && newAssignment.subjects.length > 0) {
       console.log('AddTeacherModal: newAssignment has values, adding to assignments:', newAssignment)
@@ -300,7 +270,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
     }
     
     if (assignmentsToProcess.length > 0) {
-      // Merge assignments with the same class to combine all subjects
       const classSubjectMap = {}
       assignmentsToProcess.forEach(assignment => {
         const classId = assignment.class?.toString() || assignment.class
@@ -311,7 +280,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
               subjects: []
             }
           }
-          // Merge subjects, ensuring uniqueness
           const subjects = Array.isArray(assignment.subjects) ? assignment.subjects : []
           subjects.forEach(subjId => {
             const subjIdStr = subjId?.toString() || subjId
@@ -322,7 +290,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
         }
       })
       
-      // Convert map back to array and ensure they're properly formatted
       submitData.assignments = Object.values(classSubjectMap).map((assignment, idx) => {
         console.log(`AddTeacherModal: Processing assignment ${idx}:`, {
           original: assignment,
@@ -338,11 +305,9 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
       })
       console.log('AddTeacherModal: Processed and merged assignments:', submitData.assignments)
     } else if (teacher) {
-      // If assignments are empty but we're editing, try to preserve from original teacher data
       if (teacher.assignments && teacher.assignments.length > 0) {
         submitData.assignments = teacher.assignments
       } else if (teacher.teacher_assignments && teacher.teacher_assignments.length > 0) {
-        // Convert teacher_assignments format to assignments format
         const classSubjectMap = {}
         teacher.teacher_assignments.forEach(ta => {
           const classId = ta.class?.id || ta.class_id || ta.class
@@ -363,7 +328,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
         })
         submitData.assignments = Object.values(classSubjectMap)
       } else {
-        // If no existing assignments, use newAssignment if it has values
         if (newAssignment.class && newAssignment.subjects && newAssignment.subjects.length > 0) {
           submitData.assignments = [{ ...newAssignment }]
         } else {
@@ -371,7 +335,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
         }
       }
     } else {
-      // For new teachers, use newAssignment if it has values
       if (newAssignment.class && newAssignment.subjects && newAssignment.subjects.length > 0) {
         submitData.assignments = [{ ...newAssignment }]
       } else {
@@ -423,14 +386,12 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
         subjectsType: typeof newAssignment.subjects[0]
       })
       setFormData(prev => {
-        // Check if an assignment for this class already exists
         const existingIndex = prev.assignments.findIndex(
           a => a.class === newAssignment.class || a.class?.toString() === newAssignment.class?.toString()
         )
         
         let updatedAssignments
         if (existingIndex >= 0) {
-          // Merge subjects with existing assignment
           const existingAssignment = prev.assignments[existingIndex]
           const mergedSubjects = [...new Set([
             ...(Array.isArray(existingAssignment.subjects) ? existingAssignment.subjects : []),
@@ -447,7 +408,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
             subjects: mergedSubjects
           }
         } else {
-          // Add as new assignment
           updatedAssignments = [...prev.assignments, { ...newAssignment }]
         }
         console.log('AddTeacherModal: Updated formData.assignments:', updatedAssignments)
@@ -484,7 +444,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
           </div>
           
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Personal Information */}
             <div>
               <h4 className="text-md font-semibold text-gray-900 mb-4">Personal Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -567,11 +526,9 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
               </div>
             </div>
 
-            {/* Class & Subject Assignments */}
             <div>
               <h4 className="text-md font-semibold text-gray-900 mb-4">Class & Subject Assignments</h4>
               
-              {/* Existing Assignments */}
               {formData.assignments.map((assignment, index) => {
                 const className = classes.find(c => c.id === assignment.class)?.name || assignment.class
                 const subjectNames = assignment.subjects.map(subjId => {
@@ -595,7 +552,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                 )
               })}
               
-              {/* Add New Assignment */}
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
@@ -683,7 +639,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
               </div>
             </div>
 
-            {/* Additional Details */}
             <div>
               <h4 className="text-md font-semibold text-gray-900 mb-4">Additional Details</h4>
               
@@ -714,7 +669,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
               </div>
             </div>
             
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
               <button
                 type="button"
@@ -735,7 +689,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
         </div>
       </div>
 
-      {/* Create Class/Subject Modal */}
       {showCreateClassSubjectModal && (
         <CreateClassSubjectModal
           isOpen={showCreateClassSubjectModal}

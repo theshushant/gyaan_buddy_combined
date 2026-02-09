@@ -91,13 +91,11 @@ const AISuggestions = () => {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 animate-slide-down">AI Suggestions</h1>
         <p className="text-gray-600 mt-2 animate-slide-right" style={{animationDelay: '0.1s'}}>Personalized recommendations to enhance your teaching and student learning experience.</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.2s'}}>
           <div className="text-center">
@@ -137,7 +135,6 @@ const AISuggestions = () => {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="mb-6">
         <div className="flex space-x-4">
           <button
@@ -187,7 +184,6 @@ const AISuggestions = () => {
         </div>
       </div>
 
-      {/* Suggestions Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {filteredSuggestions.map((suggestion, index) => (
           <div
@@ -247,7 +243,6 @@ const AISuggestions = () => {
         </div>
       )}
 
-      {/* AI Insights */}
       <div className="mt-8 bg-gradient-to-r from-primary-50 to-secondary-50 rounded-lg p-6 border border-primary-500/30 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '1.2s'}}>
         <div className="flex items-start space-x-3">
           <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center transform transition-transform duration-200 hover:rotate-12">

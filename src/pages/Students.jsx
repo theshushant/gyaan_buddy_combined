@@ -42,13 +42,11 @@ const Students = () => {
   const [studentToDelete, setStudentToDelete] = useState(null)
 
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = error.students !== null || error.stats !== null
     if (hasError) {
       return // Don't retry if there's already an error
     }
 
-    // Fetch all students once on mount (without filters), stats, classes, and subjects
     const fetchData = async () => {
       try {
         await Promise.all([
@@ -80,9 +78,7 @@ const Students = () => {
   const handleAddStudent = async (studentData) => {
     try {
       await dispatch(createStudent(studentData)).unwrap()
-      // Close modal on success
       setShowAddModal(false)
-      // Refresh students list (without filters) and stats
       await Promise.all([
         dispatch(fetchStudents({})), // Fetch all students without filters
         dispatch(fetchStudentStats())
@@ -93,7 +89,6 @@ const Students = () => {
       })
       setShowSuccessModal(true)
     } catch (error) {
-      // Error is handled by Redux, modal will stay open
       console.error('Error adding student:', error)
     }
   }
@@ -103,7 +98,6 @@ const Students = () => {
       await dispatch(updateStudent({ studentId: editingStudent.id, studentData })).unwrap()
       setEditingStudent(null)
       setShowAddModal(false)
-      // Refresh students list (without filters) and stats
       await Promise.all([
         dispatch(fetchStudents({})), // Fetch all students without filters
         dispatch(fetchStudentStats())
@@ -128,7 +122,6 @@ const Students = () => {
 
     try {
       await dispatch(deleteStudent(studentToDelete.id)).unwrap()
-      // Refresh students list (without filters) and stats
       await Promise.all([
         dispatch(fetchStudents({})), // Fetch all students without filters
         dispatch(fetchStudentStats())
@@ -142,7 +135,6 @@ const Students = () => {
       setShowSuccessModal(true)
     } catch (error) {
       console.error('Error deleting student:', error)
-      // Keep modal open on error so user can try again or cancel
     }
   }
 
@@ -157,13 +149,11 @@ const Students = () => {
 
   const handleEditStudent = async (student) => {
     try {
-      // Fetch full student details to ensure we have all fields (parent_name, date_of_birth, subjects, etc.)
       const fullStudent = await dispatch(fetchStudentById(student.id)).unwrap()
       setEditingStudent(fullStudent)
       setShowAddModal(true)
     } catch (error) {
       console.error('Error fetching student details:', error)
-      // Fallback to using the student from the list if fetch fails
       setEditingStudent(student)
       setShowAddModal(true)
     }
@@ -177,9 +167,7 @@ const Students = () => {
     }))
   }
 
-  // Local filtering logic - filter students based on search, class, and subject
   const filteredStudents = (students || []).filter(student => {
-    // Search filter - check if name matches search term
     if (filters.search) {
       const firstName = (student.first_name || student.firstName || '').toLowerCase()
       const lastName = (student.last_name || student.lastName || '').toLowerCase()
@@ -191,7 +179,6 @@ const Students = () => {
       }
     }
 
-    // Class filter - check if student's class matches selected class
     if (filters.class) {
       const studentClassId = (
         student.class_id?.toString() || 
@@ -207,25 +194,21 @@ const Students = () => {
       ).toString()
       const filterClassValue = filters.class.toString()
       
-      // Match by ID or name
       if (studentClassId !== filterClassValue && studentClassName !== filterClassValue) {
         return false
       }
     }
 
-    // Subject filter - check if student has the selected subject
     if (filters.subject) {
       const studentSubjects = student.subjects || student.subject_ids || []
       const filterSubjectValue = filters.subject.toString()
       
-      // Check if student has this subject (by ID or name)
       const hasSubject = studentSubjects.some(subject => {
         if (typeof subject === 'object') {
           const subjectId = (subject.id || subject.uuid || '').toString()
           const subjectName = (subject.name || subject.subject_name || '').toString().toLowerCase()
           return subjectId === filterSubjectValue || subjectName === filterSubjectValue.toLowerCase()
         } else {
-          // Subject might be a string or ID
           const subjectStr = subject.toString()
           return subjectStr === filterSubjectValue || subjectStr === filterSubjectValue.toLowerCase()
         }
@@ -239,7 +222,6 @@ const Students = () => {
     return true
   })
 
-  // Prepare summary cards data
   const summaryCards = [
     { label: 'Total Students', value: studentStats?.totalStudents?.toString() || '0' },
     { label: 'Average Score', value: `${studentStats?.averageScore || 0}%` },
@@ -279,7 +261,6 @@ const Students = () => {
         <p className="text-gray-600 mt-2">Filter and view student performance data.</p>
       </div>
 
-      {/* Search and Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1">
@@ -340,7 +321,6 @@ const Students = () => {
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {summaryCards.map((card, index) => (
           <div key={index} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -357,7 +337,6 @@ const Students = () => {
         ))}
       </div>
 
-      {/* Students Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-900">Students</h2>
@@ -436,7 +415,6 @@ const Students = () => {
         </div>
       </div>
 
-      {/* Modals */}
       {showAddModal && (
         <AddStudentModal
           isOpen={showAddModal}

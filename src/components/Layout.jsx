@@ -35,7 +35,6 @@ const Layout = ({ children }) => {
   const dispatch = useDispatch()
   const { role, user } = useSelector(state => state.auth)
 
-  // Close avatar menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target)) {
@@ -62,7 +61,6 @@ const Layout = ({ children }) => {
     setAvatarMenuOpen(!avatarMenuOpen)
   }
 
-  // Principal navigation
   const principalNavigation = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Students', href: '/students', icon: GraduationCap },
@@ -73,7 +71,6 @@ const Layout = ({ children }) => {
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
-  // Teacher navigation
   const teacherNavigation = [
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'My Profile', href: '/profile', icon: UserCheck },
@@ -84,8 +81,6 @@ const Layout = ({ children }) => {
     { name: 'Leaderboards', href: '/leaderboards', icon: Trophy },
     { name: 'Daily Missions', href: '/missions', icon: Calendar },
     { name: 'Notifications', href: '/notifications', icon: Bell },
-    // { name: 'AI Data', href: '/ai-data', icon: Wand2 },
-    // { name: 'AI Suggestions', href: '/ai-suggestions', icon: Lightbulb },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
@@ -94,7 +89,6 @@ const Layout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
         <div className="fixed inset-0 bg-transparent" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white">
@@ -140,7 +134,6 @@ const Layout = ({ children }) => {
               )
             })}
           </nav>
-          {/* Logout Button */}
           <div className="px-4 pb-4">
             <button
               onClick={handleLogout}
@@ -154,7 +147,6 @@ const Layout = ({ children }) => {
         </div>
       </div>
 
-      {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
           <div className="flex h-16 items-center px-4">
@@ -196,7 +188,6 @@ const Layout = ({ children }) => {
               )
             })}
           </nav>
-          {/* Logout Button */}
           <div className="px-4 pb-4">
             <button
               onClick={handleLogout}
@@ -210,9 +201,7 @@ const Layout = ({ children }) => {
         </div>
       </div>
 
-      {/* Main content */}
       <div className="lg:pl-64">
-        {/* Top header */}
         <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center">
@@ -259,7 +248,6 @@ const Layout = ({ children }) => {
                   </div>
                 </div>
                 
-                {/* Dropdown menu with animation */}
                 <div 
                   className={`absolute right-0 mt-2 w-48 bg-white rounded-md shadow-xl py-1 z-50 border border-gray-200 transition-all duration-300 ease-out ${
                     avatarMenuOpen 
@@ -293,7 +281,6 @@ const Layout = ({ children }) => {
           </div>
         </div>
 
-        {/* Page content */}
         <main className="p-6">
           {children}
         </main>

@@ -1,4 +1,3 @@
-// Mock AI insights data
 export default {
   '/ai/insights': {
     subjectMastery: [

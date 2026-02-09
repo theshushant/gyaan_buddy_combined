@@ -25,9 +25,7 @@ const MyStudents = () => {
 
   const { classes } = useSelector(state => state.classes);
 
-  // Fetch students, stats, and classes on component mount
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = error.students !== null || error.stats !== null
     if (hasError) {
       return // Don't retry if there's already an error
@@ -48,9 +46,7 @@ const MyStudents = () => {
     fetchData();
   }, [dispatch, error.students, error.stats]);
 
-  // Update filters and refetch when search or class filter changes
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = error.students !== null
     if (hasError) {
       return // Don't retry if there's already an error
@@ -66,7 +62,6 @@ const MyStudents = () => {
     
     dispatch(setFilters(filters));
     
-    // Debounce search to avoid too many API calls
     const timeoutId = setTimeout(() => {
       dispatch(fetchStudents(filters));
     }, 300);
@@ -74,7 +69,6 @@ const MyStudents = () => {
     return () => clearTimeout(timeoutId);
   }, [dispatch, searchTerm, selectedClass, error.students]);
 
-  // Transform API student data to match UI expectations
   const transformStudent = (student) => {
     const firstName = student.first_name || student.firstName || '';
     const lastName = student.last_name || student.lastName || '';
@@ -99,7 +93,6 @@ const MyStudents = () => {
     };
   };
 
-  // Filter students based on search and class
   const filteredStudents = (students || []).map(transformStudent).filter(student => {
     const matchesSearch = !searchTerm || 
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -111,13 +104,11 @@ const MyStudents = () => {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 animate-slide-down">My Students</h1>
         <p className="text-gray-600 mt-2 animate-slide-right" style={{animationDelay: '0.1s'}}>Manage and track your students' progress and performance.</p>
       </div>
 
-      {/* Error Display */}
       {error.students && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-sm text-red-800">{error.students}</p>
@@ -130,7 +121,6 @@ const MyStudents = () => {
         </div>
       )}
 
-      {/* Filters and Search */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <div className="flex-1 animate-slide-right" style={{animationDelay: '0.2s'}}>
           <input
@@ -164,7 +154,6 @@ const MyStudents = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.4s'}}>
           <div className="text-center">
@@ -211,7 +200,6 @@ const MyStudents = () => {
         </div>
       </div>
 
-      {/* Students Table */}
       {loading.students ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>

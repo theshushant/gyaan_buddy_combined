@@ -23,7 +23,6 @@ const CreateTopicModal = ({
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
 
-  // Prefill form when chapterData is provided (edit mode)
   useEffect(() => {
     if (isOpen) {
       if (chapterData) {
@@ -35,17 +34,12 @@ const CreateTopicModal = ({
           is_important: chapterData.is_important !== undefined ? chapterData.is_important : false
         })
         
-        // Set logo preview if logo exists
         if (chapterData.logo) {
           let logoUrl = chapterData.logo
           if (logoUrl && typeof logoUrl === 'string') {
-            // Handle different URL formats
             if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
-              // Full URL
             } else if (logoUrl.startsWith('/')) {
-              // Relative URL - construct full URL
               const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.REACT_APP_API_URL || 'http://localhost:8000'
-              // Remove /api from baseURL if present, as media files are served from root
               const cleanBaseUrl = baseUrl.replace('/api', '')
               logoUrl = `${cleanBaseUrl}${logoUrl}`
             }
@@ -78,7 +72,6 @@ const CreateTopicModal = ({
   const handleClose = useCallback(() => {
     if (loading) return
     
-    // Reset form on close
     setFormData({
       title: '',
       description: '',
@@ -93,7 +86,6 @@ const CreateTopicModal = ({
     onClose()
   }, [loading, onClose])
 
-  // Handle escape key press
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape' && isOpen && !loading) {
@@ -103,7 +95,6 @@ const CreateTopicModal = ({
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
-      // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden'
     }
 
@@ -115,7 +106,6 @@ const CreateTopicModal = ({
 
   const isEditMode = !!chapterData
 
-  // Validation function
   const validateField = (name, value) => {
     let error = ''
     
@@ -165,7 +155,6 @@ const CreateTopicModal = ({
   const handleFieldChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
     }
@@ -182,13 +171,11 @@ const CreateTopicModal = ({
   const handleLogoChange = (e) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         setErrors(prev => ({ ...prev, logo: 'Please select a valid image file' }))
         return
       }
       
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setErrors(prev => ({ ...prev, logo: 'Image size must be less than 5MB' }))
         return
@@ -201,7 +188,6 @@ const CreateTopicModal = ({
         return newErrors
       })
       
-      // Create preview
       const reader = new FileReader()
       reader.onloadend = () => {
         setLogoPreview(reader.result)
@@ -218,7 +204,6 @@ const CreateTopicModal = ({
       delete newErrors.logo
       return newErrors
     })
-    // Reset file input
     const fileInput = document.getElementById('topic-logo-upload')
     if (fileInput) {
       fileInput.value = ''
@@ -228,7 +213,6 @@ const CreateTopicModal = ({
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    // Mark all fields as touched
     const allTouched = {}
     Object.keys(formData).forEach(field => {
       allTouched[field] = true
@@ -236,7 +220,6 @@ const CreateTopicModal = ({
     setTouched(allTouched)
     
     if (validateForm()) {
-      // Include logo file in form data
       const dataToSave = { ...formData }
       if (logoFile) {
         dataToSave.logo = logoFile
@@ -274,14 +257,12 @@ const CreateTopicModal = ({
           </div>
           
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Error message */}
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-800">{error}</p>
               </div>
             )}
 
-            {/* Topic Information */}
             <div>
               <h4 className="text-md font-semibold text-gray-900 mb-4">Topic Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -351,11 +332,9 @@ const CreateTopicModal = ({
               </div>
             </div>
 
-            {/* Logo/Image Upload Field */}
             <div>
               <h4 className="text-md font-semibold text-gray-900 mb-4">Topic Logo</h4>
               <div className="space-y-4">
-                {/* File Input */}
                 <div className="flex items-center space-x-4">
                   <input
                     id="topic-logo-upload"
@@ -380,7 +359,6 @@ const CreateTopicModal = ({
                   </label>
                 </div>
 
-                {/* Image Preview */}
                 {logoPreview && (
                   <div className="relative inline-block">
                     <img
@@ -408,7 +386,6 @@ const CreateTopicModal = ({
               </div>
             </div>
 
-            {/* Topic Settings */}
             <div>
               <h4 className="text-md font-semibold text-gray-900 mb-4">Topic Settings</h4>
               
@@ -443,7 +420,6 @@ const CreateTopicModal = ({
               </div>
             </div>
             
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
               <button
                 type="button"

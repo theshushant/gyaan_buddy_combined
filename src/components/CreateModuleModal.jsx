@@ -29,37 +29,30 @@ const CreateModuleModal = ({
   const [logoPreview, setLogoPreview] = useState(null)
   const [validationErrors, setValidationErrors] = useState(null)
 
-  // Fetch subjects when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchSubjects()
     }
   }, [isOpen])
 
-  // Parse validation errors from error prop
   useEffect(() => {
     if (error) {
       let parsedErrors = null
       
-      // Check if error is an object with validation error structure
       if (typeof error === 'object' && error !== null) {
-        // Check for errors.errors structure (nested errors object)
         if (error.errors && typeof error.errors === 'object') {
           parsedErrors = error.errors
         } else if (error.non_field_errors || Object.keys(error).some(key => Array.isArray(error[key]))) {
-          // Direct error object structure (errors object itself)
           parsedErrors = error
         }
       }
       
       setValidationErrors(parsedErrors)
       
-      // If there are field-specific errors, update the form errors state
       if (parsedErrors) {
         const fieldErrors = {}
         Object.keys(parsedErrors).forEach(key => {
           if (key !== 'non_field_errors' && Array.isArray(parsedErrors[key]) && parsedErrors[key].length > 0) {
-            // Map common field names from API to form field names
             const fieldMap = {
               'module': 'subject', // module field might map to subject
             }
@@ -70,7 +63,6 @@ const CreateModuleModal = ({
         
         if (Object.keys(fieldErrors).length > 0) {
           setErrors(prev => ({ ...prev, ...fieldErrors }))
-          // Mark fields as touched to show errors
           const touchedFields = {}
           Object.keys(fieldErrors).forEach(field => {
             touchedFields[field] = true
@@ -83,7 +75,6 @@ const CreateModuleModal = ({
     }
   }, [error])
 
-  // Prefill form when moduleData is provided (edit mode) or selectedSubject is provided
   useEffect(() => {
     if (isOpen) {
       if (moduleData) {
@@ -95,17 +86,11 @@ const CreateModuleModal = ({
           is_active: moduleData.is_active !== undefined ? moduleData.is_active : true,
           is_enabled: moduleData.is_enabled !== undefined ? moduleData.is_enabled : false
         })
-        // Set logo preview if logo exists
         if (moduleData.logo) {
-          // Convert relative URL to full URL if needed
           let logoUrl = moduleData.logo
           if (logoUrl && typeof logoUrl === 'string') {
-            // If it's already a full URL (http:// or https://), use it as is
             if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
-              // Already a full URL, use as is
             } else if (logoUrl.startsWith('/')) {
-              // If it's a relative URL (starts with /), prepend the API base URL
-              // Remove /api from baseURL if present, as media files are served from root
               const baseUrl = apiService.baseURL.replace('/api', '')
               logoUrl = `${baseUrl}${logoUrl}`
             }
@@ -167,7 +152,6 @@ const CreateModuleModal = ({
   const handleClose = useCallback(() => {
     if (loading) return
     
-    // Reset form on close
     setFormData({
       name: '',
       subject: '',
@@ -187,13 +171,11 @@ const CreateModuleModal = ({
   const handleLogoChange = (e) => {
     const file = e.target.files[0]
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         setErrors(prev => ({ ...prev, logo: 'Please select a valid image file' }))
         return
       }
       
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setErrors(prev => ({ ...prev, logo: 'Image size must be less than 5MB' }))
         return
@@ -202,7 +184,6 @@ const CreateModuleModal = ({
       setLogoFile(file)
       setErrors(prev => ({ ...prev, logo: '' }))
       
-      // Create preview
       const reader = new FileReader()
       reader.onloadend = () => {
         setLogoPreview(reader.result)
@@ -215,14 +196,12 @@ const CreateModuleModal = ({
     setLogoFile(null)
     setLogoPreview(null)
     setErrors(prev => ({ ...prev, logo: '' }))
-    // Reset file input
     const fileInput = document.getElementById('logo-upload')
     if (fileInput) {
       fileInput.value = ''
     }
   }
 
-  // Handle escape key press
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape' && isOpen && !loading) {
@@ -232,7 +211,6 @@ const CreateModuleModal = ({
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
-      // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden'
     }
 
@@ -244,7 +222,6 @@ const CreateModuleModal = ({
 
   const isEditMode = !!moduleData
 
-  // Validation function
   const validateField = (name, value) => {
     let error = ''
     
@@ -299,7 +276,6 @@ const CreateModuleModal = ({
   const handleFieldChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
     }
@@ -316,7 +292,6 @@ const CreateModuleModal = ({
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    // Mark all fields as touched
     const allTouched = {}
     Object.keys(formData).forEach(field => {
       allTouched[field] = true
@@ -324,7 +299,6 @@ const CreateModuleModal = ({
     setTouched(allTouched)
     
     if (validateForm()) {
-      // Include logo file in form data
       const dataToSave = { ...formData }
       if (logoFile) {
         dataToSave.logo = logoFile
@@ -337,16 +311,13 @@ const CreateModuleModal = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop with blur */}
       <div 
         className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
         onClick={handleClose}
       />
       
-      {/* Modal Container */}
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col transform transition-all duration-300 scale-100 overflow-hidden">
-          {/* Header with gradient - Fixed */}
           <div 
             className="relative px-8 py-6 flex-shrink-0"
             style={{ background: 'linear-gradient(135deg, #00167a 0%, #1fb7eb 50%, #1e3a8a 100%)' }}
@@ -376,10 +347,8 @@ const CreateModuleModal = ({
             </div>
           </div>
           
-          {/* Form Content - Scrollable */}
           <div className="overflow-y-auto flex-1">
             <form onSubmit={handleSubmit} className="p-8 space-y-8 bg-gray-50">
-            {/* Error message */}
             {error && (
               <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-lg flex items-start space-x-3 animate-slide-down">
                 <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -388,7 +357,6 @@ const CreateModuleModal = ({
                     {typeof error === 'object' && error.message ? error.message : 'Validation Error'}
                   </p>
                   <div className="text-sm text-red-700 mt-1">
-                    {/* Display non_field_errors if present */}
                     {validationErrors && validationErrors.non_field_errors && Array.isArray(validationErrors.non_field_errors) && (
                       <ul className="list-disc list-inside space-y-1">
                         {validationErrors.non_field_errors.map((errMsg, index) => (
@@ -396,7 +364,6 @@ const CreateModuleModal = ({
                         ))}
                       </ul>
                     )}
-                    {/* Display general error message if no validation errors */}
                     {(!validationErrors || !validationErrors.non_field_errors) && (
                       <p>{typeof error === 'object' && error.message ? error.message : String(error)}</p>
                     )}
@@ -405,7 +372,6 @@ const CreateModuleModal = ({
               </div>
             )}
 
-            {/* Module Information Section */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
               <div className="flex items-center space-x-2 mb-6">
                 <div className="p-2 bg-primary-100 rounded-lg">
@@ -415,7 +381,6 @@ const CreateModuleModal = ({
               </div>
               
               <div className="space-y-6">
-                {/* Subject Field */}
                 <div>
                   <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
                     <BookOpen className="h-4 w-4 text-gray-500" />
@@ -459,7 +424,6 @@ const CreateModuleModal = ({
                   )}
                 </div>
 
-                {/* Module Name Field */}
                 <div>
                   <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
                     <FileText className="h-4 w-4 text-gray-500" />
@@ -496,7 +460,6 @@ const CreateModuleModal = ({
                   )}
                 </div>
 
-                {/* Description Field */}
                 <div>
                   <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
                     <FileText className="h-4 w-4 text-gray-500" />
@@ -528,14 +491,12 @@ const CreateModuleModal = ({
                   </div>
                 </div>
 
-                {/* Logo/Image Upload Field */}
                 <div>
                   <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
                     <ImageIcon className="h-4 w-4 text-gray-500" />
                     <span>Logo <span className="text-xs font-normal text-gray-500">(Optional)</span></span>
                   </label>
                   <div className="space-y-3">
-                    {/* File Input */}
                     <div className="relative">
                       <input
                         id="logo-upload"
@@ -560,7 +521,6 @@ const CreateModuleModal = ({
                       </label>
                     </div>
                     
-                    {/* Preview */}
                     {logoPreview && (
                       <div className="relative inline-block">
                         <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-100">
@@ -581,7 +541,6 @@ const CreateModuleModal = ({
                       </div>
                     )}
                     
-                    {/* Error Message */}
                     {errors.logo && (
                       <p className="text-sm text-red-600 flex items-center space-x-1">
                         <AlertCircle className="h-4 w-4" />
@@ -589,14 +548,12 @@ const CreateModuleModal = ({
                       </p>
                     )}
                     
-                    {/* Help Text */}
                     <p className="text-xs text-gray-500">
                       Supported formats: JPG, PNG, GIF. Max size: 5MB
                     </p>
                   </div>
                 </div>
 
-                {/* Order Field */}
                 <div>
                   <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
                     <Hash className="h-4 w-4 text-gray-500" />
@@ -634,7 +591,6 @@ const CreateModuleModal = ({
               </div>
             </div>
 
-            {/* Module Settings Section */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
               <div className="flex items-center space-x-2 mb-6">
                 <div className="p-2 bg-indigo-100 rounded-lg">
@@ -644,7 +600,6 @@ const CreateModuleModal = ({
               </div>
               
               <div className="space-y-5">
-                {/* Active Toggle */}
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 rounded-lg ${formData.is_active ? 'bg-green-100' : 'bg-gray-200'}`}>
@@ -679,7 +634,6 @@ const CreateModuleModal = ({
                   </button>
                 </div>
 
-                {/* Enabled Toggle */}
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 rounded-lg ${formData.is_enabled ? 'bg-primary-100' : 'bg-gray-200'}`}>
@@ -717,7 +671,6 @@ const CreateModuleModal = ({
               </div>
             </div>
             
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
               <button
                 type="button"

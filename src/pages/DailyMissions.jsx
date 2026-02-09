@@ -17,20 +17,16 @@ const DailyMissions = () => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [allMissions, setAllMissions] = useState([]); // Store all missions for the month (for calendar indicators)
 
-  // Generate calendar days for current month
   const getCalendarDays = useCallback(() => {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
     const days = [];
     
-    // Add empty cells for days before the first day of the month
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push({ day: null, hasActivity: false });
     }
     
-    // Add days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      // Check if there are missions for this day
       const hasActivity = allMissions.some(mission => {
         if (mission.mission_date) {
           const missionDate = new Date(mission.mission_date);
@@ -53,7 +49,6 @@ const DailyMissions = () => {
 
   const calendarDays = getCalendarDays();
 
-  // Fetch classes
   const fetchClasses = useCallback(async () => {
     setLoadingClasses(true);
     try {
@@ -65,7 +60,6 @@ const DailyMissions = () => {
       })).filter(cls => cls.id && cls.name);
       setClasses(classesList);
       
-      // Auto-select first class if available
       if (classesList.length > 0 && !selectedClass) {
         setSelectedClass(classesList[0].id);
       }
@@ -77,7 +71,6 @@ const DailyMissions = () => {
     }
   }, [selectedClass]);
 
-  // Fetch subjects
   const fetchSubjects = useCallback(async () => {
     setLoadingSubjects(true);
     try {
@@ -89,7 +82,6 @@ const DailyMissions = () => {
       })).filter(subject => subject.id && subject.name);
       setSubjects(subjectsList);
       
-      // Auto-select first subject if available
       if (subjectsList.length > 0 && !selectedSubject) {
         setSelectedSubject(subjectsList[0].id);
       }
@@ -101,7 +93,6 @@ const DailyMissions = () => {
     }
   }, [selectedSubject]);
 
-  // Fetch missions based on selected filters
   const fetchMissions = useCallback(async () => {
     if (!selectedClass || !selectedSubject) {
       setMissions([]);
@@ -111,7 +102,6 @@ const DailyMissions = () => {
 
     setLoadingMissions(true);
     try {
-      // Fetch all missions for the selected class and subject
       const response = await testsService.getMissions({
         class: selectedClass,
         subject: selectedSubject
@@ -119,7 +109,6 @@ const DailyMissions = () => {
       
       const missionsData = response.data || response || [];
       
-      // Filter missions for the current month
       const monthMissions = missionsData.filter(mission => {
         if (mission.mission_date) {
           const missionDate = new Date(mission.mission_date);
@@ -129,14 +118,11 @@ const DailyMissions = () => {
         return false;
       });
       
-      // Store all missions for calendar indicators
       setAllMissions(monthMissions);
       
-      // Build date for selected day
       const selectedDateObj = new Date(currentYear, currentMonth, selectedDate);
       const dateString = selectedDateObj.toISOString().split('T')[0];
       
-      // Filter missions for the selected date
       const filteredMissions = monthMissions.filter(mission => {
         if (mission.mission_date) {
           const missionDate = new Date(mission.mission_date).toISOString().split('T')[0];
@@ -145,14 +131,11 @@ const DailyMissions = () => {
         return false;
       });
       
-      // Transform missions to include completion rate and status
       const transformedMissions = filteredMissions.map(mission => {
-        // Calculate completion rate from progress data if available
         let completionRate = 0;
         if (mission.progress) {
           completionRate = mission.progress.percentage || 0;
         } else {
-          // Mock completion rate if no progress data
           completionRate = Math.floor(Math.random() * 100);
         }
         
@@ -168,7 +151,6 @@ const DailyMissions = () => {
           statusColor = 'red';
         }
         
-        // Get title - fallback to module/chapter info if title doesn't exist
         const missionTitle = mission.title || 
           (mission.module_name && mission.chapter_title 
             ? `${mission.module_name} - ${mission.chapter_title}` 
@@ -203,20 +185,17 @@ const DailyMissions = () => {
     }
   }, [selectedClass, selectedSubject, selectedDate, currentMonth, currentYear]);
 
-  // Fetch classes and subjects on mount
   useEffect(() => {
     fetchClasses();
     fetchSubjects();
   }, [fetchClasses, fetchSubjects]);
 
-  // Fetch missions when filters change
   useEffect(() => {
     if (selectedClass && selectedSubject) {
       fetchMissions();
     }
   }, [selectedClass, selectedSubject, selectedDate, currentMonth, currentYear, fetchMissions]);
 
-  // Handle month navigation
   const handlePreviousMonth = () => {
     if (currentMonth === 0) {
       setCurrentMonth(11);
@@ -240,13 +219,11 @@ const DailyMissions = () => {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 animate-slide-down">Daily Missions</h1>
         <p className="text-gray-600 mt-2 animate-slide-right" style={{animationDelay: '0.1s'}}>Select a class and subject to view mission completion rates.</p>
       </div>
 
-      {/* Filters */}
       <div className="mb-6 flex space-x-4">
         <div className="animate-slide-right" style={{animationDelay: '0.2s'}}>
           <label className="block text-sm font-medium text-gray-700 mb-2">Class</label>
@@ -284,7 +261,6 @@ const DailyMissions = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Calendar */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.4s'}}>
         <div className="flex justify-between items-center mb-4">
           <button 
@@ -306,7 +282,6 @@ const DailyMissions = () => {
           </button>
         </div>
 
-          {/* Days of week */}
           <div className="grid grid-cols-7 gap-1 mb-2">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
               <div key={day} className="text-center text-sm font-medium text-gray-500 py-2 animate-slide-down" style={{animationDelay: `${0.5 + index * 0.05}s`}}>
@@ -315,7 +290,6 @@ const DailyMissions = () => {
             ))}
           </div>
 
-          {/* Calendar grid */}
           <div className="grid grid-cols-7 gap-1">
             {calendarDays.map(({ day, hasActivity, isSelected }, index) => (
               day === null ? (
@@ -344,7 +318,6 @@ const DailyMissions = () => {
           </div>
         </div>
 
-        {/* Missions List */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.7s'}}>
           <h3 className="text-lg font-semibold text-gray-800 mb-4 animate-slide-right">
             Missions for {monthNames[currentMonth]} {selectedDate}, {currentYear}
@@ -386,7 +359,6 @@ const DailyMissions = () => {
                   </span>
                 </div>
 
-                {/* Mission Info */}
                 <div className="flex items-center space-x-4 text-xs text-gray-500 mb-3">
                   {mission.duration && (
                     <span className="flex items-center space-x-1">

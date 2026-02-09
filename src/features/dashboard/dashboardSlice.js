@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import dashboardService from '../../services/dashboardService'
 
-// Async thunks for dashboard API calls
 export const fetchDashboardMetrics = createAsyncThunk(
   'dashboard/fetchDashboardMetrics',
   async (role = 'principal', { rejectWithValue }) => {
@@ -175,7 +174,6 @@ const dashboardSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch dashboard metrics
       .addCase(fetchDashboardMetrics.pending, (state) => {
         state.loading.metrics = true
         state.error.metrics = null
@@ -186,7 +184,6 @@ const dashboardSlice = createSlice({
         const metricsData = response.metrics || response
         state.metrics = Array.isArray(metricsData) ? metricsData : []
         
-        // Extract quickSummary from the same response if available
         if (response.quickSummary) {
           state.quickSummary = Array.isArray(response.quickSummary) ? response.quickSummary : []
         }
@@ -198,7 +195,6 @@ const dashboardSlice = createSlice({
         state.error.metrics = action.payload
       })
 
-      // Fetch progress trends
       .addCase(fetchProgressTrends.pending, (state) => {
         state.loading.progressTrends = true
         state.error.progressTrends = null
@@ -212,7 +208,6 @@ const dashboardSlice = createSlice({
         state.error.progressTrends = action.payload
       })
 
-      // Fetch subject performance
       .addCase(fetchSubjectPerformance.pending, (state) => {
         state.loading.subjectPerformance = true
         state.error.subjectPerformance = null
@@ -226,7 +221,6 @@ const dashboardSlice = createSlice({
         state.error.subjectPerformance = action.payload
       })
 
-      // Fetch class distribution
       .addCase(fetchClassDistribution.pending, (state) => {
         state.loading.classDistribution = true
         state.error.classDistribution = null
@@ -240,7 +234,6 @@ const dashboardSlice = createSlice({
         state.error.classDistribution = action.payload
       })
 
-      // Fetch dashboard alerts
       .addCase(fetchDashboardAlerts.pending, (state) => {
         state.loading.alerts = true
         state.error.alerts = null
@@ -255,7 +248,6 @@ const dashboardSlice = createSlice({
         state.error.alerts = action.payload
       })
 
-      // Fetch recent activities
       .addCase(fetchRecentActivities.pending, (state) => {
         state.loading.recentActivities = true
         state.error.recentActivities = null
@@ -270,7 +262,6 @@ const dashboardSlice = createSlice({
         state.error.recentActivities = action.payload
       })
 
-      // Fetch quick summary
       .addCase(fetchQuickSummary.pending, (state) => {
         state.loading.quickSummary = true
         state.error.quickSummary = null

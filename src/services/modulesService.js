@@ -1,8 +1,6 @@
-// Modules API service
 import apiService from './api';
 
 class ModulesService {
-  // Get all modules with optional filters
   async getModules(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -19,7 +17,6 @@ class ModulesService {
     }
   }
 
-  // Get module by ID
   async getModuleById(moduleId) {
     try {
       return await apiService.get(`/modules/${moduleId}`);
@@ -28,7 +25,6 @@ class ModulesService {
     }
   }
 
-  // Get chapters for a specific module
   async getModuleChapters(moduleId) {
     try {
       return await apiService.get(`/modules/${moduleId}/module_chapters/`, { timeout: 120000 });
@@ -37,7 +33,6 @@ class ModulesService {
     }
   }
 
-  // Get modules for a specific subject
   async getSubjectModules(subjectId) {
     try {
       return await apiService.get(`/subjects/${subjectId}/modules/`);
@@ -46,33 +41,27 @@ class ModulesService {
     }
   }
 
-  // Create a new module
   async createModule(moduleData) {
     try {
-      // Check if logo is a File object (for file upload)
       const hasFile = moduleData.logo instanceof File;
       
       let payload;
       if (hasFile) {
-        // Use FormData for file uploads
         payload = new FormData();
         payload.append('name', moduleData.name);
         payload.append('subject', moduleData.subject);
         
-        // Add optional fields if they exist
         if (moduleData.description) payload.append('description', moduleData.description);
         if (moduleData.order !== undefined) payload.append('order', moduleData.order);
         if (moduleData.logo) payload.append('logo', moduleData.logo);
         if (moduleData.is_active !== undefined) payload.append('is_active', moduleData.is_active);
         if (moduleData.is_enabled !== undefined) payload.append('is_enabled', moduleData.is_enabled);
       } else {
-        // Use regular JSON payload
         payload = {
           name: moduleData.name,
           subject: moduleData.subject,
         };
         
-        // Add optional fields if they exist
         if (moduleData.description) payload.description = moduleData.description;
         if (moduleData.order !== undefined) payload.order = moduleData.order;
         if (moduleData.logo) payload.logo = moduleData.logo;
@@ -82,7 +71,6 @@ class ModulesService {
       
       return await apiService.post('/modules/', payload, { isFormData: hasFile });
     } catch (error) {
-      // Preserve error structure for validation error handling
       const newError = new Error(`Failed to create module: ${error.message}`);
       if (error.responseData) {
         newError.responseData = error.responseData;
@@ -94,15 +82,12 @@ class ModulesService {
     }
   }
 
-  // Update a module
   async updateModule(moduleId, moduleData) {
     try {
-      // Check if logo is a File object (for file upload)
       const hasFile = moduleData.logo instanceof File;
       
       let payload;
       if (hasFile) {
-        // Use FormData for file uploads
         payload = new FormData();
         
         if (moduleData.name) payload.append('name', moduleData.name);
@@ -114,7 +99,6 @@ class ModulesService {
         if (moduleData.is_enabled !== undefined) payload.append('is_enabled', moduleData.is_enabled);
         if (moduleData.is_due !== undefined) payload.append('is_due', moduleData.is_due);
       } else {
-        // Use regular JSON payload
         payload = {};
         
         if (moduleData.name) payload.name = moduleData.name;
@@ -129,7 +113,6 @@ class ModulesService {
       
       return await apiService.put(`/modules/${moduleId}/`, payload, { isFormData: hasFile });
     } catch (error) {
-      // Preserve error structure for validation error handling
       const newError = new Error(`Failed to update module: ${error.message}`);
       if (error.responseData) {
         newError.responseData = error.responseData;
@@ -141,7 +124,6 @@ class ModulesService {
     }
   }
 
-  // Delete a module
   async deleteModule(moduleId) {
     try {
       return await apiService.delete(`/modules/${moduleId}/`);
@@ -150,33 +132,27 @@ class ModulesService {
     }
   }
 
-  // Create a new chapter for a module
   async createChapter(moduleId, chapterData) {
     try {
-      // Check if logo is a File object (for file upload)
       const hasFile = chapterData.logo instanceof File;
       
       let payload;
       if (hasFile) {
-        // Use FormData for file uploads
         payload = new FormData();
         payload.append('module', moduleId);
         payload.append('title', chapterData.title);
         
-        // Add optional fields if they exist
         if (chapterData.description) payload.append('description', chapterData.description);
         if (chapterData.order !== undefined) payload.append('order', chapterData.order);
         if (chapterData.logo) payload.append('logo', chapterData.logo);
         if (chapterData.is_enabled !== undefined) payload.append('is_enabled', chapterData.is_enabled);
         if (chapterData.is_important !== undefined) payload.append('is_important', chapterData.is_important);
       } else {
-        // Use regular JSON payload
         payload = {
           module: moduleId,
           title: chapterData.title,
         };
         
-        // Add optional fields if they exist
         if (chapterData.description) payload.description = chapterData.description;
         if (chapterData.order !== undefined) payload.order = chapterData.order;
         if (chapterData.logo) payload.logo = chapterData.logo;
@@ -186,26 +162,18 @@ class ModulesService {
       
       const response = await apiService.post('/module_chapters/', payload, { isFormData: hasFile, timeout: 120000 });
       
-      // Handle response structure: { success: true, data: {...}, message: "..." }
-      // The backend returns: { success: true, data: {...}, message: "..." }
       return response;
     } catch (error) {
-      // The API service already extracts the error message from the backend response
-      // Backend returns: { success: false, message: "...", errors: {...} }
-      // API service extracts errorData.message and throws it as Error
       throw new Error(error.message || 'Failed to create chapter. Please try again.');
     }
   }
 
-  // Update a chapter
   async updateChapter(chapterId, chapterData) {
     try {
-      // Check if logo is a File object (for file upload)
       const hasFile = chapterData.logo instanceof File;
       
       let payload;
       if (hasFile) {
-        // Use FormData for file uploads
         payload = new FormData();
         
         if (chapterData.title) payload.append('title', chapterData.title);
@@ -217,7 +185,6 @@ class ModulesService {
         if (chapterData.is_important !== undefined) payload.append('is_important', chapterData.is_important);
         if (chapterData.is_due !== undefined) payload.append('is_due', chapterData.is_due);
       } else {
-        // Use regular JSON payload
         payload = {};
         
         if (chapterData.title) payload.title = chapterData.title;
@@ -236,7 +203,6 @@ class ModulesService {
     }
   }
 
-  // Delete a chapter
   async deleteChapter(chapterId) {
     try {
       return await apiService.delete(`/module_chapters/${chapterId}/`, { timeout: 120000 });
@@ -245,7 +211,6 @@ class ModulesService {
     }
   }
 
-  // Get module content (questions) for a chapter
   async getChapterQuestions(chapterId) {
     try {
       return await apiService.get(`/module_chapters/${chapterId}/module_questions/`, { timeout: 120000 });
@@ -254,7 +219,6 @@ class ModulesService {
     }
   }
 
-  // Get module content for a chapter (questions and theories)
   async getChapterModuleContent(chapterId) {
     try {
       return await apiService.get(`/module_chapters/${chapterId}/module_content/`, { timeout: 120000 });
@@ -263,14 +227,12 @@ class ModulesService {
     }
   }
 
-  // Create module content for a chapter (question or theory)
   async createChapterModuleContent(chapterId, contentData) {
     try {
       const payload = {
         type: contentData.type || contentData.content_type || 'question',
       };
       
-      // Add question or theory based on type
       if (payload.type === 'question' && contentData.question) {
         payload.question = contentData.question;
       } else if (payload.type === 'theory' && contentData.theory) {
@@ -284,7 +246,6 @@ class ModulesService {
     }
   }
 
-  // Get questions for a mission
   async getMissionQuestions(missionId) {
     try {
       return await apiService.get(`/missions/${missionId}/questions/`);

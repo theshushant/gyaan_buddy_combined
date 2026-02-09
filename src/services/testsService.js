@@ -1,12 +1,7 @@
-// Tests/Missions API service
 import apiService from './api';
 
 class TestsService {
-  // ============================================================================
-  // MISSION APIs
-  // ============================================================================
 
-  // Get all missions with optional filters
   async getMissions(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -24,7 +19,6 @@ class TestsService {
     }
   }
 
-  // Get mission by ID
   async getMissionById(missionId) {
     try {
       return await apiService.get(`/missions/${missionId}/`);
@@ -33,19 +27,16 @@ class TestsService {
     }
   }
 
-  // Create a new mission
   async createMission(missionData) {
     try {
       console.log('TestsService: Creating mission with data:', missionData);
       
-      // Transform frontend data to match backend MissionCreateSerializer
       const payload = {
         mission_date: missionData.mission_date,
         subject: missionData.subject,
         class_group: missionData.class_group,
       };
       
-      // Add optional fields if provided
       if (missionData.module) payload.module = missionData.module;
       if (missionData.module_chapter) payload.module_chapter = missionData.module_chapter;
       if (missionData.title) payload.title = missionData.title;
@@ -65,12 +56,10 @@ class TestsService {
     }
   }
 
-  // Update an existing mission
   async updateMission(missionId, missionData) {
     try {
       console.log('TestsService: Updating mission with data:', missionData);
       
-      // Transform frontend data to match backend
       const payload = {};
       
       if (missionData.mission_date) payload.mission_date = missionData.mission_date;
@@ -95,7 +84,6 @@ class TestsService {
     }
   }
 
-  // Delete a mission
   async deleteMission(missionId) {
     try {
       return await apiService.delete(`/missions/${missionId}/`);
@@ -104,7 +92,6 @@ class TestsService {
     }
   }
 
-  // Get all missions with past date created by logged in teacher
   async getAllMissions() {
     try {
       return await apiService.get('/missions/all/');
@@ -113,7 +100,6 @@ class TestsService {
     }
   }
 
-  // Get questions for a mission
   async getMissionQuestions(missionId) {
     try {
       console.log('TestsService: Fetching questions for mission:', missionId);
@@ -126,7 +112,6 @@ class TestsService {
     }
   }
 
-  // Create a question for a mission
   async createMissionQuestion(missionId, questionData) {
     try {
       console.log('TestsService: Creating mission question with data:', questionData);
@@ -139,7 +124,6 @@ class TestsService {
     }
   }
 
-  // Start a mission
   async startMission(missionId) {
     try {
       console.log('TestsService: Starting mission:', missionId);
@@ -152,7 +136,6 @@ class TestsService {
     }
   }
 
-  // Get students performance for a mission
   async getStudentsPerformance(missionId) {
     try {
       console.log('TestsService: Fetching students performance for mission:', missionId);
@@ -165,11 +148,7 @@ class TestsService {
     }
   }
 
-  // ============================================================================
-  // TEST APIs
-  // ============================================================================
 
-  // Get all tests with optional filters
   async getTests(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -188,7 +167,6 @@ class TestsService {
     }
   }
 
-  // Get my tests (for students - tests with progress)
   async getMyTests() {
     try {
       return await apiService.get('/tests/my-tests/');
@@ -197,7 +175,6 @@ class TestsService {
     }
   }
 
-  // Get test by ID
   async getTestById(testId) {
     try {
       return await apiService.get(`/tests/${testId}/`);
@@ -206,10 +183,6 @@ class TestsService {
     }
   }
 
-  // Create a new test.
-  // Accepts either:
-  // - module_chapters: [{ module: uuid, chapters: [uuid] }] (new format), or
-  // - module + module_chapter: single module and chapter (legacy format).
   async createTest(testData) {
     try {
       console.log('TestsService: Creating test with data:', testData);
@@ -243,8 +216,6 @@ class TestsService {
     }
   }
 
-  // Update an existing test.
-  // Accepts either module_chapters: [{ module, chapters }] or legacy module + module_chapter.
   async updateTest(testId, testData) {
     try {
       console.log('TestsService: Updating test with data:', testData);
@@ -276,7 +247,6 @@ class TestsService {
     }
   }
 
-  // Delete a test
   async deleteTest(testId) {
     try {
       return await apiService.delete(`/tests/${testId}/`);
@@ -285,7 +255,6 @@ class TestsService {
     }
   }
 
-  // Start a test
   async startTest(testId) {
     try {
       console.log('TestsService: Starting test:', testId);
@@ -298,7 +267,6 @@ class TestsService {
     }
   }
 
-  // Complete a test
   async completeTest(testId) {
     try {
       console.log('TestsService: Completing test:', testId);
@@ -311,7 +279,6 @@ class TestsService {
     }
   }
 
-  // Get questions for a test
   async getTestQuestions(testId) {
     try {
       console.log('TestsService: Fetching questions for test:', testId);
@@ -324,7 +291,6 @@ class TestsService {
     }
   }
 
-  // Remove questions from a test; deselected questions are removed and (if ai_generated) marked inactive
   async removeTestQuestions(testId, questionIds) {
     try {
       const response = await apiService.post(`/tests/${testId}/remove-questions/`, {
@@ -337,7 +303,6 @@ class TestsService {
     }
   }
 
-  // Add existing questions to a test by question IDs
   async addTestQuestions(testId, questionIds) {
     try {
       const response = await apiService.post(`/tests/${testId}/add-questions/`, {
@@ -350,7 +315,6 @@ class TestsService {
     }
   }
 
-  // Create a new question and add it to the test (manual question creation)
   async createTestQuestion(testId, questionData) {
     try {
       const response = await apiService.post(`/tests/${testId}/add-question/`, questionData);
@@ -361,7 +325,6 @@ class TestsService {
     }
   }
 
-  // Check answer for a test question
   async checkTestAnswer(testId, answerData) {
     try {
       console.log('TestsService: Checking answer for test:', testId, answerData);
@@ -374,7 +337,6 @@ class TestsService {
     }
   }
 
-  // Get test performance/students performance
   async getTestStudentsPerformance(testId) {
     try {
       console.log('TestsService: Fetching students performance for test:', testId);

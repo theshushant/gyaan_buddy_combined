@@ -1,8 +1,5 @@
 import SoftDeleteModel from '../base/SoftDeleteModel.js';
 
-/**
- * Model for managing schools in the educational system.
- */
 export default class School extends SoftDeleteModel {
   constructor(data = {}) {
     super(data);
@@ -14,10 +11,6 @@ export default class School extends SoftDeleteModel {
     this.is_active = data.is_active !== undefined ? data.is_active : true;
   }
 
-  /**
-   * Validate school data
-   * @returns {Object} Validation result with isValid and errors
-   */
   validate() {
     const errors = {};
 
@@ -41,21 +34,11 @@ export default class School extends SoftDeleteModel {
     };
   }
 
-  /**
-   * Check if email is valid
-   * @param {string} email - Email to validate
-   * @returns {boolean} True if valid
-   */
   isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   }
 
-  /**
-   * Check if URL is valid
-   * @param {string} url - URL to validate
-   * @returns {boolean} True if valid
-   */
   isValidUrl(url) {
     try {
       new URL(url);
@@ -65,26 +48,16 @@ export default class School extends SoftDeleteModel {
     }
   }
 
-  /**
-   * Activate the school
-   */
   activate() {
     this.is_active = true;
     this.touch();
   }
 
-  /**
-   * Deactivate the school
-   */
   deactivate() {
     this.is_active = false;
     this.touch();
   }
 
-  /**
-   * Convert to plain object
-   * @returns {Object} Plain object representation
-   */
   toJSON() {
     return {
       ...super.toJSON(),
@@ -97,10 +70,6 @@ export default class School extends SoftDeleteModel {
     };
   }
 
-  /**
-   * String representation
-   * @returns {string} String representation
-   */
   toString() {
     return this.name;
   }

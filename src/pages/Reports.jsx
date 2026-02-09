@@ -55,13 +55,11 @@ const Reports = () => {
   } = useSelector(state => state.reports)
 
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = Object.values(error).some(err => err !== null)
     if (hasError) {
       return // Don't retry if there's already an error
     }
 
-    // Fetch reports data when component mounts or filters change
     const fetchReportsData = async () => {
       const filters = {
         class: selectedClass !== 'all' ? selectedClass : undefined,
@@ -98,9 +96,7 @@ const Reports = () => {
 
   if (hasError) {
     const handleRetry = async () => {
-      // Clear error first
       dispatch(clearError())
-      // Then retry fetching data
       const filters = {
         class: selectedClass !== 'all' ? selectedClass : undefined,
         subject: selectedSubject !== 'all' ? selectedSubject : undefined,
@@ -143,7 +139,6 @@ const Reports = () => {
     )
   }
 
-  // Transform API data for charts
   const mathProgressData = progressOverTimeReport?.mathProgressData || {
     labels: progressOverTimeReport?.labels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: progressOverTimeReport?.datasets?.filter(d => d.label?.toLowerCase().includes('math')) || [
@@ -172,20 +167,17 @@ const Reports = () => {
     ],
   }
 
-  // Transform student performance data for chart - use API data only
   const transformStudentPerformanceData = () => {
     if (!studentPerformanceReport) {
       return null
     }
 
-    // Handle case where API returns pre-formatted chart data
     if (studentPerformanceReport.studentPerformanceData && 
         studentPerformanceReport.studentPerformanceData.labels && 
         studentPerformanceReport.studentPerformanceData.datasets) {
       return studentPerformanceReport.studentPerformanceData
     }
 
-    // Get students array from various possible response structures
     let studentsArray = []
     if (Array.isArray(studentPerformanceReport)) {
       studentsArray = studentPerformanceReport
@@ -199,13 +191,11 @@ const Reports = () => {
       return null
     }
 
-    // Extract student names for labels
     const labels = studentsArray.map(s => {
       if (typeof s === 'string') return s
       return s.student_name || s.name || `${s.firstName || ''} ${s.lastName || ''}`.trim() || 'Unknown'
     })
 
-    // Determine subjects from student data
     const subjectsSet = new Set()
     studentsArray.forEach(s => {
       if (s.performance && typeof s.performance === 'object') {
@@ -215,7 +205,6 @@ const Reports = () => {
       }
     })
 
-    // If no subjects found, use average score as a single dataset
     if (subjectsSet.size === 0) {
       return {
         labels,
@@ -224,7 +213,6 @@ const Reports = () => {
             label: 'Average Score',
             data: studentsArray.map(s => {
               const score = s.averageScore || s.score || s.total_exp || 0
-              // If score is > 100, it might be exp, so normalize it
               return score > 100 ? Math.min(100, Math.round(score / 100)) : score
             }),
             backgroundColor: 'rgba(59, 130, 246, 0.8)',
@@ -233,7 +221,6 @@ const Reports = () => {
       }
     }
 
-    // Create datasets for each subject
     const subjects = Array.from(subjectsSet)
     const backgroundColorPalette = [
       'rgba(59, 130, 246, 0.8)',
@@ -252,7 +239,6 @@ const Reports = () => {
         if (s[subject] !== undefined) {
           return s[subject]
         }
-        // Fallback to average score if subject-specific data not available
         return s.averageScore || s.score || 0
       }),
       backgroundColor: backgroundColorPalette[index % backgroundColorPalette.length],
@@ -289,7 +275,6 @@ const Reports = () => {
     },
   }
 
-  // Debug: Log chart data
   console.log('Chart data loaded:', { studentPerformanceData, mathProgressData, scienceProgressData })
 
   const tabs = [
@@ -299,13 +284,11 @@ const Reports = () => {
     { id: 'ai-insights', label: 'AI Insights' }
   ]
 
-  // Transform API data for students - handle various response structures
   const transformStudentsData = () => {
     if (!studentPerformanceReport) {
       return []
     }
 
-    // Get students array from various possible response structures
     let studentsArray = []
     if (Array.isArray(studentPerformanceReport)) {
       studentsArray = studentPerformanceReport
@@ -320,35 +303,28 @@ const Reports = () => {
     }
 
     return studentsArray.map(s => {
-      // Extract name
       const name = s.student_name || s.name || 
                    `${s.firstName || ''} ${s.lastName || ''}`.trim() || 
                    'Unknown'
       
-      // Extract class
       const classValue = s.class || s.className || 'N/A'
       
-      // Calculate score (handle different formats)
       let score = 0
       if (s.averageScore !== undefined) {
         score = s.averageScore
       } else if (s.score !== undefined) {
         score = s.score
       } else if (s.total_exp !== undefined) {
-        // Convert exp to percentage (scaled)
         score = Math.min(100, Math.round((s.total_exp || 0) / 100))
       } else if (s.performance && typeof s.performance === 'object') {
-        // Calculate average from performance object
         const scores = Object.values(s.performance).filter(v => typeof v === 'number')
         score = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0
       }
       score = Math.min(100, Math.max(0, score)) // Clamp between 0 and 100
 
-      // Extract attendance
       const attendance = s.attendance !== undefined ? s.attendance : 
                         s.attendanceRate !== undefined ? s.attendanceRate : 0
 
-      // Extract assignments
       let assignments = '0/0'
       if (s.assignmentsCompleted !== undefined && s.totalAssignments !== undefined) {
         assignments = `${s.assignmentsCompleted}/${s.totalAssignments}`
@@ -372,16 +348,13 @@ const Reports = () => {
 
   const students = transformStudentsData()
 
-  // Transform class performance from analytics report
   const classPerformance = analyticsReport?.overview ? [
     { class: 'Total Students', score: Math.round((analyticsReport.overview.total_students || 0) / 10) },
     { class: 'Active Classes', score: Math.round((analyticsReport.overview.active_classes || 0) * 10) },
   ] : []
 
-  // Transform AI insights - backend returns array of insights
   const aiInsightsData = Array.isArray(aiInsightsReport) ? aiInsightsReport : []
   const aiInsights = aiInsightsData.map((insight) => {
-    // Map icon based on insight title/description
     let IconComponent = TrendingUp
     if (insight.title?.toLowerCase().includes('engagement') || insight.title?.toLowerCase().includes('completion')) {
       IconComponent = Lightbulb
@@ -396,7 +369,6 @@ const Reports = () => {
     }
   })
 
-  // Transform quiz/assignment data - backend returns array of summaries
   const quizAssignmentItems = Array.isArray(quizAssignmentSummaries) ? quizAssignmentSummaries : []
 
   return (
@@ -406,7 +378,6 @@ const Reports = () => {
         <p className="text-gray-600 mt-2">Analyze student performance and progress with detailed reports.</p>
       </div>
 
-      {/* Tabs */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab, index) => (
@@ -426,7 +397,6 @@ const Reports = () => {
         </nav>
       </div>
 
-      {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <div className="flex flex-wrap gap-4">
           <select
@@ -471,10 +441,8 @@ const Reports = () => {
         </div>
       </div>
 
-      {/* Content based on active tab */}
       {activeTab === 'student-performance' && (
         <div className="space-y-6">
-          {/* Student Performance Chart */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 ease-in-out">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Student Performance Overview</h2>
             <div className="h-64 w-full animate-fade-in">
@@ -489,7 +457,6 @@ const Reports = () => {
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Student Performance Table */}
           <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">Student Performance</h2>
@@ -546,9 +513,7 @@ const Reports = () => {
             </div>
           </div>
 
-          {/* Side Panel */}
           <div className="space-y-6">
-            {/* Class Performance */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Class Performance</h3>
               <p className="text-sm text-gray-600 mb-4">Average score by class</p>
@@ -570,7 +535,6 @@ const Reports = () => {
               </div>
             </div>
 
-            {/* Progress Over Time */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Progress Over Time</h3>
               <p className="text-sm text-gray-600 mb-4">Last 6 Months</p>
@@ -598,10 +562,8 @@ const Reports = () => {
         </div>
       )}
 
-      {/* Progress Over Time Tab */}
       {activeTab === 'progress-over-time' && (
         <div className="space-y-6">
-          {/* Period Selection */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Progress Over Time Report</h3>
             <p className="text-gray-600 mb-6">Track student performance trends over different periods.</p>
@@ -642,7 +604,6 @@ const Reports = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Mathematics Performance */}
               <div className="bg-white p-6 rounded-lg border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-lg font-semibold text-gray-900">Mathematics Performance</h4>
@@ -667,7 +628,6 @@ const Reports = () => {
                 </div>
               </div>
 
-              {/* Science Performance */}
               <div className="bg-white p-6 rounded-lg border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-lg font-semibold text-gray-900">Science Performance</h4>
@@ -696,7 +656,6 @@ const Reports = () => {
         </div>
       )}
 
-      {/* Quiz/Assignment Summaries Tab */}
       {activeTab === 'quiz-assignment' && (
         <div className="space-y-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -720,7 +679,6 @@ const Reports = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {quizAssignmentItems.length > 0 ? (
                       quizAssignmentItems.map((item, index) => {
-                        // Backend returns: participants, completed, average_score
                         const completionRate = item.participants && item.completed 
                           ? Math.round((item.completed / item.participants) * 100) 
                           : 0;
@@ -769,7 +727,6 @@ const Reports = () => {
         </div>
       )}
 
-      {/* AI Insights Tab */}
       {activeTab === 'ai-insights' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -794,7 +751,6 @@ const Reports = () => {
             ))}
           </div>
           
-          {/* Quick Access to Full AI Insights */}
           <div className="bg-primary-50 border border-primary-200 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div>

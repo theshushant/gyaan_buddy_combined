@@ -1,8 +1,5 @@
 import TimeStampUUID from '../base/TimeStampUUID.js';
 
-/**
- * Model for managing modules within subjects.
- */
 export default class Module extends TimeStampUUID {
   constructor(data = {}) {
     super(data);
@@ -16,10 +13,6 @@ export default class Module extends TimeStampUUID {
     this.created_by = data.created_by || null; // User ID or User object
   }
 
-  /**
-   * Validate module data
-   * @returns {Object} Validation result with isValid and errors
-   */
   validate() {
     const errors = {};
 
@@ -43,67 +36,39 @@ export default class Module extends TimeStampUUID {
     };
   }
 
-  /**
-   * Activate the module
-   */
   activate() {
     this.is_active = true;
     this.touch();
   }
 
-  /**
-   * Deactivate the module
-   */
   deactivate() {
     this.is_active = false;
     this.touch();
   }
 
-  /**
-   * Enable the module
-   */
   enable() {
     this.is_enabled = true;
     this.touch();
   }
 
-  /**
-   * Disable the module
-   */
   disable() {
     this.is_enabled = false;
     this.touch();
   }
 
-  /**
-   * Get subject ID
-   * @returns {string|null} Subject ID
-   */
   getSubjectId() {
     return typeof this.subject === 'object' ? this.subject.id : this.subject;
   }
 
-  /**
-   * Get created by user ID
-   * @returns {string|null} User ID
-   */
   getCreatedById() {
     return typeof this.created_by === 'object' ? this.created_by.id : this.created_by;
   }
 
-  /**
-   * Set subject
-   * @param {string|Object} subject - Subject ID or Subject object
-   */
   setSubject(subject) {
     this.subject = subject;
     this.touch();
   }
 
-  /**
-   * Convert to plain object
-   * @returns {Object} Plain object representation
-   */
   toJSON() {
     return {
       ...super.toJSON(),
@@ -118,10 +83,6 @@ export default class Module extends TimeStampUUID {
     };
   }
 
-  /**
-   * String representation
-   * @returns {string} String representation
-   */
   toString() {
     const subjectName = typeof this.subject === 'object' ? this.subject.name : 'Unknown Subject';
     return `${this.name} - ${subjectName}`;

@@ -24,7 +24,6 @@ const TeacherDashboard = () => {
     error
   } = useSelector(state => state.dashboard)
 
-  // Label mapping for teacher dashboard cards
   const labelMapping = {
     "My Students' Average Score": "Average Student Percentage",
     "Module Completed": "Module completion rate",
@@ -32,19 +31,16 @@ const TeacherDashboard = () => {
     "Questions Created": "Topics covered"
   }
 
-  // Function to get mapped label
   const getMappedLabel = (label) => {
     return labelMapping[label] || label
   }
 
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = Object.values(error).some(err => err !== null)
     if (hasError) {
       return // Don't retry if there's already an error
     }
 
-    // Fetch dashboard data when component mounts
     const fetchDashboardData = async () => {
       try {
         await Promise.all([
@@ -63,7 +59,6 @@ const TeacherDashboard = () => {
     fetchDashboardData()
   }, [dispatch, role, error])
 
-  // Check if any critical errors occurred
   const hasError = Object.values(error).some(err => err !== null)
   const isLoading = Object.values(loading).some(load => load === true)
 
@@ -77,9 +72,7 @@ const TeacherDashboard = () => {
 
   if (hasError) {
     const handleRetry = async () => {
-      // Clear error first
       dispatch(clearError())
-      // Then retry fetching data
       try {
         await Promise.all([
           dispatch(fetchDashboardMetrics(role || 'teacher')),
@@ -119,18 +112,15 @@ const TeacherDashboard = () => {
     )
   }
 
-  // Use data from Redux state
   const metricsData = metrics || []
   const quickSummaryData = quickSummary || []
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 animate-slide-down">Teacher Dashboard</h1>
       </div>
 
-      {/* Class-wise quick stats */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-700 animate-slide-right">Class-wise quick stats</h2>
@@ -153,7 +143,6 @@ const TeacherDashboard = () => {
             </div>
           ))}
           
-          {/* Module Covered Card */}
           <div 
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
             style={{animationDelay: `${(metricsData.length + 1) * 0.1}s`}}
@@ -164,7 +153,6 @@ const TeacherDashboard = () => {
             </div>
           </div>
           
-          {/* Active Student with Latest Module Card */}
           <div 
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
             style={{animationDelay: `${(metricsData.length + 2) * 0.1}s`}}
@@ -176,7 +164,6 @@ const TeacherDashboard = () => {
             </div>
           </div>
           
-          {/* Total Students Card */}
           <div 
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
             style={{animationDelay: `${(metricsData.length + 3) * 0.1}s`}}
@@ -187,7 +174,6 @@ const TeacherDashboard = () => {
             </div>
           </div>
           
-          {/* Completion Rate Card */}
           <div 
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
             style={{animationDelay: `${(metricsData.length + 4) * 0.1}s`}}
@@ -198,7 +184,6 @@ const TeacherDashboard = () => {
             </div>
           </div>
           
-          {/* Average Score Card */}
           <div 
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
             style={{animationDelay: `${(metricsData.length + 5) * 0.1}s`}}
@@ -211,7 +196,6 @@ const TeacherDashboard = () => {
         </div>
       </div>
 
-      {/* Shortcuts to most-used actions */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-gray-700 mb-4 animate-slide-right">Shortcuts to most-used actions</h2>
         
@@ -250,7 +234,6 @@ const TeacherDashboard = () => {
         </div>
       </div>
 
-      {/* Quick Summary */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-gray-700 mb-4 animate-slide-right">Quick Summary</h2>
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">

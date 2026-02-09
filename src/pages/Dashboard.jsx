@@ -50,13 +50,11 @@ const Dashboard = () => {
   } = useSelector(state => state.dashboard)
 
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = Object.values(error).some(err => err !== null)
     if (hasError) {
       return // Don't retry if there's already an error
     }
 
-    // Fetch all dashboard data when component mounts
     const fetchDashboardData = async () => {
       try {
         await Promise.all([
@@ -74,7 +72,6 @@ const Dashboard = () => {
     fetchDashboardData()
   }, [dispatch, role, error])
 
-  // Check if any critical errors occurred
   const hasError = Object.values(error).some(err => err !== null)
   const isLoading = Object.values(loading).some(load => load === true)
 
@@ -88,9 +85,7 @@ const Dashboard = () => {
 
   if (hasError) {
     const handleRetry = async () => {
-      // Clear error first
       dispatch(clearError())
-      // Then retry fetching data
       try {
         await Promise.all([
           dispatch(fetchDashboardMetrics(role || 'principal')),
@@ -128,11 +123,8 @@ const Dashboard = () => {
     )
   }
 
-  // Prepare KPI metrics - use actual API data
-  // The metrics endpoint returns an array of metric objects with: title, value, change, changeType, trend
   const metricsData = Array.isArray(metrics) ? metrics : []
   
-  // Display first 3 metrics from API, or show empty state if no data
   const displayMetrics = metricsData.slice(0, 3).map(metric => ({
     title: metric.title || 'Metric',
     value: metric.value || '0',
@@ -140,12 +132,8 @@ const Dashboard = () => {
     changeType: metric.changeType || (metric.change && metric.change.includes('+') ? 'positive' : 'neutral')
   }))
 
-  // Prepare progress trends chart data - use actual API data
-  // API returns: { labels: [...], datasets: [{ label, data, borderColor, backgroundColor }] }
   const prepareProgressTrendsData = () => {
-    // If we have API data with proper structure, use it directly
     if (progressTrends && progressTrends.labels && progressTrends.datasets && Array.isArray(progressTrends.datasets)) {
-      // Ensure datasets have proper chart.js format
       return {
         labels: progressTrends.labels,
         datasets: progressTrends.datasets.map(dataset => ({
@@ -160,7 +148,6 @@ const Dashboard = () => {
       }
     }
     
-    // Return null if no data - component will show loading/empty state
     return null
   }
 
@@ -216,27 +203,20 @@ const Dashboard = () => {
     },
   }
 
-  // Prepare Quick Summary data - use actual API data
-  // API returns: [{ label: "...", value: "..." }]
   const quickSummaryData = Array.isArray(quickSummary) ? quickSummary : []
   
-  // Display first 3 quick summary items from API
   const displayQuickSummary = quickSummaryData.slice(0, 3).map(item => ({
     label: item.label || 'Summary Item',
     value: String(item.value || '0')
   }))
 
-  // Prepare Alerts data - use actual API data
-  // API returns: [{ id, type, title, message, timestamp, read }]
   const alertsData = Array.isArray(alerts) ? alerts : []
   
-  // Map API alerts to display format
   const mapAlertToDisplay = (alert) => {
     let bgColor = 'bg-gray-50'
     let borderColor = 'border-gray-200'
     let textColor = 'text-gray-800'
     
-    // Determine colors based on alert type
     if (alert.type === 'warning' || alert.type === 'alert') {
       bgColor = 'bg-red-50'
       borderColor = 'border-red-200'
@@ -251,11 +231,8 @@ const Dashboard = () => {
       textColor = 'text-green-800'
     }
     
-    // Build message from alert data
-    // API provides both title and message, use message if available, otherwise title
     let message = alert.message || alert.title || 'No message'
     
-    // Format message based on type if not already formatted
     if (!message.startsWith('Alert:') && !message.startsWith('Announcement:') && !message.startsWith('Achievement:')) {
       if (alert.type === 'warning' || alert.type === 'alert') {
         message = `Alert: ${message}`
@@ -275,19 +252,16 @@ const Dashboard = () => {
     }
   }
 
-  // Display first 3 alerts from API
   const displayAlerts = alertsData.slice(0, 3).map(mapAlertToDisplay)
 
   return (
     <div className="space-y-6">
-      {/* Dashboard Title */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">
           {role === 'teacher' ? 'Teacher Dashboard' : role === 'principal' ? 'Principal Dashboard' : 'Dashboard'}
         </h1>
       </div>
 
-      {/* Key Performance Indicators */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {displayMetrics.length > 0 ? (
           displayMetrics.map((metric, index) => (
@@ -317,16 +291,12 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* School-Wide Progress Trends */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">School-Wide Progress Trends</h2>
-          {/* Custom Legend - positioned at top right */}
           <div className="flex items-center space-x-4 flex-wrap">
-            {/* Show datasets from API */}
             {chartProgressTrends && chartProgressTrends.datasets && chartProgressTrends.datasets.length > 0 ? (
               chartProgressTrends.datasets.slice(0, 3).map((dataset, index) => {
-                // Extract color from dataset borderColor
                 const color = dataset.borderColor || 'rgb(128, 128, 128)'
                 return (
                   <div key={index} className="flex items-center space-x-2">
@@ -341,14 +311,12 @@ const Dashboard = () => {
             ) : (
               <span className="text-sm text-gray-400">No data available</span>
             )}
-            {/* Show "More →" if there are more datasets */}
             {chartProgressTrends && chartProgressTrends.datasets && chartProgressTrends.datasets.length > 3 && (
               <a href="#" className="text-primary-500 hover:text-primary-600 text-sm font-medium">More →</a>
             )}
           </div>
         </div>
         
-        {/* Chart */}
         <div className="h-64 w-full">
           {chartProgressTrends && chartProgressTrends.labels && chartProgressTrends.datasets && chartProgressTrends.datasets.length > 0 ? (
             <Line data={chartProgressTrends} options={chartOptions} />
@@ -360,9 +328,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Bottom Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Quick Summary */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Summary</h2>
           <div className="space-y-4">
@@ -382,7 +348,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Critical Alerts & Announcements */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-900">Critical Alerts & Announcements</h2>

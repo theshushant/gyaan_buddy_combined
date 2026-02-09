@@ -46,7 +46,6 @@ const Notifications = () => {
           setNotifications([]);
         }
       } else {
-        // Fetch student notifications
         const response = await notificationsService.getStudentNotifications();
         console.log('Student notifications response:', response);
 
@@ -105,7 +104,6 @@ const Notifications = () => {
   const handleMarkAsRead = async (notificationId) => {
     try {
       await notificationsService.markAsRead(notificationId);
-      // Update local state
       if (activeTab === 'my') {
         setNotifications(prev => 
           prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
@@ -132,7 +130,6 @@ const Notifications = () => {
   const handleMarkAllAsRead = async () => {
     try {
       await notificationsService.markAllAsRead();
-      // Update local state
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setStats(prev => ({
         ...prev,
@@ -210,7 +207,6 @@ const Notifications = () => {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 animate-slide-down">Notifications</h1>
         <p className="text-gray-600 mt-2 animate-slide-right" style={{animationDelay: '0.1s'}}>
@@ -218,7 +214,6 @@ const Notifications = () => {
         </p>
       </div>
 
-      {/* Tabs */}
       <div className="mb-6 border-b border-gray-200">
         <nav className="flex space-x-8">
           <button
@@ -249,7 +244,6 @@ const Notifications = () => {
         </nav>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.2s'}}>
           <div className="text-center">
@@ -312,7 +306,6 @@ const Notifications = () => {
         )}
       </div>
 
-      {/* Filters */}
       <div className="mb-6">
         <div className="flex flex-wrap gap-2">
           <button
@@ -372,7 +365,6 @@ const Notifications = () => {
         </div>
       </div>
 
-      {/* Notifications List */}
       <div className="space-y-4">
         {filteredNotifications.map((notification) => (
           <div
@@ -458,7 +450,6 @@ const Notifications = () => {
         </div>
       )}
 
-      {/* Actions */}
       {currentNotifications.length > 0 && activeTab === 'my' && (
         <div className="mt-8 flex justify-end space-x-4">
           <button 

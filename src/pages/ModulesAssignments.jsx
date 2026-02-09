@@ -77,7 +77,6 @@ const ModulesAssignments = () => {
     );
   };
 
-  // Fetch all modules once and store locally
   const fetchAllModulesData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -100,7 +99,6 @@ const ModulesAssignments = () => {
               title: module.name || `Chapter ${module.order}`,
               completionRate: module.user_percentage || 0,
               isDue: module.status === 'due',
-              // Store full module data for editing
               name: module.name,
               description: module.description || '',
               order: module.order || 1,
@@ -122,7 +120,6 @@ const ModulesAssignments = () => {
               title: module.name || `Chapter ${module.order}`,
               completionRate: module.user_percentage || 0,
               isDue: module.status === 'due',
-              // Store full module data for editing
               name: module.name,
               description: module.description || '',
               order: module.order || 1,
@@ -145,7 +142,6 @@ const ModulesAssignments = () => {
     }
   }, []);
 
-  // Local filtering based on selectedSubject
   useEffect(() => {
     if (!selectedSubject) {
       setChapters([]);
@@ -164,7 +160,6 @@ const ModulesAssignments = () => {
     }
   }, [selectedSubject, allModulesData]);
 
-  // Fetch subjects for the filter dropdown
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
@@ -181,7 +176,6 @@ const ModulesAssignments = () => {
     fetchSubjects();
   }, []);
 
-  // Fetch all modules once on component mount
   useEffect(() => {
     fetchAllModulesData();
   }, [fetchAllModulesData]);
@@ -192,7 +186,6 @@ const ModulesAssignments = () => {
 
     try {
       if (editingModule) {
-        // Update existing module
         await modulesService.updateModule(editingModule.id, moduleData);
         setShowCreateModal(false);
         setEditingModule(null);
@@ -201,7 +194,6 @@ const ModulesAssignments = () => {
           message: `Chapter "${moduleData.name}" has been updated successfully.`
         });
       } else {
-        // Create new module
         await modulesService.createModule(moduleData);
         setShowCreateModal(false);
         setSuccessData({
@@ -213,7 +205,6 @@ const ModulesAssignments = () => {
       await fetchAllModulesData();
     } catch (err) {
       console.error('Error saving module:', err);
-      // Pass the full error object to preserve validation error structure
       setCreateError(err.responseData || err.message || `Failed to ${editingModule ? 'update' : 'create'} chapter. Please try again.`);
     } finally {
       setCreatingModule(false);
@@ -237,7 +228,6 @@ const ModulesAssignments = () => {
 
     try {
       if (editingChapter) {
-        // Update existing chapter
         const response = await modulesService.updateChapter(editingChapter.id, chapterData);
         const successMessage = response?.message || `Assignment "${chapterData.title}" has been updated successfully.`;
         
@@ -249,7 +239,6 @@ const ModulesAssignments = () => {
           message: successMessage
         });
       } else {
-        // Create new chapter
         const response = await modulesService.createChapter(selectedModuleForChapter.id, chapterData);
         const successMessage = response?.message || `Assignment "${chapterData.title}" has been created successfully.`;
         
@@ -284,28 +273,14 @@ const ModulesAssignments = () => {
   };
 
   const handleToggleModuleDue = (module, newDueStatus) => {
-    // TODO: Uncomment API call when backend is ready
-    // try {
-    //   await modulesService.updateModule(module.id, { is_due: newDueStatus });
-    // } catch (err) {
-    //   console.error('Error toggling module due status:', err);
-    // }
     
-    // Update local state
     setAllModulesData(prev => prev.map(m => 
       m.id === module.id ? { ...m, isDue: newDueStatus } : m
     ));
   };
 
   const handleToggleChapterDue = (chapter, parentModule, newDueStatus) => {
-    // TODO: Uncomment API call when backend is ready
-    // try {
-    //   await modulesService.updateChapter(chapter.id, { is_due: newDueStatus });
-    // } catch (err) {
-    //   console.error('Error toggling chapter due status:', err);
-    // }
     
-    // Update local state
     setAllModulesData(prev => prev.map(m => {
       if (m.id === parentModule.id) {
         return {
@@ -321,7 +296,6 @@ const ModulesAssignments = () => {
 
   const handleEditChapter = async (chapter, module) => {
     try {
-      // Fetch full chapter data
       const response = await modulesService.getModuleChapters(module.id);
       const chaptersData = response.data || response;
       const chaptersList = Array.isArray(chaptersData) ? chaptersData : [];
@@ -350,17 +324,14 @@ const ModulesAssignments = () => {
     setEditingQuestion(null);
 
     try {
-      // Use module_content API to get all content (questions and theories) for the chapter
       const response = await modulesService.getChapterModuleContent(chapter.id);
       const contentData = response.data || response;
       const contentList = Array.isArray(contentData) ? contentData : [];
       
-      // Extract questions from module content (filter only question type content)
       const questions = contentList
         .filter(content => content.content_type === 'question' && content.question)
         .map(content => ({
           ...content.question,
-          // Preserve module content metadata if needed
           module_content_id: content.id,
           order: content.order
         }));
@@ -389,7 +360,6 @@ const ModulesAssignments = () => {
   };
 
   const handleOpenAIGenerate = () => {
-    // Pass both chapter and parent module info for AI generation
     setSelectedChapterForAI({
       chapter: selectedChapterForQuestion,
       module: selectedModuleForQuestion
@@ -410,7 +380,6 @@ const ModulesAssignments = () => {
     try {
       const { options, image, ...questionPayload } = questionData;
 
-      // If image is present or needs to be removed, create FormData
       let dataToSend;
       const needsFormData = image instanceof File || questionPayload.remove_image;
       const isMCQ = questionPayload.question_type === 'mcq_single' || questionPayload.question_type === 'mcq_multiple';
@@ -420,7 +389,6 @@ const ModulesAssignments = () => {
         Object.keys(questionPayload).forEach(key => {
           if (key !== 'remove_image' && questionPayload[key] !== null && questionPayload[key] !== undefined) {
             const value = questionPayload[key];
-            // Handle different data types
             if (value instanceof File) {
               dataToSend.append(key, value);
             } else if (typeof value === 'boolean') {
@@ -433,15 +401,11 @@ const ModulesAssignments = () => {
           }
         });
         
-        // Add chapter_id for linking question to chapter (ModuleContent) and ChapterHOTS if is_hots
         if (selectedChapterForQuestion?.id) {
           dataToSend.append('chapter_id', selectedChapterForQuestion.id);
         }
         
-        // Add options for MCQ questions - send as JSON string for FormData
-        // The backend will need to parse this, but for now we'll send it this way
         if (isMCQ && options && Array.isArray(options) && options.length > 0) {
-          // Filter out empty options and ensure proper structure
           const validOptions = options
             .filter(opt => opt.option_text && opt.option_text.trim() !== '')
             .map((opt, idx) => ({
@@ -457,21 +421,16 @@ const ModulesAssignments = () => {
         if (image instanceof File) {
           dataToSend.append('image', image);
         } else if (questionPayload.remove_image) {
-          // For Django REST Framework, send empty file or null to clear image
-          // We'll send an empty string which Django should interpret as clearing the field
           dataToSend.append('image', '');
         }
       } else {
-        // For JSON payload, include options directly
         dataToSend = { ...questionPayload };
         
-        // Add chapter_id for linking question to chapter (ModuleContent) and ChapterHOTS if is_hots
         if (selectedChapterForQuestion?.id) {
           dataToSend.chapter_id = selectedChapterForQuestion.id;
         }
         
         if (isMCQ && options && Array.isArray(options) && options.length > 0) {
-          // Filter out empty options and ensure proper structure
           const validOptions = options
             .filter(opt => opt.option_text && opt.option_text.trim() !== '')
             .map((opt, idx) => ({
@@ -486,7 +445,6 @@ const ModulesAssignments = () => {
       }
 
       if (editingQuestion) {
-        // Update existing question
         const questionId = editingQuestion.id;
         await questionsService.updateQuestion(questionId, dataToSend);
 
@@ -498,12 +456,10 @@ const ModulesAssignments = () => {
           message: 'Question has been updated successfully.'
         });
         setShowSuccessModal(true);
-        // Refresh questions list
         if (showViewQuestionsModal) {
           await handleViewQuestions(selectedChapterForQuestion);
         }
       } else {
-        // Create new question (backend handles ModuleContent creation when chapter_id is provided)
         const questionResponse = await questionsService.createQuestion(dataToSend);
         const questionId = questionResponse.data?.id || questionResponse.id;
 
@@ -533,7 +489,6 @@ const ModulesAssignments = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gradient-start/10 to-gradient-end/10">
       <div className="p-6 lg:p-8">
-        {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
@@ -552,7 +507,6 @@ const ModulesAssignments = () => {
             </div>
           </div>
 
-          {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between">
@@ -594,7 +548,6 @@ const ModulesAssignments = () => {
           </div>
         </div>
 
-        {/* Filters and Actions */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex-1 w-full md:w-auto">
@@ -641,7 +594,6 @@ const ModulesAssignments = () => {
           </div>
         </div>
 
-        {/* Loading State */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="relative">
@@ -652,7 +604,6 @@ const ModulesAssignments = () => {
           </div>
         )}
 
-        {/* Error State */}
         {error && !loading && (
           <div className="bg-red-50 border-l-4 border-red-500 rounded-xl p-6 mb-6 shadow-sm">
             <div className="flex items-start space-x-3">
@@ -674,7 +625,6 @@ const ModulesAssignments = () => {
           </div>
         )}
 
-        {/* Modules List */}
         {!loading && !error && (
           <div className="space-y-4">
             {chapters.length === 0 ? (
@@ -710,7 +660,6 @@ const ModulesAssignments = () => {
                   key={chapter.id} 
                   className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300"
                 >
-                  {/* Module Header */}
                   <div 
                     className="p-6 cursor-pointer"
                     onClick={() => toggleChapter(chapter.id)}
@@ -779,7 +728,6 @@ const ModulesAssignments = () => {
                     </div>
                   </div>
 
-                  {/* Expanded Content */}
                   {expandedChapters.includes(chapter.id) && (
                     <div className="border-t border-gray-200 bg-gray-50/50 p-6 space-y-3 animate-slide-down">
                       {chapter.modules && chapter.modules.length > 0 ? (
@@ -865,7 +813,6 @@ const ModulesAssignments = () => {
           </div>
         )}
 
-        {/* Create/Edit Module Modal */}
         {showCreateModal && (
           <CreateModuleModal
             isOpen={showCreateModal}
@@ -882,7 +829,6 @@ const ModulesAssignments = () => {
           />
         )}
 
-        {/* Create/Edit Topic Modal */}
         {showCreateChapterModal && (
           <CreateTopicModal
             isOpen={showCreateChapterModal}
@@ -900,7 +846,6 @@ const ModulesAssignments = () => {
           />
         )}
 
-        {/* View Questions Modal */}
         {showViewQuestionsModal && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => {
@@ -910,7 +855,6 @@ const ModulesAssignments = () => {
             }} />
             <div className="flex min-h-screen items-center justify-center p-4">
               <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-                {/* Modal Header */}
                 <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
@@ -940,7 +884,6 @@ const ModulesAssignments = () => {
                   </div>
                 </div>
                 
-                {/* Modal Content */}
                 <div className="p-6 overflow-y-auto flex-1 bg-gray-50">
                   {loadingQuestions ? (
                     <div className="flex flex-col items-center justify-center py-20">
@@ -1004,7 +947,6 @@ const ModulesAssignments = () => {
                                   alt="Question"
                                   className="rounded-lg border-2 border-gray-200 max-w-full h-auto"
                                   onError={(e) => {
-                                    // Fallback if image fails to load
                                     e.target.style.display = 'none';
                                   }}
                                 />
@@ -1052,7 +994,6 @@ const ModulesAssignments = () => {
           </div>
         )}
 
-        {/* Create Question Modal */}
         {showCreateQuestionModal && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => {
@@ -1062,7 +1003,6 @@ const ModulesAssignments = () => {
             }} />
             <div className="flex min-h-screen items-center justify-center p-4">
               <div className="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-                {/* Modal Header */}
                 <div 
                   className="px-8 py-6"
                   style={{ background: editingQuestion ? 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' : 'linear-gradient(135deg, #16a34a 0%, #059669 100%)' }}
@@ -1106,7 +1046,6 @@ const ModulesAssignments = () => {
                   </div>
                 </div>
                 
-                {/* Modal Content */}
                 <div className="p-6 overflow-y-auto flex-1 bg-gray-50">
                   <CreateQuestionForm
                     onSave={handleSaveQuestion}
@@ -1126,7 +1065,6 @@ const ModulesAssignments = () => {
           </div>
         )}
 
-        {/* Success Modal */}
         {showSuccessModal && (
           <SuccessModal
             isOpen={showSuccessModal}
@@ -1136,7 +1074,6 @@ const ModulesAssignments = () => {
           />
         )}
 
-        {/* AI Generate Questions Modal */}
         {showAIGenerateModal && (
           <AIGenerateModal
             isOpen={showAIGenerateModal}
@@ -1162,9 +1099,7 @@ const ModulesAssignments = () => {
   );
 };
 
-// AI Generate Modal Component
 const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) => {
-  // Extract chapter and module from the prop
   const chapter = chapterData?.chapter;
   const parentModule = chapterData?.module;
 
@@ -1235,7 +1170,6 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
         use_matplot: useMatplot,
       };
 
-      // Call the appropriate API based on selected provider
       const response = aiProvider === 'gemini' 
         ? await aiService.generateAIQuestionsGemini(requestData)
         : await aiService.generateAIQuestions(requestData);
@@ -1290,7 +1224,6 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
 
       setSuccess(`Successfully saved! ${result.deactivated_count || 0} unselected questions marked as inactive.`);
       
-      // Clear and trigger success callback
       setTimeout(() => {
         onSuccess();
       }, 1000);
@@ -1323,7 +1256,6 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-          {/* Modal Header */}
           <div className="px-8 py-6" style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -1348,10 +1280,8 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
             </div>
           </div>
 
-          {/* Modal Content */}
           <div className="p-6 overflow-y-auto flex-1 bg-gray-50">
             <div className="space-y-6">
-              {/* Error Alert */}
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start space-x-3">
                   <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -1362,7 +1292,6 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                 </div>
               )}
 
-              {/* Success Alert */}
               {success && (
                 <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start space-x-3">
                   <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -1373,44 +1302,9 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                 </div>
               )}
 
-              {/* Generation Form */}
               {generatedQuestions.length === 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
-                  {/* AI Provider Toggle - Hidden for now, defaulting to Gemini */}
-                  {/* <div className="space-y-2">
-                    <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                      <Brain className="h-4 w-4 text-primary-500" />
-                      <span>AI Provider</span>
-                    </label>
-                    <div className="flex rounded-xl border-2 border-gray-200 p-1 bg-gray-50">
-                      <button
-                        type="button"
-                        onClick={() => setAiProvider('chatgpt')}
-                        className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                          aiProvider === 'chatgpt'
-                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md'
-                            : 'text-gray-600 hover:bg-gray-100'
-                        }`}
-                      >
-                        <Sparkles className="h-5 w-5" />
-                        <span>ChatGPT</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAiProvider('gemini')}
-                        className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                          aiProvider === 'gemini'
-                            ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-md'
-                            : 'text-gray-600 hover:bg-gray-100'
-                        }`}
-                      >
-                        <Brain className="h-5 w-5" />
-                        <span>Gemini</span>
-                      </button>
-                    </div>
-                  </div> */}
 
-                  {/* Question Type Dropdown */}
                   <div className="space-y-2">
                     <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
                       <HelpCircle className="h-4 w-4 text-primary-500" />
@@ -1432,9 +1326,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                     </div>
                   </div>
 
-                  {/* Number of Questions & Level Row */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Number of Questions */}
                     <div className="space-y-2">
                       <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
                         <BarChart3 className="h-4 w-4 text-primary-500" />
@@ -1456,7 +1348,6 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                       </div>
                     </div>
 
-                    {/* Level */}
                     <div className="space-y-2">
                       <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
                         <Zap className="h-4 w-4 text-primary-500" />
@@ -1479,7 +1370,6 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                     </div>
                   </div>
 
-                  {/* Level 5 Info */}
                   {level === '5' && (
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start space-x-3">
                       <Zap className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -1493,7 +1383,6 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                     </div>
                   )}
 
-                  {/* Generate images & Use matplotlib (Gemini only) */}
                   <div className="space-y-2">
                     <div className="flex items-center space-x-3">
                       <input
@@ -1522,7 +1411,6 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
                   <div className="flex items-center justify-end space-x-4 pt-4 border-t border-gray-200">
                     <button
                       onClick={handleReset}
@@ -1554,7 +1442,6 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                 </div>
               )}
 
-              {/* Generated Questions List */}
               {generatedQuestions.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                   <div className="bg-gradient-to-r from-primary-500/10 to-secondary-500/10 border-b border-gray-200 px-6 py-4">
@@ -1588,7 +1475,6 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                     </p>
                   </div>
 
-                  {/* Questions List */}
                   <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto">
                     {generatedQuestions.map((question, index) => (
                       <div
@@ -1632,7 +1518,6 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                                 {question.question_text}
                               </p>
 
-                              {/* Options */}
                               {question.options && question.options.length > 0 && (
                                 <div className="mt-3 space-y-2">
                                   {question.options.map((option, optIdx) => (
@@ -1670,7 +1555,6 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                     ))}
                   </div>
 
-                  {/* Save Button */}
                   <div className="bg-gray-50 border-t border-gray-200 px-6 py-4">
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-gray-600">
@@ -1715,11 +1599,9 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
   );
 };
 
-// Create Question Form Component
 const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) => {
   const [formData, setFormData] = useState(() => {
     if (initialData) {
-      // Pre-fill form with existing question data
       return {
         question_text: initialData.question_text || '',
         question_type: initialData.question_type || 'mcq_single',
@@ -1761,7 +1643,6 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
   const [validationError, setValidationError] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(() => {
-    // If editing and question has an image, set preview
     if (initialData?.image) {
       const imageUrl = initialData.image.startsWith('http') 
         ? initialData.image 
@@ -1771,7 +1652,6 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
     return null;
   });
 
-  // Update form data when initialData changes (switching between edit/create modes)
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -1796,7 +1676,6 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
             ],
       });
     } else {
-      // Reset to default when no initialData (create mode)
       setFormData({
         question_text: '',
         question_type: 'mcq_single',
@@ -1815,7 +1694,6 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
     }
   }, [initialData]);
 
-  // Reset image state when initialData changes (switching between edit/create modes)
   useEffect(() => {
     if (initialData?.image) {
       const imageUrl = initialData.image.startsWith('http') 
@@ -1831,10 +1709,8 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
 
   const handleFieldChange = (field, value) => {
     if (field === 'question_type') {
-      // When changing to MCQ types, ensure options are initialized
       if ((value === 'mcq_single' || value === 'mcq_multiple')) {
         setFormData(prev => {
-          // If options don't exist or are empty, initialize them
           const hasOptions = prev.options && prev.options.length > 0;
           const options = hasOptions 
             ? prev.options 
@@ -1847,7 +1723,6 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
           return { ...prev, [field]: value, options };
         });
       } else {
-        // When changing away from MCQ types, just update the type
         setFormData(prev => ({ ...prev, [field]: value }));
       }
     } else {
@@ -1881,13 +1756,11 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         setValidationError('Please select a valid image file');
         return;
       }
       
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setValidationError('Image size must be less than 5MB');
         return;
@@ -1896,7 +1769,6 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
       setImageFile(file);
       setValidationError(null);
       
-      // Clear remove_image flag if a new image is selected
       if (formData.remove_image) {
         setFormData(prev => {
           const { remove_image, ...rest } = prev;
@@ -1904,7 +1776,6 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         });
       }
       
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -1916,14 +1787,11 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
   const handleRemoveImage = () => {
     setImageFile(null);
     setImagePreview(null);
-    // Reset file input
     const fileInput = document.getElementById('question-image-upload');
     if (fileInput) {
       fileInput.value = '';
     }
-    // If editing and had an existing image, mark it for removal
     if (initialData?.image) {
-      // Set a flag to indicate image should be removed
       setFormData(prev => ({ ...prev, remove_image: true }));
     }
   };
@@ -1932,9 +1800,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
     e.preventDefault();
     setValidationError(null);
     
-    // Validate that at least one correct option is selected for MCQ questions
     if (formData.question_type === 'mcq_single' || formData.question_type === 'mcq_multiple') {
-      // Ensure options exist and are an array
       const options = formData.options && Array.isArray(formData.options) ? formData.options : [];
       const validOptions = options.filter(opt => opt.option_text && opt.option_text.trim() !== '');
       const hasCorrectOption = validOptions.some(opt => opt.is_correct === true);
@@ -1949,7 +1815,6 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         return;
       }
       
-      // Ensure we send all valid options with proper structure
       const dataToSave = { 
         ...formData, 
         options: validOptions.map((opt, idx) => ({
@@ -1963,9 +1828,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
       }
       onSave(dataToSave);
     } else {
-      // For non-MCQ questions, just send the data (without options)
       const dataToSave = { ...formData };
-      // Remove options for non-MCQ questions
       delete dataToSave.options;
       if (imageFile) {
         dataToSave.image = imageFile;
@@ -2019,14 +1882,12 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         />
       </div>
 
-      {/* Image Upload Field */}
       <div className="bg-white rounded-xl p-6 border border-gray-200">
         <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
           <ImageIcon className="h-4 w-4 text-gray-500" />
           <span>Question Image <span className="text-xs font-normal text-gray-500">(Optional)</span></span>
         </label>
         <div className="space-y-3">
-          {/* File Input */}
           <div className="relative">
             <input
               id="question-image-upload"
@@ -2051,7 +1912,6 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
             </label>
           </div>
           
-          {/* Preview */}
           {imagePreview && (
             <div className="relative inline-block">
               <div className="relative max-w-md rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-100">
@@ -2072,7 +1932,6 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
             </div>
           )}
           
-          {/* Help Text */}
           <p className="text-xs text-gray-500">
             Supported formats: JPG, PNG, GIF. Max size: 5MB
           </p>
@@ -2180,7 +2039,6 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         />
       </div>
 
-      {/* Options Section */}
       {(formData.question_type === 'mcq_single' || formData.question_type === 'mcq_multiple') && (
         <div className="bg-white rounded-xl p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-4">

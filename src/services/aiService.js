@@ -1,8 +1,6 @@
-// AI Services API
 import apiService from './api';
 
 class AIService {
-  // Get AI suggestions
   async getAISuggestions(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -19,7 +17,6 @@ class AIService {
     }
   }
 
-  // Get AI insights
   async getAIInsights(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -35,7 +32,6 @@ class AIService {
     }
   }
 
-  // Generate AI content
   async generateAIContent(requestData) {
     try {
       return await apiService.get('/ai/generate', {
@@ -47,7 +43,6 @@ class AIService {
     }
   }
 
-  // Get AI generated questions
   async getAIGeneratedQuestions(requestData) {
     try {
       return await apiService.get('/ai/questions/generate', {
@@ -59,7 +54,6 @@ class AIService {
     }
   }
 
-  // Analyze student performance with AI
   async analyzeStudentPerformance(studentId, filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -74,7 +68,6 @@ class AIService {
     }
   }
 
-  // Get AI recommendations
   async getAIRecommendations(type, filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -90,7 +83,6 @@ class AIService {
     }
   }
 
-  // Get AI heatmap data
   async getAIHeatmapData(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -105,7 +97,6 @@ class AIService {
     }
   }
 
-  // Get remedial activities suggestions
   async getRemedialActivities(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -121,11 +112,8 @@ class AIService {
     }
   }
 
-  // Generate AI questions using ChatGPT
-  // This will create questions, module content entries, and topic HOTS entries if level is 5
   async generateAIQuestions(requestData) {
     try {
-      // Use 2 minute timeout for AI generation (can take longer)
       const response = await apiService.post('/ai/generate-questions/', requestData, { timeout: 120000 });
       return response;
     } catch (error) {
@@ -133,11 +121,8 @@ class AIService {
     }
   }
 
-  // Generate AI questions using Vertex AI
-  // This will create questions, module content entries, and topic HOTS entries if level is 5
   async generateAIQuestionsGemini(requestData) {
     try {
-      // Use 2 minute timeout for AI generation (can take longer)
       const response = await apiService.post('/ai/generate-questions-vertex/', requestData, { timeout: 120000 });
       return response;
     } catch (error) {
@@ -145,7 +130,6 @@ class AIService {
     }
   }
 
-  // Execute matplotlib code (from Vertex Gemini) and return image as base64
   async executeMatplotlibImage(matplotlibCode) {
     try {
       const response = await apiService.post('/ai/execute-matplotlib-image/', { matplotlib_code: matplotlibCode }, { timeout: 60000 });
@@ -155,8 +139,6 @@ class AIService {
     }
   }
 
-  // Deactivate AI-generated questions that are not in the provided list
-  // This marks questions as inactive (is_active=False)
   async deactivateAIQuestions(questionIdsToKeep, moduleChapterId) {
     try {
       const response = await apiService.post('/ai/deactivate-questions/', {

@@ -1,8 +1,6 @@
-// Notifications API service
 import apiService from './api';
 
 class NotificationsService {
-  // Get all notifications for current user
   async getNotifications(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -20,7 +18,6 @@ class NotificationsService {
     }
   }
 
-  // Get student notifications (for teachers)
   async getStudentNotifications(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -39,7 +36,6 @@ class NotificationsService {
     }
   }
 
-  // Mark a notification as read
   async markAsRead(notificationId) {
     try {
       console.log('NotificationsService: Marking notification as read:', notificationId);
@@ -50,7 +46,6 @@ class NotificationsService {
     }
   }
 
-  // Mark all notifications as read
   async markAllAsRead() {
     try {
       console.log('NotificationsService: Marking all notifications as read');
@@ -61,7 +56,6 @@ class NotificationsService {
     }
   }
 
-  // Create a notification
   async createNotification(notificationData) {
     try {
       console.log('NotificationsService: Creating notification:', notificationData);
@@ -72,7 +66,6 @@ class NotificationsService {
     }
   }
 
-  // Delete a notification
   async deleteNotification(notificationId) {
     try {
       console.log('NotificationsService: Deleting notification:', notificationId);

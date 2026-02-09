@@ -1,8 +1,6 @@
-// Subjects API service
 import apiService from './api';
 
 class SubjectsService {
-  // Get all subjects with optional filters
   async getSubjects(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -19,7 +17,6 @@ class SubjectsService {
     }
   }
 
-  // Get subject by ID
   async getSubjectById(subjectId) {
     try {
       return await apiService.get(`/subjects/${subjectId}`);
@@ -28,21 +25,16 @@ class SubjectsService {
     }
   }
 
-  // Create a new subject
   async createSubject(subjectData, logoFile = null) {
     try {
       console.log('SubjectsService: Creating subject with data:', subjectData);
       
-      // Check if logo is a File object (for file upload)
       const hasFile = logoFile instanceof File;
       
-      // Prepare FormData if logo file is provided, otherwise use JSON
       let payload
       
       if (hasFile) {
-        // Use FormData for file upload
         payload = new FormData()
-        // Only append non-empty values
         if (subjectData.name) {
           payload.append('name', String(subjectData.name))
         }
@@ -52,23 +44,19 @@ class SubjectsService {
         if (subjectData.description) {
           payload.append('description', String(subjectData.description))
         }
-        // Convert boolean to Django-compatible string format
         const isActive = subjectData.is_active !== undefined ? subjectData.is_active : true
         payload.append('is_active', isActive ? 'True' : 'False')
         
-        // Add logo file - only if it's actually a File object
         if (logoFile instanceof File) {
           payload.append('logo', logoFile)
         }
         
-        // Add classes if provided
         if (subjectData.classes && Array.isArray(subjectData.classes) && subjectData.classes.length > 0) {
           subjectData.classes.forEach(classId => {
             payload.append('classes', String(classId))
           })
         }
       } else {
-        // Use JSON for regular data
         payload = {
           name: subjectData.name,
           code: subjectData.code,
@@ -76,7 +64,6 @@ class SubjectsService {
           is_active: subjectData.is_active !== undefined ? subjectData.is_active : true
         }
         
-        // Add classes if provided
         if (subjectData.classes && Array.isArray(subjectData.classes) && subjectData.classes.length > 0) {
           payload.classes = subjectData.classes
         }
@@ -93,21 +80,16 @@ class SubjectsService {
     }
   }
 
-  // Update an existing subject
   async updateSubject(subjectId, subjectData, logoFile = null) {
     try {
       console.log('SubjectsService: Updating subject with data:', subjectData)
       
-      // Check if logo is a File object (for file upload)
       const hasFile = logoFile instanceof File;
       
-      // Prepare FormData if logo file is provided, otherwise use JSON
       let payload
       
       if (hasFile) {
-        // Use FormData for file upload
         payload = new FormData()
-        // Only append non-empty values
         if (subjectData.name) {
           payload.append('name', String(subjectData.name))
         }
@@ -117,23 +99,19 @@ class SubjectsService {
         if (subjectData.description) {
           payload.append('description', String(subjectData.description))
         }
-        // Convert boolean to Django-compatible string format
         const isActive = subjectData.is_active !== undefined ? subjectData.is_active : true
         payload.append('is_active', isActive ? 'True' : 'False')
         
-        // Add logo file - only if it's actually a File object
         if (logoFile instanceof File) {
           payload.append('logo', logoFile)
         }
         
-        // Add classes if provided
         if (subjectData.classes && Array.isArray(subjectData.classes) && subjectData.classes.length > 0) {
           subjectData.classes.forEach(classId => {
             payload.append('classes', String(classId))
           })
         }
       } else {
-        // Use JSON for regular data
         payload = {
           name: subjectData.name,
           code: subjectData.code,
@@ -141,7 +119,6 @@ class SubjectsService {
           is_active: subjectData.is_active !== undefined ? subjectData.is_active : true
         }
         
-        // Add classes if provided
         if (subjectData.classes && Array.isArray(subjectData.classes) && subjectData.classes.length > 0) {
           payload.classes = subjectData.classes
         }
@@ -158,7 +135,6 @@ class SubjectsService {
     }
   }
 
-  // Delete a subject
   async deleteSubject(subjectId) {
     try {
       return await apiService.delete(`/subjects/${subjectId}/`)
@@ -167,7 +143,6 @@ class SubjectsService {
     }
   }
 
-  // Get modules for a subject
   async getModules(subjectId, filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -183,7 +158,6 @@ class SubjectsService {
     }
   }
 
-  // Get all modules (with optional subject filter)
   async getAllModules(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -200,7 +174,6 @@ class SubjectsService {
     }
   }
 
-  // Get chapters for a module
   async getChapters(moduleId, filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -209,7 +182,6 @@ class SubjectsService {
       if (filters.page) queryParams.append('page', filters.page);
       if (filters.limit) queryParams.append('limit', filters.limit);
 
-      // Use the module_chapters action endpoint
       const endpoint = `/modules/${moduleId}/module_chapters${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       return await apiService.get(endpoint);
     } catch (error) {
@@ -217,7 +189,6 @@ class SubjectsService {
     }
   }
 
-  // Get all chapters (with optional module filter)
   async getAllChapters(filters = {}) {
     try {
       const queryParams = new URLSearchParams();

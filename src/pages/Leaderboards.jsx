@@ -28,7 +28,6 @@ const Leaderboards = () => {
   });
   const [scope, setScope] = useState('class'); // 'class' or 'grade'
 
-  // Fetch classes and subjects
   const fetchClasses = useCallback(async () => {
     try {
       const response = await classesService.getClasses();
@@ -59,11 +58,9 @@ const Leaderboards = () => {
     }
   }, []);
 
-  // Fetch leaderboard data (only fetch once, no filters applied)
   const fetchLeaderboard = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch all data without filters, only sort by current tab
       const leaderboardFilters = {
         sort_by: activeTab === 'xp' ? 'xp' : 'score',
       };
@@ -71,7 +68,6 @@ const Leaderboards = () => {
       const response = await leaderboardService.getLeaderboard(leaderboardFilters);
       const data = response.data || response;
       
-      // Handle response structure
       let studentsData = [];
       let stats = {};
       
@@ -85,7 +81,6 @@ const Leaderboards = () => {
         stats = data.statistics || {};
       }
 
-      // Map students data (without rank yet, will be added after filtering)
       const mappedStudents = studentsData.map((student) => ({
         id: student.id || student.uuid,
         name: `${student.first_name || ''} ${student.last_name || ''}`.trim() || student.username,
@@ -113,16 +108,13 @@ const Leaderboards = () => {
     }
   }, [activeTab]); // Only refetch when tab changes (sort order changes)
 
-  // Apply filters to fetched data
   const applyFilters = useCallback(() => {
     let filtered = [...allStudentsData];
 
-    // Filter by class_id
     if (filters.class_id) {
       filtered = filtered.filter(student => student.class_id === filters.class_id);
     }
 
-    // Filter by subject_id
     if (filters.subject_id) {
       filtered = filtered.filter(student => {
         if (!student.subjects || !Array.isArray(student.subjects)) return false;
@@ -132,7 +124,6 @@ const Leaderboards = () => {
       });
     }
 
-    // Filter by grade (extract grade from class name)
     if (filters.grade) {
       filtered = filtered.filter(student => {
         const studentGrade = student.grade || (student.class ? student.class.match(/\d+/)?.[0] : null);
@@ -140,7 +131,6 @@ const Leaderboards = () => {
       });
     }
 
-    // Filter by XP range
     if (filters.min_xp) {
       const minXp = parseInt(filters.min_xp);
       if (!isNaN(minXp)) {
@@ -154,7 +144,6 @@ const Leaderboards = () => {
       }
     }
 
-    // Filter by score range
     if (filters.min_score) {
       const minScore = parseInt(filters.min_score);
       if (!isNaN(minScore)) {
@@ -168,14 +157,12 @@ const Leaderboards = () => {
       }
     }
 
-    // Sort by active tab
     if (activeTab === 'xp') {
       filtered.sort((a, b) => b.xp - a.xp);
     } else {
       filtered.sort((a, b) => b.averageScore - a.averageScore);
     }
 
-    // Add rank and trophy
     const studentsWithRank = filtered.map((student, index) => ({
       ...student,
       rank: index + 1,
@@ -190,12 +177,10 @@ const Leaderboards = () => {
     fetchSubjects();
   }, [fetchClasses, fetchSubjects]);
 
-  // Fetch data when tab changes (sort order changes)
   useEffect(() => {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
 
-  // Apply filters whenever filters or allStudentsData changes
   useEffect(() => {
     if (allStudentsData.length > 0) {
       applyFilters();
@@ -215,12 +200,10 @@ const Leaderboards = () => {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 animate-slide-down">Leaderboards</h1>
       </div>
 
-      {/* Filters */}
       <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="animate-slide-right" style={{animationDelay: '0.1s'}}>
           <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
@@ -290,7 +273,6 @@ const Leaderboards = () => {
         </div>
       </div>
 
-      {/* XP and Score Filters */}
       <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="animate-slide-right" style={{animationDelay: '0.5s'}}>
           <label className="block text-sm font-medium text-gray-700 mb-2">Min XP</label>
@@ -337,7 +319,6 @@ const Leaderboards = () => {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="mb-6">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
@@ -365,7 +346,6 @@ const Leaderboards = () => {
         </div>
       </div>
 
-      {/* Leaderboard Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden transform hover:shadow-lg transition-all duration-300 animate-slide-up" style={{animationDelay: '0.4s'}}>
         {loading ? (
           <div className="p-8 text-center">
@@ -431,7 +411,6 @@ const Leaderboards = () => {
         )}
       </div>
 
-      {/* Additional Stats */}
       <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.6s'}}>
           <div className="text-center">

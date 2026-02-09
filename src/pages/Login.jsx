@@ -25,7 +25,6 @@ const Login = () => {
       ...prev,
       [name]: value
     }))
-    // Clear error when user starts typing
     if (formErrors[name]) {
       setFormErrors(prev => ({
         ...prev,
@@ -57,16 +56,12 @@ const Login = () => {
     }
 
     try {
-      // Add type as 'dashboard' for web login
       const loginData = {
         ...formData,
         type: 'dashboard'
       }
       const result = await dispatch(loginUser(loginData)).unwrap()
       if (result.user) {
-        // The role will be set in Redux by authSlice (mapped from user_type)
-        // AppRoutes component will automatically show the correct dashboard based on role
-        // Teachers will see TeacherDashboard, others will see the principal Dashboard
         navigate('/')
       }
     } catch (error) {
@@ -75,7 +70,6 @@ const Login = () => {
   }
 
   const handleDemoLogin = (role) => {
-    // These are placeholder credentials - replace with actual backend users
     const demoCredentials = {
       principal: {
         username: 'admin', // Replace with actual principal username from backend
@@ -92,7 +86,6 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#00167a' }}>
       <div className="max-w-md w-full">
-        {/* Logo and Title */}
         <div className="text-center mb-8">
           <div>
             <img 
@@ -101,11 +94,8 @@ const Login = () => {
               className="w-full h-full object-contain"
             />
           </div>
-          {/* <h1 className="text-3xl font-bold text-gray-900 mb-2">Gyan Buddy</h1>
-          <p className="text-gray-600">Educational Management System</p> */}
         </div>
 
-        {/* Login Form */}
         <div className="bg-white rounded-xl shadow-lg p-8">
           <div className="mb-6">
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">Welcome Back</h2>
@@ -113,7 +103,6 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Username Field */}
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
                 Username
@@ -139,7 +128,6 @@ const Login = () => {
               )}
             </div>
 
-            {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
@@ -176,14 +164,12 @@ const Login = () => {
               )}
             </div>
 
-            {/* Error Message */}
             {loginError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-sm text-red-600">{loginError}</p>
               </div>
             )}
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}

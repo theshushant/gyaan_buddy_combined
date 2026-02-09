@@ -1,4 +1,3 @@
-// Mock students data
 export default {
   '/students': {
     students: [
@@ -172,7 +171,6 @@ export default {
     }
   },
 
-  // Dynamic endpoint handler for progress trends - returns different data based on pattern matching
   '/students/1/progress-trends': {
     math: { score: 88, change: 5, period: 'Last 3 Months' },
     science: { score: 82, change: 3, period: 'Last 3 Months' },

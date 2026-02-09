@@ -9,17 +9,14 @@ const CreateClassModal = ({ isOpen, onClose, onSave, loading = false, error = nu
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
 
-  // Prefill form when classData is provided (edit mode)
   useEffect(() => {
     if (classData && isOpen) {
       setFormData({
         name: classData.name || ''
       })
-      // Reset errors and touched states when modal opens with data
       setErrors({})
       setTouched({})
     } else if (!classData && isOpen) {
-      // Reset form when opening in create mode
       setFormData({ name: '' })
       setErrors({})
       setTouched({})
@@ -28,7 +25,6 @@ const CreateClassModal = ({ isOpen, onClose, onSave, loading = false, error = nu
 
   const isEditMode = !!classData
 
-  // Validation function
   const validateField = (name, value) => {
     let error = ''
     
@@ -67,7 +63,6 @@ const CreateClassModal = ({ isOpen, onClose, onSave, loading = false, error = nu
   const handleFieldChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
     }
@@ -84,7 +79,6 @@ const CreateClassModal = ({ isOpen, onClose, onSave, loading = false, error = nu
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    // Mark all fields as touched
     const allTouched = {}
     Object.keys(formData).forEach(field => {
       allTouched[field] = true
@@ -97,7 +91,6 @@ const CreateClassModal = ({ isOpen, onClose, onSave, loading = false, error = nu
   }
 
   const handleClose = () => {
-    // Reset form on close
     setFormData({ name: '' })
     setErrors({})
     setTouched({})
@@ -126,7 +119,6 @@ const CreateClassModal = ({ isOpen, onClose, onSave, loading = false, error = nu
               {isEditMode ? 'Update the class name below.' : 'Enter the class name to create a new class.'}
             </p>
             
-            {/* Error message */}
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-800">{error}</p>
@@ -153,7 +145,6 @@ const CreateClassModal = ({ isOpen, onClose, onSave, loading = false, error = nu
               )}
             </div>
             
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
               <button
                 type="button"

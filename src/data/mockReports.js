@@ -1,4 +1,3 @@
-// Mock reports data
 export default {
   '/reports/student-performance': {
     students: [

@@ -27,9 +27,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     setLoadingClasses(true)
     try {
       const response = await classesService.getClasses()
-      // Extract data array from response
       const classesData = response.data || response || []
-      // Store full class objects (with id and name)
       const classesList = classesData.map(cls => ({
         id: cls.id || cls.uuid,
         name: cls.name || cls
@@ -37,7 +35,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
       setClasses(classesList)
     } catch (error) {
       console.error('Failed to fetch classes:', error)
-      // Fallback to empty array on error
       setClasses([])
     } finally {
       setLoadingClasses(false)
@@ -48,9 +45,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     setLoadingSubjects(true)
     try {
       const response = await subjectsService.getSubjects()
-      // Extract data array from response
       const subjectsData = response.data || response || []
-      // Store full subject objects (with id and name)
       const subjectsList = subjectsData.map(subject => ({
         id: subject.id || subject.uuid,
         name: subject.name || subject
@@ -58,14 +53,12 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
       setSubjects(subjectsList)
     } catch (error) {
       console.error('Failed to fetch subjects:', error)
-      // Fallback to empty array on error
       setSubjects([])
     } finally {
       setLoadingSubjects(false)
     }
   }, [])
 
-  // Fetch classes and subjects from API when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchClasses()
@@ -73,20 +66,16 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     }
   }, [isOpen, fetchClasses, fetchSubjects])
 
-  // Pre-fill form when editing a student
   useEffect(() => {
     if (isOpen && student) {
-      // Format date of birth (handle both YYYY-MM-DD and danger date formats)
       let dateOfBirth = ''
       if (student.date_of_birth || student.dateOfBirth) {
         const dob = student.date_of_birth || student.dateOfBirth
-        // If it's already in YYYY-MM-DD format, use it directly
         if (dob.includes('T')) {
           dateOfBirth = dob.split('T')[0]
         } else if (dob.match(/^\d{4}-\d{2}-\d{2}$/)) {
           dateOfBirth = dob
         } else {
-          // Try to parse and format
           try {
             const date = new Date(dob)
             dateOfBirth = date.toISOString().split('T')[0]
@@ -96,27 +85,22 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
         }
       }
 
-      // Get class ID - handle both nested class object and direct class_id
       let classId = ''
       if (student.class_id || student.classId) {
         classId = student.class_id || student.classId
       } else if (student.class_instance) {
-        // Handle class_instance UUID from backend
         classId = student.class_instance
       } else if (student.class && typeof student.class === 'object' && student.class.id) {
         classId = student.class.id
       } else if (student.profile?.class_instance?.id) {
-        // Handle nested profile structure from backend
         classId = student.profile.class_instance.id
       } else if (student.class && typeof student.class === 'string') {
-        // If class is a string, we'll try to find it in the classes list
         const foundClass = classes.find(c => c.name === student.class)
         if (foundClass) {
           classId = foundClass.id
         }
       }
 
-      // Get subject IDs - handle both array of objects and array of IDs
       let subjectIds = []
       if (student.subject_ids || student.subjectIds) {
         const subjectIdsArray = student.subject_ids || student.subjectIds
@@ -131,7 +115,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
           if (typeof subj === 'object' && (subj.id || subj.uuid)) {
             return subj.id || subj.uuid
           }
-          // If subject is just a string (name), we need to find it in the subjects list
           if (typeof subj === 'string') {
             const foundSubject = subjects.find(s => s.name === subj || s.id === subj)
             return foundSubject ? foundSubject.id : null
@@ -140,7 +123,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
         }).filter(id => id !== null) // Remove null values
       }
 
-      // Get parent contact - prioritize email, then phone_number
       let parentContact = ''
       if (student.email) {
         parentContact = student.email
@@ -162,7 +144,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
         subjectIds: subjectIds
       })
     } else if (isOpen && !student) {
-      // Reset form when opening for add mode
       setFormData({
         firstName: '',
         lastName: '',
@@ -179,7 +160,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     }
   }, [isOpen, student, classes])
 
-  // Validation functions
   const validateField = (name, value) => {
     let error = ''
     
@@ -269,7 +249,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
   const handleFieldChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
     }
@@ -286,7 +265,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    // Mark all fields as touched
     const allTouched = {}
     Object.keys(formData).forEach(field => {
       allTouched[field] = true
@@ -294,7 +272,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     setTouched(allTouched)
     
     if (validateForm()) {
-      // Prepare data with all required fields properly mapped
       const submitData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -309,12 +286,10 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
         subject_ids: formData.subjectIds
       }
       onSave(submitData)
-      // Don't close modal here - let parent handle it after successful API call
     }
   }
 
   const handleClose = () => {
-    // Reset form on close (only if not editing to avoid clearing data prematurely)
     if (!student) {
       setFormData({
         firstName: '',
@@ -340,7 +315,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     
     setFormData(prev => ({ ...prev, subjectIds: newSubjectIds }))
     
-    // Trigger validation for subjects
     setTouched(prev => ({ ...prev, subjectIds: true }))
     const error = validateField('subjectIds', newSubjectIds)
     if (error) {
@@ -372,16 +346,13 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
               {student ? 'Update the student details below.' : 'Fill in the details below to add a new student.'}
             </p>
             
-            {/* Error message */}
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-800">{error}</p>
               </div>
             )}
             
-            {/* Two Column Layout */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Left Column */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Student First Name</label>
@@ -505,7 +476,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                 </div>
               </div>
               
-              {/* Right Column */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Student Last Name</label>
@@ -566,7 +536,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
               </div>
             </div>
             
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
               <button
                 type="button"

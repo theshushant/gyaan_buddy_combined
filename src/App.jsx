@@ -6,7 +6,6 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
 import { fetchCurrentUser } from './features/auth/authSlice'
 
-// Principal pages
 import Dashboard from './pages/Dashboard'
 import Students from './pages/Students'
 import Teachers from './pages/Teachers'
@@ -19,7 +18,6 @@ import AIInsights from './pages/AIInsights'
 import APILogicScreen from './pages/APILogicScreen'
 import ClassRoster from './pages/ClassRoster'
 
-// Teacher pages
 import TeacherDashboard from './pages/TeacherDashboard'
 import MyStudents from './pages/MyStudents'
 import ModulesAssignments from './pages/ModulesAssignments'
@@ -36,11 +34,9 @@ import Notifications from './pages/Notifications'
 import AISuggestions from './pages/AISuggestions'
 import AIDataGenerator from './pages/AIDataGenerator'
 
-// Role-based routing component
 const AppRoutes = () => {
   const { role } = useSelector(state => state.auth)
 
-  // Teacher routes - show TeacherDashboard
   if (role === 'teacher') {
     return (
       <Routes>
@@ -67,7 +63,6 @@ const AppRoutes = () => {
     )
   }
 
-  // Principal routes - show Dashboard (default for principal and other roles)
   return (
     <Routes>
       <Route path="/" element={<Dashboard />} />
@@ -89,7 +84,6 @@ function App() {
   const dispatch = useDispatch()
   const { isAuthenticated, loading } = useSelector(state => state.auth)
 
-  // Check if user is already logged in on app start
   useEffect(() => {
     const token = localStorage.getItem('authToken')
     if (token && !isAuthenticated && !loading.fetchUser) {
@@ -97,7 +91,6 @@ function App() {
     }
   }, [dispatch, isAuthenticated, loading.fetchUser])
 
-  // Show loading state while checking authentication
   if (loading.fetchUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -109,10 +102,8 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         
-        {/* Protected Routes */}
         <Route path="/*" element={
           <ProtectedRoute>
             <Layout>

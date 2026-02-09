@@ -6,7 +6,6 @@ const ReportsAnalytics = () => {
   const [selectedClass, setSelectedClass] = useState('All Classes');
   const [activeTab, setActiveTab] = useState('reports');
   
-  // Report filters state
   const [reportClass, setReportClass] = useState('');
   const [reportSubject, setReportSubject] = useState('');
   const [reportModule, setReportModule] = useState('');
@@ -41,7 +40,6 @@ const ReportsAnalytics = () => {
     ]
   };
 
-  // Reports tab data - Topic-wise student proficiency
   const reportsData = {
     summary: {
       totalStudents: 120,
@@ -60,7 +58,6 @@ const ReportsAnalytics = () => {
     ]
   };
 
-  // Filter options for Reports tab
   const filterOptions = {
     classes: ['Class 9', 'Class 10', 'Class 11', 'Class 12'],
     subjects: ['Mathematics', 'Science', 'English', 'Hindi', 'Social Studies'],
@@ -68,7 +65,6 @@ const ReportsAnalytics = () => {
     chapters: ['Topic 1', 'Topic 2', 'Topic 3', 'Topic 4', 'Topic 5']
   };
 
-  // Student proficiency data (shown after Apply)
   const studentProficiencyData = [
     { id: 1, name: 'Arjun Sharma', proficient: 92 },
     { id: 2, name: 'Priya Verma', proficient: 88 },
@@ -93,13 +89,11 @@ const ReportsAnalytics = () => {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 animate-slide-down">Reports & Analytics</h1>
         <p className="text-gray-600 mt-2 animate-slide-right" style={{animationDelay: '0.1s'}}>Comprehensive insights into student performance and learning patterns.</p>
       </div>
 
-      {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab, index) => (
@@ -122,7 +116,6 @@ const ReportsAnalytics = () => {
         </nav>
       </div>
 
-      {/* Filters - Only show for Analytics tab */}
       {activeTab === 'analytics' && (
       <div className="mb-6 flex space-x-4">
         <div className="animate-slide-right" style={{animationDelay: '0.2s'}}>
@@ -157,10 +150,8 @@ const ReportsAnalytics = () => {
       </div>
       )}
 
-      {/* Analytics Tab Content */}
       {activeTab === 'analytics' && (
         <>
-      {/* Overall Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.4s'}}>
           <div className="text-center">
@@ -192,7 +183,6 @@ const ReportsAnalytics = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Subject Performance */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Subject Performance</h3>
           <div className="space-y-4">
@@ -231,7 +221,6 @@ const ReportsAnalytics = () => {
           </div>
         </div>
 
-        {/* Class Performance */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Class Performance</h3>
           <div className="space-y-4">
@@ -271,7 +260,6 @@ const ReportsAnalytics = () => {
         </div>
       </div>
 
-      {/* Recent Activity */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
         <div className="space-y-3">
@@ -300,10 +288,8 @@ const ReportsAnalytics = () => {
         </>
       )}
 
-      {/* Reports Tab Content */}
       {activeTab === 'reports' && (
         <>
-          {/* Summary Blocks */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.1s'}}>
               <div className="flex items-center justify-between">
@@ -342,7 +328,6 @@ const ReportsAnalytics = () => {
             </div>
           </div>
 
-          {/* Topic Proficiency Table */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-slide-up" style={{animationDelay: '0.4s'}}>
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
               <h3 className="text-lg font-semibold text-gray-800">Topic-wise Student Proficiency</h3>
@@ -424,7 +409,6 @@ const ReportsAnalytics = () => {
             </div>
           </div>
 
-          {/* Filter Section with Unique UI */}
           <div className="mt-8 bg-gradient-to-r from-slate-50 to-primary-50 rounded-2xl p-6 border border-slate-200 shadow-sm animate-slide-up" style={{animationDelay: '0.5s'}}>
             <div className="flex items-center mb-6">
               <Search className="h-5 w-5 text-primary-500 mr-2" />
@@ -432,7 +416,6 @@ const ReportsAnalytics = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              {/* Class Dropdown */}
               <div className="relative group">
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Class</label>
                 <div className="relative">
@@ -453,7 +436,6 @@ const ReportsAnalytics = () => {
                 </div>
               </div>
 
-              {/* Subject Dropdown */}
               <div className="relative group">
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Subject</label>
                 <div className="relative">
@@ -474,7 +456,6 @@ const ReportsAnalytics = () => {
                 </div>
               </div>
 
-              {/* Module Dropdown */}
               <div className="relative group">
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Module</label>
                 <div className="relative">
@@ -495,7 +476,6 @@ const ReportsAnalytics = () => {
                 </div>
               </div>
 
-              {/* Topic Dropdown */}
               <div className="relative group">
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Topic</label>
                 <div className="relative">
@@ -517,7 +497,6 @@ const ReportsAnalytics = () => {
               </div>
             </div>
 
-            {/* Apply Button */}
             <div className="flex justify-center">
               <button
                 onClick={handleApplyFilters}
@@ -529,7 +508,6 @@ const ReportsAnalytics = () => {
       </div>
           </div>
 
-          {/* Student Proficiency Table (shown after Apply) */}
           {showStudentTable && (
             <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-slide-up">
               <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-secondary-500/10 to-primary-500/10">

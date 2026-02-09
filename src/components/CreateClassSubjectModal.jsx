@@ -17,14 +17,12 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
 
-  // Fetch classes when modal opens and type is subject
   useEffect(() => {
     if (isOpen && type === 'subject') {
       fetchClasses()
     }
   }, [isOpen, type])
 
-  // Update type when initialType changes (when modal is opened with different type)
   useEffect(() => {
     if (isOpen) {
       setType(initialType)
@@ -60,13 +58,11 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
   const handleLogoChange = (e) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         setErrors(prev => ({ ...prev, logo: 'Please select an image file' }))
         return
       }
       
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setErrors(prev => ({ ...prev, logo: 'Image size must be less than 5MB' }))
         return
@@ -79,7 +75,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
         return newErrors
       })
       
-      // Create preview
       const reader = new FileReader()
       reader.onloadend = () => {
         setLogoPreview(reader.result)
@@ -99,7 +94,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Validate required fields
     const newErrors = {}
     if (!name.trim()) {
       newErrors.name = `${type === 'class' ? 'Class' : 'Subject'} name is required`
@@ -136,14 +130,11 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
         response = await subjectsService.createSubject(subjectData, logoFile)
       }
       
-      // Extract the created item's ID from response
       const createdItem = response.data || response
       const createdId = createdItem?.id
       
-      // Reset form
       resetForm()
       
-      // Notify parent component with the created item info
       if (onSuccess) {
         onSuccess(type, createdId)
       }
@@ -152,7 +143,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
     } catch (err) {
       console.error(`Failed to create ${type}:`, err)
       
-      // Handle validation errors from backend
       if (err.responseData && typeof err.responseData === 'object') {
         if (err.responseData.errors) {
           const fieldErrors = {}
@@ -199,14 +189,12 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
           </div>
           
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Error Messages */}
             {errors.general && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 {errors.general}
               </div>
             )}
 
-            {/* Toggle for Class/Subject */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">Type</label>
               <div className="flex gap-4">
@@ -244,7 +232,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
               </div>
             </div>
 
-            {/* Name Field */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {type === 'class' ? 'Class' : 'Subject'} Name <span className="text-red-500">*</span>
@@ -271,10 +258,8 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
               )}
             </div>
 
-            {/* Subject-specific fields */}
             {type === 'subject' && (
               <>
-                {/* Code Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Subject Code <span className="text-red-500">*</span>
@@ -302,7 +287,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                   )}
                 </div>
 
-                {/* Description Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description
@@ -327,7 +311,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                   )}
                 </div>
 
-                {/* Logo Upload */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Logo
@@ -377,7 +360,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                   </div>
                 </div>
 
-                {/* Classes Assignment */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Assign to Classes (Optional)
@@ -406,7 +388,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                   )}
                 </div>
 
-                {/* Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
                   <div className="flex items-center">
@@ -426,7 +407,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
               </>
             )}
 
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
               <button
                 type="button"

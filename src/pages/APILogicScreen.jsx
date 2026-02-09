@@ -187,7 +187,6 @@ const APILogicScreen = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
@@ -203,7 +202,6 @@ const APILogicScreen = () => {
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6">
@@ -225,9 +223,7 @@ const APILogicScreen = () => {
           </div>
         </div>
 
-        {/* Tab Content */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <div>
@@ -273,7 +269,6 @@ const APILogicScreen = () => {
             </div>
           )}
 
-          {/* Data Flow Tab */}
           {activeTab === 'flow' && (
             <div className="space-y-6">
               <div>
@@ -309,7 +304,6 @@ const APILogicScreen = () => {
                 ))}
               </div>
 
-              {/* Flow Diagram */}
               <div className="mt-8 p-6 bg-gray-50 rounded-lg">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Component Interaction Flow</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -339,7 +333,6 @@ const APILogicScreen = () => {
             </div>
           )}
 
-          {/* Endpoints Tab */}
           {activeTab === 'endpoints' && (
             <div className="space-y-6">
               <div>
@@ -379,7 +372,6 @@ const APILogicScreen = () => {
             </div>
           )}
 
-          {/* Data Models Tab */}
           {activeTab === 'models' && (
             <div className="space-y-6">
               <div>
@@ -407,7 +399,6 @@ const APILogicScreen = () => {
             </div>
           )}
 
-          {/* API Status Tab */}
           {activeTab === 'status' && (
             <div className="space-y-6">
               <div>
@@ -450,7 +441,6 @@ const APILogicScreen = () => {
                 ))}
               </div>
 
-              {/* System Health */}
               <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                 <div className="flex items-center space-x-3">
                   <CheckCircle className="h-6 w-6 text-green-600" />

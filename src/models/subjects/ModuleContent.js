@@ -1,8 +1,5 @@
 import SoftDeleteModel from '../base/SoftDeleteModel.js';
 
-/**
- * Model for managing content within module chapters (questions and theories).
- */
 export default class ModuleContent extends SoftDeleteModel {
   constructor(data = {}) {
     super(data);
@@ -14,18 +11,11 @@ export default class ModuleContent extends SoftDeleteModel {
     this.created_by = data.created_by || null; // User ID or User object
   }
 
-  /**
-   * Content type choices
-   */
   static CONTENT_TYPE_CHOICES = [
     ['question', 'Question'],
     ['theory', 'Theory']
   ];
 
-  /**
-   * Validate module content data
-   * @returns {Object} Validation result with isValid and errors
-   */
   validate() {
     const errors = {};
 
@@ -43,7 +33,6 @@ export default class ModuleContent extends SoftDeleteModel {
       errors.order = 'Order must be a positive integer';
     }
 
-    // Validate content-specific fields
     if (this.content_type === 'question' && !this.question) {
       errors.question = 'Question must be set when content type is "question"';
     }
@@ -66,10 +55,6 @@ export default class ModuleContent extends SoftDeleteModel {
     };
   }
 
-  /**
-   * Get content title
-   * @returns {string} Content title
-   */
   get content_title() {
     if (this.content_type === 'question' && this.question) {
       const questionText = typeof this.question === 'object' ? 
@@ -83,10 +68,6 @@ export default class ModuleContent extends SoftDeleteModel {
     return 'Unknown Content';
   }
 
-  /**
-   * Get content preview
-   * @returns {string} Content preview
-   */
   get content_preview() {
     if (this.content_type === 'question' && this.question) {
       const questionText = typeof this.question === 'object' ? 
@@ -103,51 +84,27 @@ export default class ModuleContent extends SoftDeleteModel {
     return 'No content available';
   }
 
-  /**
-   * Get chapter ID
-   * @returns {string|null} Chapter ID
-   */
   getChapterId() {
     return typeof this.chapter === 'object' ? this.chapter.id : this.chapter;
   }
 
-  /**
-   * Get question ID
-   * @returns {string|null} Question ID
-   */
   getQuestionId() {
     return typeof this.question === 'object' ? this.question.id : this.question;
   }
 
-  /**
-   * Get theory ID
-   * @returns {string|null} Theory ID
-   */
   getTheoryId() {
     return typeof this.theory === 'object' ? this.theory.id : this.theory;
   }
 
-  /**
-   * Get created by user ID
-   * @returns {string|null} User ID
-   */
   getCreatedById() {
     return typeof this.created_by === 'object' ? this.created_by.id : this.created_by;
   }
 
-  /**
-   * Set chapter
-   * @param {string|Object} chapter - Chapter ID or Chapter object
-   */
   setChapter(chapter) {
     this.chapter = chapter;
     this.touch();
   }
 
-  /**
-   * Set question (clears theory)
-   * @param {string|Object} question - Question ID or Question object
-   */
   setQuestion(question) {
     this.question = question;
     this.theory = null;
@@ -155,10 +112,6 @@ export default class ModuleContent extends SoftDeleteModel {
     this.touch();
   }
 
-  /**
-   * Set theory (clears question)
-   * @param {string|Object} theory - Theory ID or Theory object
-   */
   setTheory(theory) {
     this.theory = theory;
     this.question = null;
@@ -166,10 +119,6 @@ export default class ModuleContent extends SoftDeleteModel {
     this.touch();
   }
 
-  /**
-   * Convert to plain object
-   * @returns {Object} Plain object representation
-   */
   toJSON() {
     return {
       ...super.toJSON(),
@@ -182,20 +131,12 @@ export default class ModuleContent extends SoftDeleteModel {
     };
   }
 
-  /**
-   * String representation
-   * @returns {string} String representation
-   */
   toString() {
     const chapterName = typeof this.chapter === 'object' ? 
       this.chapter.module?.name || 'Unknown Module' : 'Unknown Module';
     return `${this.get_content_type_display()}: ${this.content_title} - ${chapterName}`;
   }
 
-  /**
-   * Get content type display name
-   * @returns {string} Content type display name
-   */
   get_content_type_display() {
     const choice = ModuleContent.CONTENT_TYPE_CHOICES.find(([value]) => value === this.content_type);
     return choice ? choice[1] : this.content_type;

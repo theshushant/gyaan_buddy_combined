@@ -1,8 +1,6 @@
-// Dashboard API service
 import apiService from './api';
 
 class DashboardService {
-  // Get dashboard metrics
   async getDashboardMetrics(role = 'principal') {
     try {
       return await apiService.get(`/dashboard/metrics?role=${role}`);
@@ -11,7 +9,6 @@ class DashboardService {
     }
   }
 
-  // Get progress trends data
   async getProgressTrends(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -27,7 +24,6 @@ class DashboardService {
     }
   }
 
-  // Get subject performance data
   async getSubjectPerformance(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -42,7 +38,6 @@ class DashboardService {
     }
   }
 
-  // Get class distribution data
   async getClassDistribution() {
     try {
       return await apiService.get('/dashboard/class-distribution');
@@ -51,7 +46,6 @@ class DashboardService {
     }
   }
 
-  // Get quick summary data (using metrics endpoint)
   async getQuickSummary() {
     try {
       return await apiService.get('/dashboard/metrics');
@@ -60,7 +54,6 @@ class DashboardService {
     }
   }
 
-  // Get alerts and announcements
   async getAlerts(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -76,7 +69,6 @@ class DashboardService {
     }
   }
 
-  // Get teacher dashboard data (using metrics endpoint)
   async getTeacherDashboard(teacherId) {
     try {
       return await apiService.get(`/dashboard/metrics?role=teacher`);
@@ -85,7 +77,6 @@ class DashboardService {
     }
   }
 
-  // Get student dashboard data (using metrics endpoint)
   async getStudentDashboard(studentId) {
     try {
       return await apiService.get(`/dashboard/metrics?role=student`);
@@ -94,7 +85,6 @@ class DashboardService {
     }
   }
 
-  // Get recent activities (using alerts endpoint)
   async getRecentActivities(filters = {}) {
     try {
       const queryParams = new URLSearchParams();

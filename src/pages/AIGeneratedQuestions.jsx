@@ -71,7 +71,6 @@ const AIGeneratedQuestions = () => {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4 animate-slide-down">
           <div>
@@ -88,9 +87,7 @@ const AIGeneratedQuestions = () => {
         </div>
       </div>
 
-      {/* Questions List */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {/* Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -108,7 +105,6 @@ const AIGeneratedQuestions = () => {
           </div>
         </div>
 
-        {/* Questions */}
         <div className="divide-y divide-gray-200">
           {questions.map((question) => (
             <div key={question.id} className="p-6 hover:bg-gray-50">
@@ -162,7 +158,6 @@ const AIGeneratedQuestions = () => {
         </div>
       </div>
 
-      {/* Action Buttons */}
       <div className="mt-8 flex justify-end space-x-4">
         <button className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

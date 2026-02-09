@@ -18,7 +18,6 @@ const StudentProfile = () => {
   const [successData, setSuccessData] = useState({})
   
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = error.currentStudent !== null || error.progressTrends !== null
     if (hasError) {
       return // Don't retry if there's already an error
@@ -30,11 +29,9 @@ const StudentProfile = () => {
     }
   }, [id, dispatch, error.currentStudent, error.progressTrends])
   
-  // Transform backend data to frontend format
   const transformStudentData = (student) => {
     if (!student) return null
     
-    // Handle both backend format (snake_case) and frontend format (camelCase)
     const firstName = student.firstName || student.first_name || ''
     const lastName = student.lastName || student.last_name || ''
     const rollNumber = student.rollNumber || student.roll_number || student.profile?.roll_number || 'N/A'
@@ -46,7 +43,6 @@ const StudentProfile = () => {
     const parentName = student.parent_name || student.parentName || student.profile?.parent_name || 'N/A'
     const parentContact = email || phone || 'N/A'
     
-    // Calculate grade from score if available
     const overallScore = student.overallScore || student.average_score || 0
     let averageGrade = 'N/A'
     if (overallScore >= 90) averageGrade = 'A+'
@@ -79,21 +75,16 @@ const StudentProfile = () => {
     }
   }
   
-  // Get progress trends from Redux state or use empty object
   const studentProgressTrends = progressTrends[id] || {}
   
-  // Transform progress trends data from API response
-  // API might return progressTrends object or array of subject trends
   const getProgressTrendsData = () => {
     if (!studentProgressTrends || Object.keys(studentProgressTrends).length === 0) {
       return {}
     }
     
-    // Handle different API response formats
     if (studentProgressTrends.progressTrends) {
       return studentProgressTrends.progressTrends
     } else if (studentProgressTrends.subjects) {
-      // Convert array format to object format
       const trendsObj = {}
       studentProgressTrends.subjects.forEach(subject => {
         trendsObj[subject.name?.toLowerCase() || subject.subject?.toLowerCase()] = {
@@ -104,7 +95,6 @@ const StudentProfile = () => {
       })
       return trendsObj
     } else if (Array.isArray(studentProgressTrends)) {
-      // Handle array of trend objects
       const trendsObj = {}
       studentProgressTrends.forEach(trend => {
         const subjectName = (trend.subject || trend.name || 'unknown').toLowerCase()
@@ -117,7 +107,6 @@ const StudentProfile = () => {
       return trendsObj
     }
     
-    // If it's already in the expected format, return as is
     return studentProgressTrends
   }
   
@@ -149,10 +138,8 @@ const StudentProfile = () => {
     try {
       await dispatch(updateStudent({ studentId: id, studentData })).unwrap()
       setShowEditModal(false)
-      // Refresh student data after update
       await dispatch(fetchStudentById(id))
       
-      // Get student name from form data or current student as fallback
       const firstName = studentData.firstName || currentStudent?.firstName || currentStudent?.first_name || ''
       const lastName = studentData.lastName || currentStudent?.lastName || currentStudent?.last_name || ''
       const fullName = `${firstName} ${lastName}`.trim() || 'Student'
@@ -164,7 +151,6 @@ const StudentProfile = () => {
       setShowSuccessModal(true)
     } catch (error) {
       console.error('Error updating student:', error)
-      // Error is handled by Redux, modal will stay open
     }
   }
 
@@ -201,7 +187,6 @@ const StudentProfile = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
         <div className="mb-8 animate-fade-in">
           <div className="flex items-center justify-between">
             <div>
@@ -227,9 +212,7 @@ const StudentProfile = () => {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Profile Card */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 ease-in-out">
               <div className="flex flex-col items-center text-center">
@@ -243,7 +226,6 @@ const StudentProfile = () => {
                 <p className="text-gray-600 mb-1">Roll No: {studentData.rollNumber}</p>
                 <p className="text-gray-600 mb-4">{studentData.class}</p>
                 
-                {/* Quick Stats */}
                 <div className="grid grid-cols-3 gap-4 w-full mt-6">
                   <div className="text-center p-3 rounded-lg hover:scale-105 transition-all duration-200" style={{ backgroundColor: 'rgba(0,22,122,0.1)' }}>
                     <p className="text-2xl font-bold animate-pulse" style={{ color: '#00167a' }}>{studentData.overallScore}%</p>
@@ -262,9 +244,7 @@ const StudentProfile = () => {
             </div>
           </div>
 
-          {/* Right Column - Detailed Information */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Personal Information */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 ease-in-out">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Personal Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -312,7 +292,6 @@ const StudentProfile = () => {
               </div>
             </div>
 
-            {/* Weak Topics */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Weak Topics</h3>
               <div className="flex flex-wrap gap-3">
@@ -327,7 +306,6 @@ const StudentProfile = () => {
               </div>
             </div>
 
-            {/* Progress Trends */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Progress Trends</h3>
               {loading.progressTrends ? (
@@ -341,7 +319,6 @@ const StudentProfile = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {Object.entries(progressTrendsData).map(([subjectName, trend]) => {
-                    // Capitalize first letter of subject name
                     const displayName = subjectName.charAt(0).toUpperCase() + subjectName.slice(1).replace(/_/g, ' ')
                     const trendData = trend || {}
                     const score = trendData.score || 0
@@ -381,7 +358,6 @@ const StudentProfile = () => {
               )}
             </div>
 
-            {/* Recent Test Reports */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h3 className="text-xl font-semibold text-gray-900">Recent Test Reports</h3>
@@ -428,7 +404,6 @@ const StudentProfile = () => {
         </div>
       </div>
 
-      {/* Edit Student Modal */}
       {showEditModal && (
         <AddStudentModal
           isOpen={showEditModal}
@@ -441,7 +416,6 @@ const StudentProfile = () => {
         />
       )}
 
-      {/* Success Modal */}
       {showSuccessModal && (
         <SuccessModal
           isOpen={showSuccessModal}

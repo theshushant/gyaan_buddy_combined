@@ -16,7 +16,6 @@ const Settings = () => {
   const [autoBackup, setAutoBackup] = useState(true)
   const [dataRetention, setDataRetention] = useState('2')
   
-  // Password change modal state
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -26,10 +25,8 @@ const Settings = () => {
   const [profileLoading, setProfileLoading] = useState(false)
   const [profileError, setProfileError] = useState(null)
 
-  // Fetch user profile data on component mount
   useEffect(() => {
     const fetchProfile = async () => {
-      // If user data is not in Redux, fetch it
       if (!user) {
         setProfileLoading(true)
         setProfileError(null)
@@ -45,7 +42,6 @@ const Settings = () => {
     fetchProfile()
   }, [dispatch, user])
   
-  // Get user profile data with fallbacks
   const getUserDisplayName = () => {
     if (!user) return 'Loading...'
     return `${user.firstName || user.first_name || ''} ${user.lastName || user.last_name || ''}`.trim() || user.username || 'User'
@@ -62,7 +58,6 @@ const Settings = () => {
   const getUserRole = () => {
     if (!user) return ''
     const role = user.role || user.user_type || ''
-    // Capitalize first letter
     return role.charAt(0).toUpperCase() + role.slice(1)
   }
 
@@ -94,7 +89,6 @@ const Settings = () => {
     { name: 'Slack', status: 'Not Connected', icon: Globe }
   ]
 
-  // Password change handlers
   const handleOpenPasswordModal = () => {
     setPassword('')
     setConfirmPassword('')
@@ -113,7 +107,6 @@ const Settings = () => {
     e.preventDefault()
     setPasswordError('')
 
-    // Validation
     if (!password || !confirmPassword) {
       setPasswordError('Please fill in all fields')
       return
@@ -149,7 +142,6 @@ const Settings = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Settings Navigation */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-lg transition-all duration-300 ease-in-out">
           <nav className="space-y-2">
             {sections.map((section, index) => (
@@ -170,16 +162,13 @@ const Settings = () => {
           </nav>
         </div>
 
-        {/* Settings Content */}
         <div className="lg:col-span-3 space-y-6">
-          {/* Account Settings */}
           {activeSection === 'account' && (
             <div className="space-y-6 animate-fade-in">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 ease-in-out">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">Account Settings</h2>
                 
                 <div className="space-y-6">
-                  {/* Profile Card */}
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md hover:scale-105 transition-all duration-200 ease-in-out">
                     <div className="flex items-center">
                       <div className="h-12 w-12 bg-primary-50 rounded-lg flex items-center justify-center mr-4 hover:bg-primary-100 transition-colors duration-200">
@@ -198,7 +187,6 @@ const Settings = () => {
                     </button>
                   </div>
 
-                  {/* Password Card */}
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md hover:scale-105 transition-all duration-200 ease-in-out">
                     <div className="flex items-center">
                       <div className="h-12 w-12 bg-primary-50 rounded-lg flex items-center justify-center mr-4 hover:bg-primary-100 transition-colors duration-200">
@@ -218,18 +206,15 @@ const Settings = () => {
                     </button>
                   </div>
 
-                  {/* Account Info */}
                   <div className="p-4 border border-gray-200 rounded-lg">
                     <h3 className="font-medium text-gray-900 mb-4">Account Information</h3>
                     
-                    {/* Loading State */}
                     {(loading.fetchUser || profileLoading) && (
                       <div className="flex items-center justify-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
                       </div>
                     )}
                     
-                    {/* Error State */}
                     {(error.fetchUser || profileError) && (
                       <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
                         <p className="text-red-600 text-sm">
@@ -254,7 +239,6 @@ const Settings = () => {
                       </div>
                     )}
                     
-                    {/* Profile Data */}
                     {!(loading.fetchUser || profileLoading) && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -324,14 +308,12 @@ const Settings = () => {
             </div>
           )}
 
-          {/* Notifications Settings */}
           {activeSection === 'notifications' && (
             <div className="space-y-6">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">Notification Preferences</h2>
                 
                 <div className="space-y-6">
-                  {/* Email Notifications */}
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                     <div>
                       <h3 className="font-medium text-gray-900">Email Notifications</h3>
@@ -348,7 +330,6 @@ const Settings = () => {
                     </label>
                   </div>
 
-                  {/* In-App Alerts */}
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                     <div>
                       <h3 className="font-medium text-gray-900">In-App Alerts</h3>
@@ -365,7 +346,6 @@ const Settings = () => {
                     </label>
                   </div>
 
-                  {/* SMS Notifications */}
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                     <div>
                       <h3 className="font-medium text-gray-900">SMS Notifications</h3>
@@ -386,14 +366,12 @@ const Settings = () => {
             </div>
           )}
 
-          {/* General Settings */}
           {activeSection === 'general' && (
             <div className="space-y-6">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">General Preferences</h2>
                 
                 <div className="space-y-6">
-                  {/* Language */}
                   <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <h3 className="font-medium text-gray-900 mb-2">Language</h3>
                     <select className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
@@ -403,7 +381,6 @@ const Settings = () => {
                     </select>
                   </div>
 
-                  {/* Timezone */}
                   <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <h3 className="font-medium text-gray-900 mb-2">Timezone</h3>
                     <select className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
@@ -416,14 +393,12 @@ const Settings = () => {
             </div>
           )}
 
-          {/* Academic Year Settings */}
           {activeSection === 'academic-year' && (
             <div className="space-y-6">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">Academic Year Configuration</h2>
                 
                 <div className="space-y-6">
-                  {/* Current Academic Year */}
                   <div className="p-4 border border-gray-200 rounded-lg">
                     <h3 className="font-medium text-gray-900 mb-4">Current Academic Year</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -454,7 +429,6 @@ const Settings = () => {
                     </div>
                   </div>
 
-                  {/* Terms */}
                   <div className="p-4 border border-gray-200 rounded-lg">
                     <h3 className="font-medium text-gray-900 mb-4">Academic Terms</h3>
                     <div className="space-y-3">
@@ -479,14 +453,12 @@ const Settings = () => {
             </div>
           )}
 
-          {/* Data Backup Settings */}
           {activeSection === 'data-backup' && (
             <div className="space-y-6">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">Data Backup & Recovery</h2>
                 
                 <div className="space-y-6">
-                  {/* Auto Backup */}
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                     <div>
                       <h3 className="font-medium text-gray-900">Automatic Backup</h3>
@@ -503,7 +475,6 @@ const Settings = () => {
                     </label>
                   </div>
 
-                  {/* Manual Backup */}
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                     <div>
                       <h3 className="font-medium text-gray-900">Manual Backup</h3>
@@ -518,7 +489,6 @@ const Settings = () => {
                     </button>
                   </div>
 
-                  {/* Data Retention */}
                   <div className="p-4 border border-gray-200 rounded-lg">
                     <h3 className="font-medium text-gray-900 mb-2">Data Retention Period</h3>
                     <select
@@ -537,7 +507,6 @@ const Settings = () => {
             </div>
           )}
 
-          {/* Integrations */}
           {activeSection === 'integrations' && (
             <div className="space-y-6">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -576,14 +545,12 @@ const Settings = () => {
             </div>
           )}
 
-          {/* Privacy Settings */}
           {activeSection === 'privacy' && (
             <div className="space-y-6">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">Privacy & Security</h2>
                 
                 <div className="space-y-6">
-                  {/* Data Sharing */}
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                     <div>
                       <h3 className="font-medium text-gray-900">Data Sharing</h3>
@@ -598,7 +565,6 @@ const Settings = () => {
                     </label>
                   </div>
 
-                  {/* Analytics */}
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                     <div>
                       <h3 className="font-medium text-gray-900">Usage Analytics</h3>
@@ -614,7 +580,6 @@ const Settings = () => {
                     </label>
                   </div>
 
-                  {/* Data Export */}
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                     <div>
                       <h3 className="font-medium text-gray-900">Data Export</h3>
@@ -635,7 +600,6 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* Change Password Modal */}
       <Modal
         isOpen={isPasswordModalOpen}
         onClose={handleClosePasswordModal}

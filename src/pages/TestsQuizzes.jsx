@@ -307,7 +307,8 @@ const TestsQuizzes = () => {
       setError('Please select a subject');
       return;
     }
-    if (!selectedClass) {
+    const hasClass = selectedClass || (selectedClasses && selectedClasses.length > 0);
+    if (!hasClass) {
       setError('Please select a class');
       return;
     }

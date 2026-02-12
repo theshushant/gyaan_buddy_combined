@@ -11,9 +11,11 @@ const StudentTestPerformance = () => {
   const [students, setStudents] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [expandedStudentId, setExpandedStudentId] = useState(null);
+  const [selectedClassFilter, setSelectedClassFilter] = useState('all');
 
   useEffect(() => {
     fetchStudentsPerformance();
+    setSelectedClassFilter('all'); // Reset filter when test changes
   }, [testId]);
 
   const fetchStudentsPerformance = async () => {
@@ -82,6 +84,33 @@ const StudentTestPerformance = () => {
     if (percentage >= 60) return 'text-primary-500';
     if (percentage >= 40) return 'text-yellow-600';
     return 'text-red-600';
+  };
+
+  // Extract unique classes from students
+  const getAvailableClasses = () => {
+    const classesSet = new Set();
+    students.forEach(student => {
+      const className = student.class_name || student.className || student.class || student.class_group_name || student.class_group?.name;
+      if (className) {
+        classesSet.add(className);
+      }
+    });
+    // If no class found in students, use missionData class_name
+    if (classesSet.size === 0 && missionData?.class_name) {
+      classesSet.add(missionData.class_name);
+    }
+    return Array.from(classesSet).sort();
+  };
+
+  // Filter students based on selected class
+  const getFilteredStudents = () => {
+    if (selectedClassFilter === 'all') {
+      return students;
+    }
+    return students.filter(student => {
+      const className = student.class_name || student.className || student.class || student.class_group_name || student.class_group?.name || missionData?.class_name;
+      return className === selectedClassFilter;
+    });
   };
 
   if (loading) {
@@ -167,10 +196,11 @@ const StudentTestPerformance = () => {
         </div>
 
         {(() => {
-          const attemptedCount = students.filter(
+          const filteredStudents = getFilteredStudents();
+          const attemptedCount = filteredStudents.filter(
             s => (s.questions_attempted ?? 0) > 0 || (s.status && s.status !== 'not_started')
           ).length;
-          const totalUsers = students.length;
+          const totalUsers = filteredStudents.length;
           const avgPct = missionData?.average_percentage ?? 0;
           const avgColor = avgPct >= 70 ? 'text-emerald-600' : avgPct >= 40 ? 'text-amber-600' : 'text-red-600';
           return (
@@ -230,8 +260,38 @@ const StudentTestPerformance = () => {
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-800">Student results</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Per-student score and attempt summary. Click View result for details.</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">Student results</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Per-student score and attempt summary. Click View result for details.</p>
+              </div>
+              {(() => {
+                const availableClasses = getAvailableClasses();
+                if (availableClasses.length > 0) {
+                  return (
+                    <div className="flex items-center gap-2">
+                      <label htmlFor="class-filter" className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                        Filter by Class:
+                      </label>
+                      <select
+                        id="class-filter"
+                        value={selectedClassFilter}
+                        onChange={(e) => setSelectedClassFilter(e.target.value)}
+                        className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white text-sm font-medium text-gray-800 min-w-[150px]"
+                      >
+                        <option value="all">All Classes</option>
+                        {availableClasses.map((className) => (
+                          <option key={className} value={className}>
+                            {className}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[480px]">
@@ -245,7 +305,7 @@ const StudentTestPerformance = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {students.map((student, index) => {
+                {getFilteredStudents().map((student, index) => {
                   const isExpanded = expandedStudentId === student.user_id;
                   const attempted = student.questions_attempted ?? (student.correct_answer_count ?? 0) + (student.wrong_answer_count ?? 0);
                   const correct = student.correct_answer_count ?? 0;

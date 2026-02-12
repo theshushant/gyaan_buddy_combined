@@ -492,6 +492,20 @@ const TestsQuizzes = () => {
       
       const testId = selectedTest.id || selectedTest.uuid;
       
+      const classGroups = selectedTest._classGroups || selectedTest.class_groups || (selectedTest.class_group ? [selectedTest.class_group] : []);
+      const firstClass = Array.isArray(classGroups) && classGroups.length > 0 ? classGroups[0] : null;
+      let classContext = null;
+      if (firstClass) {
+        // Try to get name from class group object
+        classContext = firstClass.name || firstClass.class_name || firstClass.class_group_name;
+        // If not found, look it up from classes list
+        if (!classContext) {
+          const firstClassId = firstClass.id || firstClass.uuid || firstClass;
+          const foundClass = classes.find(c => (c.id || c.uuid) === firstClassId);
+          classContext = foundClass?.name || null;
+        }
+      }
+
       const requestData = {
         subject_id: subjectId,
         subject_name: subjectName,
@@ -502,7 +516,10 @@ const TestsQuizzes = () => {
         for_test: true,
         test_id: testId
       };
-      
+      if (classContext) {
+        requestData.class_context = classContext;
+      }
+
       const response = await aiService.generateAIQuestionsGemini(requestData);
       const responseData = response.data || response;
       const questions = responseData.data?.questions ?? responseData.questions;

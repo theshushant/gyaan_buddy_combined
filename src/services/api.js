@@ -23,7 +23,7 @@ class ApiService {
   async handleApiFailure(error, endpoint, status = null) {
     const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
     const is401Error = status === 401;
-    
+
     if (this.isLoggingOut || (!isMeEndpoint && !is401Error)) {
       return;
     }
@@ -37,9 +37,9 @@ class ApiService {
 
     try {
       this.removeAuthToken();
-      
+
       store.dispatch(logoutUser());
-      
+
       window.location.href = '/login';
     } catch (logoutError) {
       console.error('Error during logout:', logoutError);
@@ -60,7 +60,7 @@ class ApiService {
 
     const publicEndpoints = ['/auth/login/', '/auth/login', '/auth/register/', '/auth/register'];
     const isPublicEndpoint = publicEndpoints.some(publicPath => endpoint.includes(publicPath));
-    
+
     if (includeAuth && !isPublicEndpoint) {
       const token = this.getAuthToken();
       if (token) {
@@ -72,10 +72,16 @@ class ApiService {
   }
 
   async request(endpoint, options = {}) {
+    // Intercept ALL requests when mock mode is enabled
+    if (this.shouldUseMockData()) {
+      console.log(`[MOCK] Intercepting: ${options.method || 'GET'} ${endpoint}`);
+      return this.getMockData(endpoint);
+    }
+
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const isFormData = options.body instanceof FormData || options.isFormData === true;
-    
+
     const config = {
       method: options.method || 'GET',
       headers: this.getHeaders(true, endpoint, isFormData),
@@ -115,32 +121,32 @@ class ApiService {
       if (!response.ok) {
         const publicEndpoints = ['/auth/login/', '/auth/login', '/auth/register/', '/auth/register'];
         const isPublicEndpoint = publicEndpoints.some(publicPath => endpoint.includes(publicPath));
-        
+
         const errorData = await response.json().catch(() => ({}));
-        
-        const hasValidationErrors = errorData.errors || 
-                                   errorData.non_field_errors || 
-                                   (typeof errorData === 'object' && Object.keys(errorData).some(key => 
-                                     Array.isArray(errorData[key]) || typeof errorData[key] === 'object'
-                                   ));
-        
+
+        const hasValidationErrors = errorData.errors ||
+          errorData.non_field_errors ||
+          (typeof errorData === 'object' && Object.keys(errorData).some(key =>
+            Array.isArray(errorData[key]) || typeof errorData[key] === 'object'
+          ));
+
         const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
         const is401Error = response.status === 401 && !isPublicEndpoint;
-        
+
         if (isMeEndpoint || is401Error) {
           this.handleApiFailure(new Error(`HTTP error! status: ${response.status}`), endpoint, response.status);
         }
-        
-        const errorMessage = errorData.message || 
-                            errorData.detail || 
-                            (errorData.non_field_errors && Array.isArray(errorData.non_field_errors) 
-                              ? errorData.non_field_errors.join(', ') 
-                              : null) ||
-                            (errorData.errors && typeof errorData.errors === 'string' 
-                              ? errorData.errors 
-                              : null) ||
-                            `HTTP error! status: ${response.status}`;
-        
+
+        const errorMessage = errorData.message ||
+          errorData.detail ||
+          (errorData.non_field_errors && Array.isArray(errorData.non_field_errors)
+            ? errorData.non_field_errors.join(', ')
+            : null) ||
+          (errorData.errors && typeof errorData.errors === 'string'
+            ? errorData.errors
+            : null) ||
+          `HTTP error! status: ${response.status}`;
+
         const error = new Error(errorMessage);
         error.responseData = errorData; // Attach full error response
         error.status = response.status;
@@ -149,7 +155,7 @@ class ApiService {
 
       const contentType = response.headers.get('content-type');
       const contentLength = response.headers.get('content-length');
-      
+
       if (response.status === 204 || contentLength === '0' || !contentType?.includes('application/json')) {
         return { success: true, message: 'Operation completed successfully' };
       }
@@ -168,7 +174,7 @@ class ApiService {
     } catch (error) {
       const publicEndpoints = ['/auth/login/', '/auth/login', '/auth/register/', '/auth/register'];
       const isPublicEndpoint = publicEndpoints.some(publicPath => endpoint.includes(publicPath));
-      
+
       if (error.name === 'AbortError') {
         const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
         if (isMeEndpoint && !this.isLoggingOut) {
@@ -176,29 +182,29 @@ class ApiService {
         }
         throw new Error('Request timeout');
       }
-      
+
       if (
-        error.message.includes('Failed to fetch') || 
+        error.message.includes('Failed to fetch') ||
         error.message.includes('ERR_CONNECTION_REFUSED') ||
         error.message.includes('ERR_CONNECTION_RESET') ||
         error.message.includes('NetworkError') ||
         error.name === 'TypeError'
       ) {
         console.warn(`Backend not available at ${url}. Make sure the backend server is running.`);
-        
+
         const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
         if (isMeEndpoint && !this.isLoggingOut) {
           this.handleApiFailure(error, endpoint, null);
         }
-        
+
         throw new Error('Cannot connect to server. Please ensure the backend is running.');
       }
-      
+
       const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
       if (isMeEndpoint && !this.isLoggingOut && !error.message.includes('Session expired')) {
         this.handleApiFailure(error, endpoint, null);
       }
-      
+
       throw error;
     }
   }
@@ -232,28 +238,28 @@ class ApiService {
 
   async getMockData(endpoint) {
     await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
-    
+
     const baseEndpoint = endpoint.split('?')[0].replace(/\/$/, '');
-    
+
     const mockDataMap = {
       '/auth/login': () => import('../data/mockAuth'),
       '/auth/logout': () => import('../data/mockAuth'),
       '/auth/me': () => import('../data/mockAuth'),
       '/auth/profile': () => import('../data/mockAuth'),
       '/auth/change-password': () => import('../data/mockAuth'),
-      
+
       '/students': () => import('../data/mockStudents'),
       '/students/stats': () => import('../data/mockStudents'),
-      
+
       '/teachers': () => import('../data/mockTeachers'),
       '/teachers/stats': () => import('../data/mockTeachers'),
-      
+
       '/questions': () => import('../data/mockQuestions'),
       '/questions/stats': () => import('../data/mockQuestions'),
       '/questions/ai/generate': () => import('../data/mockQuestions'),
       '/questions/ai/generated': () => import('../data/mockQuestions'),
       '/questions/ai/save': () => import('../data/mockQuestions'),
-      
+
       '/dashboard': () => import('../data/mockDashboard'),
       '/dashboard/metrics': () => import('../data/mockDashboard'),
       '/dashboard/progress-trends': () => import('../data/mockDashboard'),
@@ -262,7 +268,7 @@ class ApiService {
       '/dashboard/alerts': () => import('../data/mockDashboard'),
       '/dashboard/quick-summary': () => import('../data/mockDashboard'),
       '/dashboard/recent-activities': () => import('../data/mockDashboard'),
-      
+
       '/reports': () => import('../data/mockReports'),
       '/reports/student-performance': () => import('../data/mockReports'),
       '/reports/progress-over-time': () => import('../data/mockReports'),
@@ -272,7 +278,7 @@ class ApiService {
       '/reports/generate': () => import('../data/mockReports'),
       '/reports/templates': () => import('../data/mockReports'),
       '/reports/configurations': () => import('../data/mockReports'),
-      
+
       '/ai/suggestions': () => import('../data/mockAISuggestions'),
       '/ai/insights': () => import('../data/mockAIInsights'),
       '/ai/generate': () => import('../data/mockAIInsights'),
@@ -287,35 +293,35 @@ class ApiService {
     if (mockDataLoader) {
       const mockModule = await mockDataLoader();
       const mockData = mockModule.default || mockModule;
-      
+
       if (mockData[baseEndpoint]) {
         return mockData[baseEndpoint];
       }
-      
+
       if (baseEndpoint.startsWith('/dashboard/') && mockData[baseEndpoint]) {
         return mockData[baseEndpoint];
       }
-      
+
       if (baseEndpoint.startsWith('/students/') && mockData[baseEndpoint]) {
         return mockData[baseEndpoint];
       }
-      
+
       if (baseEndpoint.startsWith('/teachers/') && mockData[baseEndpoint]) {
         return mockData[baseEndpoint];
       }
-      
+
       if (baseEndpoint.startsWith('/questions/') && mockData[baseEndpoint]) {
         return mockData[baseEndpoint];
       }
-      
+
       if (baseEndpoint.startsWith('/reports/') && mockData[baseEndpoint]) {
         return mockData[baseEndpoint];
       }
-      
+
       if (baseEndpoint.startsWith('/ai/') && mockData[baseEndpoint]) {
         return mockData[baseEndpoint];
       }
-      
+
       return mockData;
     }
 

@@ -43,7 +43,7 @@ const Reports = () => {
   const [selectedClass, setSelectedClass] = useState('all')
   const [selectedSubject, setSelectedSubject] = useState('all')
   const [selectedDateRange, setSelectedDateRange] = useState('30')
-  
+
   const {
     studentPerformanceReport,
     progressOverTimeReport,
@@ -66,7 +66,7 @@ const Reports = () => {
         subject: selectedSubject !== 'all' ? selectedSubject : undefined,
         dateRange: selectedDateRange
       }
-      
+
       try {
         await Promise.all([
           dispatch(fetchStudentPerformanceReport(filters)),
@@ -172,9 +172,9 @@ const Reports = () => {
       return null
     }
 
-    if (studentPerformanceReport.studentPerformanceData && 
-        studentPerformanceReport.studentPerformanceData.labels && 
-        studentPerformanceReport.studentPerformanceData.datasets) {
+    if (studentPerformanceReport.studentPerformanceData &&
+      studentPerformanceReport.studentPerformanceData.labels &&
+      studentPerformanceReport.studentPerformanceData.datasets) {
       return studentPerformanceReport.studentPerformanceData
     }
 
@@ -267,7 +267,7 @@ const Reports = () => {
         beginAtZero: true,
         max: 100,
         ticks: {
-          callback: function(value) {
+          callback: function (value) {
             return value + '%'
           }
         }
@@ -303,12 +303,12 @@ const Reports = () => {
     }
 
     return studentsArray.map(s => {
-      const name = s.student_name || s.name || 
-                   `${s.firstName || ''} ${s.lastName || ''}`.trim() || 
-                   'Unknown'
-      
+      const name = s.student_name || s.name ||
+        `${s.firstName || ''} ${s.lastName || ''}`.trim() ||
+        'Unknown'
+
       const classValue = s.class || s.className || 'N/A'
-      
+
       let score = 0
       if (s.averageScore !== undefined) {
         score = s.averageScore
@@ -322,8 +322,8 @@ const Reports = () => {
       }
       score = Math.min(100, Math.max(0, score)) // Clamp between 0 and 100
 
-      const attendance = s.attendance !== undefined ? s.attendance : 
-                        s.attendanceRate !== undefined ? s.attendanceRate : 0
+      const attendance = s.attendance !== undefined ? s.attendance :
+        s.attendanceRate !== undefined ? s.attendanceRate : 0
 
       let assignments = '0/0'
       if (s.assignmentsCompleted !== undefined && s.totalAssignments !== undefined) {
@@ -359,7 +359,7 @@ const Reports = () => {
     if (insight.title?.toLowerCase().includes('engagement') || insight.title?.toLowerCase().includes('completion')) {
       IconComponent = Lightbulb
     }
-    
+
     return {
       icon: IconComponent,
       title: insight.title || 'AI Insight',
@@ -384,11 +384,10 @@ const Reports = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-300 ease-in-out hover:scale-105 ${
-                activeTab === tab.id
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-300 ease-in-out hover:scale-105 ${activeTab === tab.id
                   ? 'border-primary-500 text-primary-500'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+                }`}
               style={{ animationDelay: `${index * 100}ms` }}
             >
               {tab.label}
@@ -410,7 +409,7 @@ const Reports = () => {
             <option value="10B">Class 10B</option>
             <option value="10C">Class 10C</option>
           </select>
-          
+
           <select
             value={selectedSubject}
             onChange={(e) => setSelectedSubject(e.target.value)}
@@ -422,7 +421,7 @@ const Reports = () => {
             <option value="english">English</option>
             <option value="history">History</option>
           </select>
-          
+
           <select
             value={selectedDateRange}
             onChange={(e) => setSelectedDateRange(e.target.value)}
@@ -433,7 +432,7 @@ const Reports = () => {
             <option value="90">Last 90 Days</option>
             <option value="365">Last Year</option>
           </select>
-          
+
           <button className="flex items-center px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}>
             <Download className="h-4 w-4 mr-2" />
             Export Report
@@ -455,109 +454,109 @@ const Reports = () => {
               )}
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Student Performance</h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Overall Score</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignments Completed</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {students.length > 0 ? (
-                    students.map((student, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{student.name}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{student.class}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                              <div 
-                                className="bg-primary-500 h-2 rounded-full"
-                                style={{ width: `${student.score}%` }}
-                              ></div>
+            <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Student Performance</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Overall Score</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignments Completed</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {students.length > 0 ? (
+                      students.map((student, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{student.class}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div
+                                  className="bg-primary-500 h-2 rounded-full"
+                                  style={{ width: `${student.score}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm text-gray-900">{student.score}%</span>
                             </div>
-                            <span className="text-sm text-gray-900">{student.score}%</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{student.attendance}%</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{student.assignments}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{student.attendance}%</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{student.assignments}</div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                          No student data available
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                        No student data available
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Class Performance</h3>
-              <p className="text-sm text-gray-600 mb-4">Average score by class</p>
-              <div className="space-y-3">
-                {classPerformance.map((item, index) => (
-                  <div key={index}>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-gray-600">{item.class}</span>
-                      <span className="text-sm font-medium text-gray-900">{item.score}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-primary-500 h-2 rounded-full"
-                        style={{ width: `${item.score}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Progress Over Time</h3>
-              <p className="text-sm text-gray-600 mb-4">Last 6 Months</p>
-              <div className="h-32 w-full">
-                <Line data={mathProgressData} options={{
-                  ...chartOptions,
-                  scales: {
-                    ...chartOptions.scales,
-                    y: {
-                      ...chartOptions.scales.y,
-                      max: 100
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Class Performance</h3>
+                <p className="text-sm text-gray-600 mb-4">Average score by class</p>
+                <div className="space-y-3">
+                  {classPerformance.map((item, index) => (
+                    <div key={index}>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm text-gray-600">{item.class}</span>
+                        <span className="text-sm font-medium text-gray-900">{item.score}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-primary-500 h-2 rounded-full"
+                          style={{ width: `${item.score}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Progress Over Time</h3>
+                <p className="text-sm text-gray-600 mb-4">Last 6 Months</p>
+                <div className="h-32 w-full">
+                  <Line data={mathProgressData} options={{
+                    ...chartOptions,
+                    scales: {
+                      ...chartOptions.scales,
+                      y: {
+                        ...chartOptions.scales.y,
+                        max: 100
+                      }
+                    },
+                    plugins: {
+                      ...chartOptions.plugins,
+                      legend: {
+                        display: false
+                      }
                     }
-                  },
-                  plugins: {
-                    ...chartOptions.plugins,
-                    legend: {
-                      display: false
-                    }
-                  }
-                }} />
+                  }} />
+                </div>
               </div>
             </div>
-          </div>
           </div>
         </div>
       )}
@@ -567,36 +566,32 @@ const Reports = () => {
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Progress Over Time Report</h3>
             <p className="text-gray-600 mb-6">Track student performance trends over different periods.</p>
-            
+
             <div className="flex flex-wrap gap-4 mb-6">
-              <button 
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  selectedDateRange === '7' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+              <button
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedDateRange === '7' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
                 style={selectedDateRange === '7' ? { backgroundColor: '#00167a' } : {}}
               >
                 Weekly
               </button>
-              <button 
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  selectedDateRange === '30' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+              <button
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedDateRange === '30' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
                 style={selectedDateRange === '30' ? { backgroundColor: '#00167a' } : {}}
               >
                 Monthly
               </button>
-              <button 
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  selectedDateRange === '90' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+              <button
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedDateRange === '90' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
                 style={selectedDateRange === '90' ? { backgroundColor: '#00167a' } : {}}
               >
                 Quarterly
               </button>
-              <button 
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  selectedDateRange === '365' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+              <button
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedDateRange === '365' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
                 style={selectedDateRange === '365' ? { backgroundColor: '#00167a' } : {}}
               >
                 Yearly
@@ -663,7 +658,7 @@ const Reports = () => {
               <h3 className="text-lg font-semibold text-gray-900">Quiz & Assignment Reports</h3>
               <p className="text-gray-600 mt-2">An overview of performance across all quizzes and assignments.</p>
             </div>
-            
+
             <div className="p-6">
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -679,8 +674,8 @@ const Reports = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {quizAssignmentItems.length > 0 ? (
                       quizAssignmentItems.map((item, index) => {
-                        const completionRate = item.participants && item.completed 
-                          ? Math.round((item.completed / item.participants) * 100) 
+                        const completionRate = item.participants && item.completed
+                          ? Math.round((item.completed / item.participants) * 100)
                           : 0;
                         const colorClass = completionRate >= 90 ? 'bg-green-500' : completionRate >= 70 ? 'bg-yellow-500' : 'bg-red-500';
                         return (
@@ -739,7 +734,7 @@ const Reports = () => {
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{insight.title}</h3>
                     <p className="text-gray-600 mb-4">{insight.description}</p>
-                    <button 
+                    <button
                       onClick={() => navigate('/ai-insights')}
                       className="text-primary-500 hover:text-primary-600 text-sm font-medium"
                     >
@@ -750,14 +745,14 @@ const Reports = () => {
               </div>
             ))}
           </div>
-          
+
           <div className="bg-primary-50 border border-primary-200 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-primary-900 mb-2">Comprehensive AI Analysis</h3>
                 <p className="text-primary-700">Get detailed AI insights including weak topics, remedial activities, and mastery heatmaps.</p>
               </div>
-              <button 
+              <button
                 onClick={() => navigate('/ai-insights')}
                 className="px-6 py-3 text-white rounded-lg hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}
               >

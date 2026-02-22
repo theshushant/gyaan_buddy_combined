@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   fetchDashboardMetrics,
@@ -12,9 +13,9 @@ import {
 
 const TeacherDashboard = () => {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { role } = useSelector(state => state.auth)
   const {
-    metrics,
     progressTrends,
     subjectPerformance,
     classDistribution,
@@ -25,8 +26,8 @@ const TeacherDashboard = () => {
   } = useSelector(state => state.dashboard)
 
   const labelMapping = {
-    "My Students' Average Score": "Average Student Percentage",
-    "Module Completed": "Module completion rate",
+    "My Students' Average Score": "Attempt rate",
+    "Module Completed": "Last Assignment Attempt Rate",
     "Students Engaged": "Last Module Student Engagement",
     "Questions Created": "Topics covered"
   }
@@ -112,7 +113,6 @@ const TeacherDashboard = () => {
     )
   }
 
-  const metricsData = metrics || []
   const quickSummaryData = quickSummary || []
 
   return (
@@ -124,75 +124,51 @@ const TeacherDashboard = () => {
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-700 animate-slide-right">Class-wise quick stats</h2>
-          <button className="font-medium transform hover:scale-105 transition-all duration-200" style={{ color: '#00167a' }}>
-            More &gt;
-          </button>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {metricsData.map((metric, index) => (
-            <div 
-              key={index}
-              className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
-              style={{animationDelay: `${(index + 1) * 0.1}s`}}
-            >
-              <div className="text-center">
-                <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>{metric.value}</div>
-                <div className="text-gray-600">{getMappedLabel(metric.title)}</div>
-              </div>
-            </div>
-          ))}
-          
-          <div 
-            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
-            style={{animationDelay: `${(metricsData.length + 1) * 0.1}s`}}
-          >
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.1s'}}>
             <div className="text-center">
-              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>12</div>
-              <div className="text-gray-600">Module Covered</div>
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>74%</div>
+              <div className="text-gray-600">Attempt Rate</div>
             </div>
           </div>
-          
-          <div 
-            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
-            style={{animationDelay: `${(metricsData.length + 2) * 0.1}s`}}
-          >
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.2s'}}>
             <div className="text-center">
-              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>45</div>
-              <div className="text-gray-600">Active Students</div>
-              <div className="text-sm text-gray-500 mt-1">Latest module attempted for same subject</div>
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>79%</div>
+              <div className="text-gray-600">Overall Student Percentage</div>
             </div>
           </div>
-          
-          <div 
-            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
-            style={{animationDelay: `${(metricsData.length + 3) * 0.1}s`}}
-          >
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.3s'}}>
             <div className="text-center">
-              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>120</div>
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>3/12</div>
+              <div className="text-gray-600">Chapters Covered</div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.4s'}}>
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>92%</div>
+              <div className="text-gray-600">Last Assignment Attempt Rate</div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.5s'}}>
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>3</div>
+              <div className="text-gray-600">Weak Topics</div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.6s'}}>
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>40</div>
               <div className="text-gray-600">Total Students</div>
             </div>
           </div>
           
-          <div 
-            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
-            style={{animationDelay: `${(metricsData.length + 4) * 0.1}s`}}
-          >
-            <div className="text-center">
-              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>78%</div>
-              <div className="text-gray-600">Completion Rate</div>
-            </div>
-          </div>
-          
-          <div 
-            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
-            style={{animationDelay: `${(metricsData.length + 5) * 0.1}s`}}
-          >
-            <div className="text-center">
-              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>85</div>
-              <div className="text-gray-600">Average Score</div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -200,33 +176,28 @@ const TeacherDashboard = () => {
         <h2 className="text-xl font-semibold text-gray-700 mb-4 animate-slide-right">Shortcuts to most-used actions</h2>
         
         <div className="flex flex-wrap gap-4">
-          <button 
-            className="text-white px-6 py-3 rounded-lg transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" 
+          <button
+            className="text-white px-6 py-3 rounded-lg transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up"
             style={{animationDelay: '0.4s', backgroundColor: '#00167a'}}
+            onClick={() => navigate('/modules')}
           >
             <span className="text-xl transform transition-transform duration-200 hover:rotate-90">+</span>
             <span>Create Assignment</span>
           </button>
           
-          <button 
-            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" 
+          <button
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up"
             style={{animationDelay: '0.5s'}}
+            onClick={() => navigate('/reports')}
           >
             <span className="text-xl">📊</span>
             <span>View Reports</span>
           </button>
           
-          <button 
-            className="text-white px-6 py-3 rounded-lg transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" 
-            style={{animationDelay: '0.6s', backgroundColor: '#1e3a8a'}}
-          >
-            <span className="text-xl">🤖</span>
-            <span>AI Suggestions</span>
-          </button>
-          
-          <button 
-            className="text-white px-6 py-3 rounded-lg transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" 
+          <button
+            className="text-white px-6 py-3 rounded-lg transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up"
             style={{animationDelay: '0.7s', backgroundColor: '#1fb7eb'}}
+            onClick={() => navigate('/tests')}
           >
             <span className="text-xl">📝</span>
             <span>Generate Quiz</span>

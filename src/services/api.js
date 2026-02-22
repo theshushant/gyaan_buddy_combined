@@ -6,6 +6,29 @@ class ApiService {
     this.baseURL = import.meta.env.VITE_API_URL || import.meta.env.REACT_APP_API_URL || 'http://localhost:8000/api';
     this.timeout = import.meta.env.VITE_API_TIMEOUT || import.meta.env.REACT_APP_API_TIMEOUT || 60000; // Increased to 60 seconds for slower connections and large requests
     this.isLoggingOut = false; // Flag to prevent multiple logout attempts
+    this._usedMockData = false; // Set when fallback to mock due to network error
+  }
+
+  isNetworkError(error) {
+    if (!error || !error.message) return false;
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes('failed to fetch') ||
+      msg.includes('networkerror') ||
+      msg.includes('err_connection_refused') ||
+      msg.includes('err_connection_reset') ||
+      msg.includes('cannot connect to server') ||
+      msg.includes('request timeout') ||
+      error.name === 'TypeError'
+    );
+  }
+
+  setUsedMockData(value) {
+    this._usedMockData = !!value;
+  }
+
+  getUsedMockData() {
+    return this._usedMockData;
   }
 
   getAuthToken() {
@@ -170,6 +193,13 @@ class ApiService {
       const isPublicEndpoint = publicEndpoints.some(publicPath => endpoint.includes(publicPath));
       
       if (error.name === 'AbortError') {
+        try {
+          const mockResult = await this.getMockData(endpoint);
+          this.setUsedMockData(true);
+          return mockResult;
+        } catch (mockErr) {
+          // No mock for this endpoint
+        }
         const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
         if (isMeEndpoint && !this.isLoggingOut) {
           this.handleApiFailure(error, endpoint, null);
@@ -177,20 +207,19 @@ class ApiService {
         throw new Error('Request timeout');
       }
       
-      if (
-        error.message.includes('Failed to fetch') || 
-        error.message.includes('ERR_CONNECTION_REFUSED') ||
-        error.message.includes('ERR_CONNECTION_RESET') ||
-        error.message.includes('NetworkError') ||
-        error.name === 'TypeError'
-      ) {
-        console.warn(`Backend not available at ${url}. Make sure the backend server is running.`);
-        
+      if (this.isNetworkError(error)) {
+        console.warn(`Backend not available at ${url}. Attempting to use demo data if available.`);
+        try {
+          const mockResult = await this.getMockData(endpoint);
+          this.setUsedMockData(true);
+          return mockResult;
+        } catch (mockErr) {
+          // No mock for this endpoint
+        }
         const isMeEndpoint = endpoint.includes('/auth/me') || endpoint.includes('/auth/me/');
         if (isMeEndpoint && !this.isLoggingOut) {
           this.handleApiFailure(error, endpoint, null);
         }
-        
         throw new Error('Cannot connect to server. Please ensure the backend is running.');
       }
       
@@ -237,11 +266,15 @@ class ApiService {
     
     const mockDataMap = {
       '/auth/login': () => import('../data/mockAuth'),
+      '/auth/login/': () => import('../data/mockAuth'),
       '/auth/logout': () => import('../data/mockAuth'),
+      '/auth/logout/': () => import('../data/mockAuth'),
       '/auth/me': () => import('../data/mockAuth'),
+      '/auth/me/': () => import('../data/mockAuth'),
       '/auth/profile': () => import('../data/mockAuth'),
       '/auth/change-password': () => import('../data/mockAuth'),
       
+      '/users': () => import('../data/mockStudents'),
       '/students': () => import('../data/mockStudents'),
       '/students/stats': () => import('../data/mockStudents'),
       
@@ -287,35 +320,14 @@ class ApiService {
     if (mockDataLoader) {
       const mockModule = await mockDataLoader();
       const mockData = mockModule.default || mockModule;
-      
-      if (mockData[baseEndpoint]) {
-        return mockData[baseEndpoint];
-      }
-      
-      if (baseEndpoint.startsWith('/dashboard/') && mockData[baseEndpoint]) {
-        return mockData[baseEndpoint];
-      }
-      
-      if (baseEndpoint.startsWith('/students/') && mockData[baseEndpoint]) {
-        return mockData[baseEndpoint];
-      }
-      
-      if (baseEndpoint.startsWith('/teachers/') && mockData[baseEndpoint]) {
-        return mockData[baseEndpoint];
-      }
-      
-      if (baseEndpoint.startsWith('/questions/') && mockData[baseEndpoint]) {
-        return mockData[baseEndpoint];
-      }
-      
-      if (baseEndpoint.startsWith('/reports/') && mockData[baseEndpoint]) {
-        return mockData[baseEndpoint];
-      }
-      
-      if (baseEndpoint.startsWith('/ai/') && mockData[baseEndpoint]) {
-        return mockData[baseEndpoint];
-      }
-      
+      if (mockData[baseEndpoint]) return mockData[baseEndpoint];
+      if (baseEndpoint === '/users' && mockData['/students']) return mockData['/students'];
+      if (baseEndpoint.startsWith('/dashboard/') && mockData[baseEndpoint]) return mockData[baseEndpoint];
+      if (baseEndpoint.startsWith('/students') && mockData[baseEndpoint]) return mockData[baseEndpoint];
+      if (baseEndpoint.startsWith('/teachers') && mockData[baseEndpoint]) return mockData[baseEndpoint];
+      if (baseEndpoint.startsWith('/questions') && mockData[baseEndpoint]) return mockData[baseEndpoint];
+      if (baseEndpoint.startsWith('/reports/') && mockData[baseEndpoint]) return mockData[baseEndpoint];
+      if (baseEndpoint.startsWith('/ai/') && mockData[baseEndpoint]) return mockData[baseEndpoint];
       return mockData;
     }
 

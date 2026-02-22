@@ -47,9 +47,7 @@ class QuestionsService {
 
   async deleteQuestion(questionId) {
     try {
-      return await apiService.get(`/questions/${questionId}`, {
-        method: 'DELETE',
-      });
+      return await apiService.delete(`/questions/${questionId}/`);
     } catch (error) {
       throw new Error(`Failed to delete question: ${error.message}`);
     }

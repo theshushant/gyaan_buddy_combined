@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Plus, 
   Eye, 
@@ -68,6 +68,7 @@ const ModulesAssignments = () => {
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
   const [selectedChapterForAI, setSelectedChapterForAI] = useState(null);
   const [selectedModuleForQuestion, setSelectedModuleForQuestion] = useState(null);
+  const [chaptersLoadingForModuleId, setChaptersLoadingForModuleId] = useState(null);
 
   const toggleChapter = (chapterId) => {
     setExpandedChapters(prev => 
@@ -76,6 +77,48 @@ const ModulesAssignments = () => {
         : [...prev, chapterId]
     );
   };
+
+  const loadChaptersForModule = useCallback(async (moduleId) => {
+    setChaptersLoadingForModuleId(moduleId);
+    try {
+      const chaptersResponse = await modulesService.getModuleChapters(moduleId);
+      const chaptersData = chaptersResponse.data || chaptersResponse;
+      const chaptersList = Array.isArray(chaptersData) ? chaptersData : [];
+
+      setAllModulesData(prev => {
+        const entry = prev.find(m => m.id === moduleId);
+        if (entry && entry.modules !== undefined) return prev;
+        return prev.map(m => {
+          if (m.id !== moduleId) return m;
+          return {
+            ...m,
+            modules: chaptersList.map((chapter, idx) => ({
+              id: chapter.id,
+              title: chapter.title || `Assignment ${idx + 1}`,
+              isDue: chapter.is_due || false
+            }))
+          };
+        });
+      });
+    } catch (err) {
+      console.error(`Error fetching chapters for module ${moduleId}:`, err);
+      setAllModulesData(prev => prev.map(m => {
+        if (m.id !== moduleId) return m;
+        return { ...m, modules: [] };
+      }));
+    } finally {
+      setChaptersLoadingForModuleId(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    expandedChapters.forEach(moduleId => {
+      const moduleEntry = allModulesData.find(m => m.id === moduleId);
+      if (moduleEntry && moduleEntry.modules === undefined) {
+        loadChaptersForModule(moduleId);
+      }
+    });
+  }, [expandedChapters, allModulesData, loadChaptersForModule]);
 
   const fetchAllModulesData = useCallback(async () => {
     setLoading(true);
@@ -86,65 +129,37 @@ const ModulesAssignments = () => {
       const modulesData = modulesResponse.data || modulesResponse;
       const modulesList = Array.isArray(modulesData) ? modulesData : [];
 
-      const modulesWithChapters = await Promise.all(
-        modulesList.map(async (module) => {
-          try {
-            const chaptersResponse = await modulesService.getModuleChapters(module.id);
-            const chaptersData = chaptersResponse.data || chaptersResponse;
-            const chaptersList = Array.isArray(chaptersData) ? chaptersData : [];
+      const modulesWithoutChapters = modulesList.map((module) => ({
+        id: module.id,
+        subjectId: module.subject || module.subject_id || module.subject?.id,
+        title: module.name || `Chapter ${module.order}`,
+        completionRate: module.user_percentage || 0,
+        isDue: module.status === 'due',
+        name: module.name,
+        description: module.description || '',
+        order: module.order || 1,
+        is_active: module.is_active !== undefined ? module.is_active : true,
+        is_enabled: module.is_enabled !== undefined ? module.is_enabled : false,
+        subject: module.subject || module.subject_id || module.subject?.id,
+        logo: module.logo || null,
+        modules: undefined
+      }));
 
-            return {
-              id: module.id,
-              subjectId: module.subject || module.subject_id || module.subject?.id,
-              title: module.name || `Chapter ${module.order}`,
-              completionRate: module.user_percentage || 0,
-              isDue: module.status === 'due',
-              name: module.name,
-              description: module.description || '',
-              order: module.order || 1,
-              is_active: module.is_active !== undefined ? module.is_active : true,
-              is_enabled: module.is_enabled !== undefined ? module.is_enabled : false,
-              subject: module.subject || module.subject_id || module.subject?.id,
-              logo: module.logo || null,
-              modules: chaptersList.map((chapter, idx) => ({
-                id: chapter.id,
-                title: chapter.title || `Assignment ${idx + 1}`,
-                isDue: chapter.is_due || false
-              }))
-            };
-          } catch (err) {
-            console.error(`Error fetching chapters for module ${module.id}:`, err);
-            return {
-              id: module.id,
-              subjectId: module.subject || module.subject_id || module.subject?.id,
-              title: module.name || `Chapter ${module.order}`,
-              completionRate: module.user_percentage || 0,
-              isDue: module.status === 'due',
-              name: module.name,
-              description: module.description || '',
-              order: module.order || 1,
-              is_active: module.is_active !== undefined ? module.is_active : true,
-              is_enabled: module.is_enabled !== undefined ? module.is_enabled : false,
-              subject: module.subject || module.subject_id || module.subject?.id,
-              logo: module.logo || null,
-              modules: []
-            };
-          }
-        })
-      );
-
-      setAllModulesData(modulesWithChapters);
+      setAllModulesData(modulesWithoutChapters);
     } catch (err) {
       console.error('Error fetching modules:', err);
-      setError(err.message || 'Failed to load chapters. Please try again.');
+      setError(err.message || 'Failed to load modules. Please try again.');
     } finally {
       setLoading(false);
     }
   }, []);
 
+  const prevSubjectRef = useRef(selectedSubject);
+
   useEffect(() => {
     if (!selectedSubject) {
       setChapters([]);
+      prevSubjectRef.current = selectedSubject;
       return;
     }
 
@@ -155,7 +170,9 @@ const ModulesAssignments = () => {
     });
 
     setChapters(filteredModules);
-    if (filteredModules.length > 0) {
+    const subjectChanged = prevSubjectRef.current !== selectedSubject;
+    prevSubjectRef.current = selectedSubject;
+    if (subjectChanged && filteredModules.length > 0) {
       setExpandedChapters([filteredModules[0].id]);
     }
   }, [selectedSubject, allModulesData]);
@@ -215,6 +232,49 @@ const ModulesAssignments = () => {
     setEditingModule(module);
     setShowCreateModal(true);
     setCreateError(null);
+  };
+
+  const handleDeleteModule = async (module) => {
+    if (!window.confirm(`Delete module "${module.title || module.name}"? This will remove the module and all its assignments.`)) return;
+    try {
+      await modulesService.deleteModule(module.id);
+      setExpandedChapters(prev => prev.filter(id => id !== module.id));
+      await fetchAllModulesData();
+      setSuccessData({ title: 'Module deleted', message: 'Module has been deleted successfully.' });
+      setShowSuccessModal(true);
+    } catch (err) {
+      console.error('Error deleting module:', err);
+      setCreateError(err.message || 'Failed to delete module.');
+    }
+  };
+
+  const handleDeleteChapter = async (assignment, parentModule) => {
+    if (!window.confirm(`Delete assignment "${assignment.title}"?`)) return;
+    try {
+      await modulesService.deleteChapter(assignment.id);
+      setAllModulesData(prev => prev.map(m => {
+        if (m.id !== parentModule.id || !Array.isArray(m.modules)) return m;
+        return { ...m, modules: m.modules.filter(ch => ch.id !== assignment.id) };
+      }));
+      setSuccessData({ title: 'Assignment deleted', message: 'Assignment has been deleted successfully.' });
+      setShowSuccessModal(true);
+    } catch (err) {
+      console.error('Error deleting assignment:', err);
+      setCreateChapterError(err.message || 'Failed to delete assignment.');
+    }
+  };
+
+  const handleDeleteQuestion = async (question) => {
+    if (!window.confirm(`Delete this question?`)) return;
+    try {
+      await questionsService.deleteQuestion(question.id);
+      setChapterQuestions(prev => prev.filter(q => q.id !== question.id));
+      setSuccessData({ title: 'Question deleted', message: 'Question has been deleted successfully.' });
+      setShowSuccessModal(true);
+    } catch (err) {
+      console.error('Error deleting question:', err);
+      setCreateQuestionError(err.message || 'Failed to delete question.');
+    }
   };
 
   const handleCreateChapter = async (chapterData) => {
@@ -280,17 +340,14 @@ const ModulesAssignments = () => {
   };
 
   const handleToggleChapterDue = (chapter, parentModule, newDueStatus) => {
-    
     setAllModulesData(prev => prev.map(m => {
-      if (m.id === parentModule.id) {
-        return {
-          ...m,
-          modules: m.modules.map(ch => 
-            ch.id === chapter.id ? { ...ch, isDue: newDueStatus } : ch
-          )
-        };
-      }
-      return m;
+      if (m.id !== parentModule.id || !Array.isArray(m.modules)) return m;
+      return {
+        ...m,
+        modules: m.modules.map(ch =>
+          ch.id === chapter.id ? { ...ch, isDue: newDueStatus } : ch
+        )
+      };
     }));
   };
 
@@ -690,7 +747,10 @@ const ModulesAssignments = () => {
                             </div>
                           </div>
                           <p className="text-sm text-gray-500 mt-1">
-                            {chapter.modules?.length || 0} {chapter.modules?.length === 1 ? 'assignment' : 'assignments'}
+                            {chapter.modules === undefined
+                              ? '— assignments'
+                              : `${chapter.modules.length} ${chapter.modules.length === 1 ? 'assignment' : 'assignments'}`
+                            }
                           </p>
                         </div>
                       </div>
@@ -704,6 +764,16 @@ const ModulesAssignments = () => {
                         >
                           <Edit className="h-4 w-4" />
                           <span className="text-sm font-medium">Edit</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteModule(chapter);
+                          }}
+                          className="flex items-center space-x-2 px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-all duration-200"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="text-sm font-medium">Delete</span>
                         </button>
                         <div className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg">
                           <span className="text-sm text-gray-600">Due</span>
@@ -730,7 +800,12 @@ const ModulesAssignments = () => {
 
                   {expandedChapters.includes(chapter.id) && (
                     <div className="border-t border-gray-200 bg-gray-50/50 p-6 space-y-3 animate-slide-down">
-                      {chapter.modules && chapter.modules.length > 0 ? (
+                      {(chaptersLoadingForModuleId === chapter.id || chapter.modules === undefined) ? (
+                        <div className="flex items-center justify-center py-8 text-gray-500">
+                          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                          <span>Loading assignments...</span>
+                        </div>
+                      ) : chapter.modules.length > 0 ? (
                         chapter.modules.map((module, moduleIndex) => (
                           <div 
                             key={module.id} 
@@ -786,6 +861,16 @@ const ModulesAssignments = () => {
                                 >
                                   <Plus className="h-4 w-4" />
                                   <span className="text-sm font-medium">Question</span>
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteChapter(module, chapter);
+                                  }}
+                                  className="flex items-center space-x-2 px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-all duration-200"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="text-sm font-medium">Delete</span>
                                 </button>
                               </div>
                             </div>
@@ -929,13 +1014,22 @@ const ModulesAssignments = () => {
                                 </span>
                               </div>
                             </div>
-                            <button
-                              onClick={() => handleEditQuestion(question)}
-                              className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md" style={{ backgroundColor: '#00167a' }}
-                            >
-                              <Edit className="h-4 w-4" />
-                              <span className="text-sm font-medium">Edit</span>
-                            </button>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => handleEditQuestion(question)}
+                                className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md" style={{ backgroundColor: '#00167a' }}
+                              >
+                                <Edit className="h-4 w-4" />
+                                <span className="text-sm font-medium">Edit</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteQuestion(question)}
+                                className="flex items-center space-x-2 px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-all duration-200"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="text-sm font-medium">Delete</span>
+                              </button>
+                            </div>
                           </div>
                           <p className="text-gray-800 text-lg leading-relaxed">{question.question_text}</p>
                           {question.image && (
@@ -1104,11 +1198,10 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
   const parentModule = chapterData?.module;
 
   const [numberOfQuestions, setNumberOfQuestions] = useState('5');
-  const [level, setLevel] = useState('1');
-  const [questionType, setQuestionType] = useState('mcq_single');
+  const [selectedQuestionTypes, setSelectedQuestionTypes] = useState(['mcq_single']);
   const [addImage, setAddImage] = useState(false);
   const [useMatplot, setUseMatplot] = useState(false);
-  const [aiProvider, setAiProvider] = useState('gemini'); // 'chatgpt' or 'gemini' - defaulting to gemini for now
+  const [aiProvider, setAiProvider] = useState('gemini');
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -1117,28 +1210,19 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
   const [saving, setSaving] = useState(false);
   const [chapterId, setChapterId] = useState(null);
 
-  const questionCountOptions = [
-    { value: '3', label: '3 Questions' },
-    { value: '5', label: '5 Questions' },
-    { value: '10', label: '10 Questions' },
-    { value: '15', label: '15 Questions' },
-    { value: '20', label: '20 Questions' },
-  ];
-
-  const levelOptions = [
-    { value: '1', label: 'Level 1 - Basic' },
-    { value: '2', label: 'Level 2 - Easy' },
-    { value: '3', label: 'Level 3 - Medium' },
-    { value: '4', label: 'Level 4 - Hard' },
-    { value: '5', label: 'Level 5 - HOTS (Advanced)' },
-  ];
-
   const questionTypeOptions = [
     { value: 'mcq_single', label: 'MCQ - Single Correct' },
     { value: 'mcq_multiple', label: 'MCQ - Multiple Correct' },
     { value: 'short_answer', label: 'Short Answer' },
     { value: 'rearrange', label: 'Re-arrange' },
   ];
+
+  const toggleQuestionType = (value) => {
+    setSelectedQuestionTypes(prev => {
+      const next = prev.includes(value) ? prev.filter(t => t !== value) : [...prev, value];
+      return next.length > 0 ? next : ['mcq_single'];
+    });
+  };
 
   const handleGenerate = async () => {
     if (!chapter?.id) {
@@ -1155,6 +1239,12 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
     setError(null);
     setSuccess(null);
 
+    const num = parseInt(numberOfQuestions, 10);
+    if (isNaN(num) || num < 1 || num > 100) {
+      setError('Please enter a valid number of questions (1–100).');
+      return;
+    }
+
     try {
       const requestData = {
         subject_id: parentModule.subjectId,
@@ -1163,12 +1253,13 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
         subject_name: parentModule.title || '',
         module_name: parentModule.name || parentModule.title || '',
         chapter_name: chapter.title || '',
-        number_of_questions: parseInt(numberOfQuestions),
-        level: parseInt(level),
-        question_type: questionType,
+        number_of_questions: num,
         add_image: addImage,
         use_matplot: useMatplot,
       };
+      if (selectedQuestionTypes.length > 0) {
+        requestData.question_types = selectedQuestionTypes;
+      }
 
       const response = aiProvider === 'gemini' 
         ? await aiService.generateAIQuestionsGemini(requestData)
@@ -1179,7 +1270,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
       setGeneratedQuestions(questions);
       setChapterId(responseData.chapter_id || chapter.id);
       setSelectedQuestionIds(new Set(questions.map(q => q.id)));
-      setSuccess(`Successfully generated ${responseData.questions_created || numberOfQuestions} questions using ${aiProvider === 'gemini' ? 'Gemini' : 'ChatGPT'}!`);
+      setSuccess(`Successfully generated ${responseData.questions_created || num} questions using ${aiProvider === 'gemini' ? 'Gemini' : 'ChatGPT'}!`);
     } catch (err) {
       console.error('Error generating AI questions:', err);
       setError(err.message || 'Failed to generate questions. Please try again.');
@@ -1237,8 +1328,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
 
   const handleReset = () => {
     setNumberOfQuestions('5');
-    setLevel('1');
-    setQuestionType('mcq_single');
+    setSelectedQuestionTypes(['mcq_single']);
     setAddImage(false);
     setUseMatplot(false);
     setAiProvider('gemini');
@@ -1307,81 +1397,40 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
 
                   <div className="space-y-2">
                     <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                      <HelpCircle className="h-4 w-4 text-primary-500" />
-                      <span>Question Type</span>
+                      <BarChart3 className="h-4 w-4 text-primary-500" />
+                      <span>Number of Questions</span>
                     </label>
-                    <div className="relative">
-                      <select
-                        value={questionType}
-                        onChange={(e) => setQuestionType(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
-                      >
-                        {questionTypeOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                    </div>
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={numberOfQuestions}
+                      onChange={(e) => setNumberOfQuestions(e.target.value)}
+                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+                      placeholder="e.g. 5"
+                    />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                        <BarChart3 className="h-4 w-4 text-primary-500" />
-                        <span>Number of Questions</span>
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={numberOfQuestions}
-                          onChange={(e) => setNumberOfQuestions(e.target.value)}
-                          className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
-                        >
-                          {questionCountOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                      </div>
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
+                      <HelpCircle className="h-4 w-4 text-primary-500" />
+                      <span>Question Types</span>
+                    </label>
+                    <div className="flex flex-wrap gap-4">
+                      {questionTypeOptions.map((option) => (
+                        <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedQuestionTypes.includes(option.value)}
+                            onChange={() => toggleQuestionType(option.value)}
+                            className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
+                          />
+                          <span className="text-sm text-gray-700">{option.label}</span>
+                        </label>
+                      ))}
                     </div>
-
-                    <div className="space-y-2">
-                      <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
-                        <Zap className="h-4 w-4 text-primary-500" />
-                        <span>Difficulty Level</span>
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={level}
-                          onChange={(e) => setLevel(e.target.value)}
-                          className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-300"
-                        >
-                          {levelOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                      </div>
-                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Select one or more types. Difficulty is set by the backend.</p>
                   </div>
-
-                  {level === '5' && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start space-x-3">
-                      <Zap className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-amber-800">HOTS Questions</p>
-                        <p className="text-sm text-amber-700 mt-1">
-                          Level 5 will generate Higher Order Thinking Skills (HOTS) questions. 
-                          These questions will also be added to the Assignment HOTS section.
-                        </p>
-                      </div>
-                    </div>
-                  )}
 
                   <div className="space-y-2">
                     <div className="flex items-center space-x-3">
@@ -1956,22 +2005,6 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
           </select>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
-          <label className="block text-sm font-semibold text-gray-700 mb-3">
-            Difficulty Level <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={formData.difficulty_level}
-            onChange={(e) => handleFieldChange('difficulty_level', e.target.value)}
-            required
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
-            disabled={loading}
-          >
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

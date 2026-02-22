@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { logout } from '../features/auth/authSlice'
+import { logout, logoutUser } from '../features/auth/authSlice'
+import apiService from '../services/api'
+import authService from '../services/authService'
 import { 
   Home, 
   GraduationCap, 
   Users, 
   BookOpen, 
   BarChart3, 
-  Settings,
   Bell,
   Search,
   Menu,
@@ -51,9 +52,15 @@ const Layout = ({ children }) => {
     }
   }, [avatarMenuOpen])
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setAvatarMenuOpen(false)
-    dispatch(logout())
+    try {
+      await dispatch(logoutUser()).unwrap()
+    } catch {
+      // API may be down; still clear token and mock flag locally
+      authService.logout()
+      dispatch(logout())
+    }
     navigate('/login')
   }
 
@@ -68,7 +75,6 @@ const Layout = ({ children }) => {
     { name: 'Classes', href: '/classes', icon: BookOpen },
     { name: 'Reports', href: '/reports', icon: BarChart3 },
     { name: 'AI Insights', href: '/ai-insights', icon: Brain },
-    { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
   const teacherNavigation = [
@@ -80,8 +86,6 @@ const Layout = ({ children }) => {
     { name: 'Reports & Analytics', href: '/reports', icon: BarChart3 },
     { name: 'Leaderboards', href: '/leaderboards', icon: Trophy },
     { name: 'Daily Missions', href: '/missions', icon: Calendar },
-    { name: 'Notifications', href: '/notifications', icon: Bell },
-    { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
   const navigation = role === 'teacher' ? teacherNavigation : principalNavigation
@@ -202,6 +206,11 @@ const Layout = ({ children }) => {
       </div>
 
       <div className="lg:pl-64">
+        {apiService.getUsedMockData() && (
+          <div className="sticky top-0 z-50 bg-amber-100 border-b border-amber-300 px-4 py-2 text-center text-sm text-amber-900">
+            You are viewing demo data because the backend is unavailable. Start the backend to use live data.
+          </div>
+        )}
         <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center">

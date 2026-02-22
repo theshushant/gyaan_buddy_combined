@@ -11,12 +11,12 @@ class AuthService {
       const response = await apiService.post('/auth/login/', credentials);
       console.log('AuthService: Login API response:', response);
 
-      if (response.success || response.data) {
-        const userData = response.data?.user || response.user;
+      if (response.success || response.data || response.user) {
+        const userData = response.data?.user || response.user || response;
         const tokenData = response.data?.tokens || response.tokens || response.data?.token || response.token;
         
         if (tokenData) {
-          const accessToken = tokenData.access || tokenData;
+          const accessToken = typeof tokenData === 'object' ? (tokenData.access || tokenData.token) : tokenData;
           if (accessToken) {
             apiService.setAuthToken(accessToken);
           }
@@ -43,6 +43,7 @@ class AuthService {
       console.warn('Logout request failed:', error.message);
     } finally {
       apiService.removeAuthToken();
+      apiService.setUsedMockData(false);
     }
   }
 

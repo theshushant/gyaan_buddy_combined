@@ -227,6 +227,10 @@ const studentsSlice = createSlice({
           if (action.payload.summary) {
             state.summary = action.payload.summary
           }
+        } else if (action.payload && action.payload.results && Array.isArray(action.payload.results)) {
+          state.students = action.payload.results
+          if (action.payload.pagination) state.pagination = action.payload.pagination
+          if (action.payload.summary) state.summary = action.payload.summary
         } else if (action.payload && action.payload.data) {
           const data = action.payload.data
           if (Array.isArray(data)) {
@@ -239,6 +243,8 @@ const studentsSlice = createSlice({
             if (data.summary) {
               state.summary = data.summary
             }
+          } else if (data.results && Array.isArray(data.results)) {
+            state.students = data.results
           } else {
             state.students = []
           }

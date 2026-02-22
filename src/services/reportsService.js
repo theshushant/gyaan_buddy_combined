@@ -4,7 +4,7 @@ class ReportsService {
   async getStudentPerformanceReports(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
-      
+
       if (filters.class) queryParams.append('class', filters.class);
       if (filters.subject) queryParams.append('subject', filters.subject);
       if (filters.dateRange) queryParams.append('dateRange', filters.dateRange);
@@ -21,7 +21,7 @@ class ReportsService {
   async getProgressOverTimeReports(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
-      
+
       if (filters.class) queryParams.append('class', filters.class);
       if (filters.subject) queryParams.append('subject', filters.subject);
       if (filters.dateRange) queryParams.append('dateRange', filters.dateRange);
@@ -37,7 +37,7 @@ class ReportsService {
   async getQuizAssignmentSummaries(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
-      
+
       if (filters.class) queryParams.append('class', filters.class);
       if (filters.subject) queryParams.append('subject', filters.subject);
       if (filters.dateRange) queryParams.append('dateRange', filters.dateRange);
@@ -54,7 +54,7 @@ class ReportsService {
   async getAIInsightsReports(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
-      
+
       if (filters.class) queryParams.append('class', filters.class);
       if (filters.subject) queryParams.append('subject', filters.subject);
       if (filters.dateRange) queryParams.append('dateRange', filters.dateRange);
@@ -70,7 +70,7 @@ class ReportsService {
   async getAnalyticsData(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
-      
+
       if (filters.class) queryParams.append('class', filters.class);
       if (filters.subject) queryParams.append('subject', filters.subject);
       if (filters.dateRange) queryParams.append('dateRange', filters.dateRange);
@@ -81,6 +81,39 @@ class ReportsService {
       return response.data || response;
     } catch (error) {
       throw new Error(`Failed to fetch analytics data: ${error.message}`);
+    }
+  }
+
+  /**
+   * Fetch all Reports & Analytics page data scoped to the current teacher.
+   * Returns analytics, reports, and filterOptions sections.
+   */
+  async getTeacherOverview() {
+    try {
+      const response = await apiService.get('/reports/teacher-overview/');
+      return response.data || response;
+    } catch (error) {
+      throw new Error(`Failed to fetch teacher overview: ${error.message}`);
+    }
+  }
+
+  /**
+   * Fetch filtered student proficiency list.
+   * @param {Object} filters - { class_id, subject_id, module_id, chapter_id }
+   */
+  async getTeacherStudentProficiency(filters = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      if (filters.class_id) queryParams.append('class_id', filters.class_id);
+      if (filters.subject_id) queryParams.append('subject_id', filters.subject_id);
+      if (filters.module_id) queryParams.append('module_id', filters.module_id);
+      if (filters.chapter_id) queryParams.append('chapter_id', filters.chapter_id);
+
+      const endpoint = `/reports/teacher-student-proficiency/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await apiService.get(endpoint);
+      return response.data || response;
+    } catch (error) {
+      throw new Error(`Failed to fetch student proficiency: ${error.message}`);
     }
   }
 

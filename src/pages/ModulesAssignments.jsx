@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Plus, 
-  Eye, 
-  BookOpen, 
-  ChevronDown, 
-  ChevronRight, 
-  FileText, 
+import {
+  Plus,
+  Eye,
+  BookOpen,
+  ChevronDown,
+  ChevronRight,
+  FileText,
   HelpCircle,
   CheckCircle2,
   AlertCircle,
@@ -69,9 +69,15 @@ const ModulesAssignments = () => {
   const [selectedChapterForAI, setSelectedChapterForAI] = useState(null);
   const [selectedModuleForQuestion, setSelectedModuleForQuestion] = useState(null);
 
+  // Delete Modal State
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [deleteType, setDeleteType] = useState(null); // 'module' or 'chapter'
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const toggleChapter = (chapterId) => {
-    setExpandedChapters(prev => 
-      prev.includes(chapterId) 
+    setExpandedChapters(prev =>
+      prev.includes(chapterId)
         ? prev.filter(id => id !== chapterId)
         : [...prev, chapterId]
     );
@@ -165,9 +171,11 @@ const ModulesAssignments = () => {
       try {
         const response = await subjectsService.getSubjects();
         const subjectsData = response.data || response;
-        setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
-        if (subjectsData.length > 0 && !selectedSubject) {
-          setSelectedSubject(subjectsData[0].id);
+        const validSubjects = Array.isArray(subjectsData) ? subjectsData : [];
+        setSubjects(validSubjects);
+        // Automatically set the first subject if none is selected
+        if (validSubjects.length > 0) {
+          setSelectedSubject(validSubjects[0].id);
         }
       } catch (err) {
         console.error('Error fetching subjects:', err);
@@ -230,7 +238,7 @@ const ModulesAssignments = () => {
       if (editingChapter) {
         const response = await modulesService.updateChapter(editingChapter.id, chapterData);
         const successMessage = response?.message || `Assignment "${chapterData.title}" has been updated successfully.`;
-        
+
         setShowCreateChapterModal(false);
         setEditingChapter(null);
         setSelectedModuleForChapter(null);
@@ -241,7 +249,7 @@ const ModulesAssignments = () => {
       } else {
         const response = await modulesService.createChapter(selectedModuleForChapter.id, chapterData);
         const successMessage = response?.message || `Assignment "${chapterData.title}" has been created successfully.`;
-        
+
         setShowCreateChapterModal(false);
         setSelectedModuleForChapter(null);
         setSuccessData({
@@ -273,19 +281,58 @@ const ModulesAssignments = () => {
   };
 
   const handleToggleModuleDue = (module, newDueStatus) => {
-    
-    setAllModulesData(prev => prev.map(m => 
+
+    setAllModulesData(prev => prev.map(m =>
       m.id === module.id ? { ...m, isDue: newDueStatus } : m
     ));
   };
 
+  const initiateDelete = (e, item, type) => {
+    e.stopPropagation();
+    setItemToDelete(item);
+    setDeleteType(type);
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete || !deleteType) return;
+
+    setIsDeleting(true);
+    try {
+      if (deleteType === 'module') {
+        await modulesService.deleteModule(itemToDelete.id);
+        setSuccessData({
+          title: 'Module Deleted Successfully',
+          message: `Module "${itemToDelete.title || itemToDelete.name}" has been deleted.`
+        });
+      } else if (deleteType === 'chapter') {
+        await modulesService.deleteChapter(itemToDelete.id);
+        setSuccessData({
+          title: 'Assignment Deleted Successfully',
+          message: `Assignment "${itemToDelete.title}" has been deleted.`
+        });
+      }
+
+      setShowDeleteConfirmModal(false);
+      setItemToDelete(null);
+      setDeleteType(null);
+      setShowSuccessModal(true);
+      await fetchAllModulesData(); // Refresh the list
+    } catch (err) {
+      console.error(`Error deleting ${deleteType}:`, err);
+      // We could add an error state here, but logging is fine for now
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleToggleChapterDue = (chapter, parentModule, newDueStatus) => {
-    
+
     setAllModulesData(prev => prev.map(m => {
       if (m.id === parentModule.id) {
         return {
           ...m,
-          modules: m.modules.map(ch => 
+          modules: m.modules.map(ch =>
             ch.id === chapter.id ? { ...ch, isDue: newDueStatus } : ch
           )
         };
@@ -300,7 +347,7 @@ const ModulesAssignments = () => {
       const chaptersData = response.data || response;
       const chaptersList = Array.isArray(chaptersData) ? chaptersData : [];
       const fullChapterData = chaptersList.find(ch => ch.id === chapter.id);
-      
+
       if (fullChapterData) {
         setEditingChapter(fullChapterData);
         setSelectedModuleForChapter(module);
@@ -327,7 +374,7 @@ const ModulesAssignments = () => {
       const response = await modulesService.getChapterModuleContent(chapter.id);
       const contentData = response.data || response;
       const contentList = Array.isArray(contentData) ? contentData : [];
-      
+
       const questions = contentList
         .filter(content => content.content_type === 'question' && content.question)
         .map(content => ({
@@ -335,7 +382,7 @@ const ModulesAssignments = () => {
           module_content_id: content.id,
           order: content.order
         }));
-      
+
       setChapterQuestions(questions);
     } catch (err) {
       console.error('Error fetching questions:', err);
@@ -383,7 +430,7 @@ const ModulesAssignments = () => {
       let dataToSend;
       const needsFormData = image instanceof File || questionPayload.remove_image;
       const isMCQ = questionPayload.question_type === 'mcq_single' || questionPayload.question_type === 'mcq_multiple';
-      
+
       if (needsFormData) {
         dataToSend = new FormData();
         Object.keys(questionPayload).forEach(key => {
@@ -400,11 +447,11 @@ const ModulesAssignments = () => {
             }
           }
         });
-        
+
         if (selectedChapterForQuestion?.id) {
           dataToSend.append('chapter_id', selectedChapterForQuestion.id);
         }
-        
+
         if (isMCQ && options && Array.isArray(options) && options.length > 0) {
           const validOptions = options
             .filter(opt => opt.option_text && opt.option_text.trim() !== '')
@@ -417,7 +464,7 @@ const ModulesAssignments = () => {
             dataToSend.append('options', JSON.stringify(validOptions));
           }
         }
-        
+
         if (image instanceof File) {
           dataToSend.append('image', image);
         } else if (questionPayload.remove_image) {
@@ -425,11 +472,11 @@ const ModulesAssignments = () => {
         }
       } else {
         dataToSend = { ...questionPayload };
-        
+
         if (selectedChapterForQuestion?.id) {
           dataToSend.chapter_id = selectedChapterForQuestion.id;
         }
-        
+
         if (isMCQ && options && Array.isArray(options) && options.length > 0) {
           const validOptions = options
             .filter(opt => opt.option_text && opt.option_text.trim() !== '')
@@ -492,7 +539,7 @@ const ModulesAssignments = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
-              <div 
+              <div
                 className="p-3 rounded-2xl shadow-lg"
                 style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
               >
@@ -556,7 +603,7 @@ const ModulesAssignments = () => {
                 <span>Filter by Subject</span>
               </label>
               <div className="relative">
-                <select 
+                <select
                   value={selectedSubject}
                   onChange={(e) => setSelectedSubject(e.target.value)}
                   className="w-full md:w-64 px-4 py-3 pl-11 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white appearance-none cursor-pointer hover:border-gray-300"
@@ -635,7 +682,7 @@ const ModulesAssignments = () => {
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">No Modules Found</h3>
                   <p className="text-gray-600 mb-6">
-                    {selectedSubject 
+                    {selectedSubject
                       ? `No modules found for the selected subject. Create your first module to get started!`
                       : 'Please select a subject to view modules.'}
                   </p>
@@ -656,21 +703,20 @@ const ModulesAssignments = () => {
               </div>
             ) : (
               chapters.map((chapter, index) => (
-                <div 
-                  key={chapter.id} 
+                <div
+                  key={chapter.id}
                   className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300"
                 >
-                  <div 
+                  <div
                     className="p-6 cursor-pointer"
                     onClick={() => toggleChapter(chapter.id)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4 flex-1">
-                        <div className={`p-2 rounded-lg transition-colors ${
-                          expandedChapters.includes(chapter.id) 
-                            ? 'bg-primary-100 text-primary-500' 
-                            : 'bg-gray-100 text-gray-600'
-                        }`}>
+                        <div className={`p-2 rounded-lg transition-colors ${expandedChapters.includes(chapter.id)
+                          ? 'bg-primary-100 text-primary-500'
+                          : 'bg-gray-100 text-gray-600'
+                          }`}>
                           {expandedChapters.includes(chapter.id) ? (
                             <ChevronDown className="h-5 w-5" />
                           ) : (
@@ -705,6 +751,13 @@ const ModulesAssignments = () => {
                           <Edit className="h-4 w-4" />
                           <span className="text-sm font-medium">Edit</span>
                         </button>
+                        <button
+                          onClick={(e) => initiateDelete(e, chapter, 'module')}
+                          className="flex items-center space-x-2 px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all duration-200"
+                          title="Delete Module"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
                         <div className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg">
                           <span className="text-sm text-gray-600">Due</span>
                           <button
@@ -712,15 +765,13 @@ const ModulesAssignments = () => {
                               e.stopPropagation();
                               handleToggleModuleDue(chapter, !chapter.isDue);
                             }}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 ${
-                              chapter.isDue ? '' : 'bg-gray-300'
-                            }`}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 ${chapter.isDue ? '' : 'bg-gray-300'
+                              }`}
                             style={chapter.isDue ? { backgroundColor: '#00167a' } : {}}
                           >
                             <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
-                                chapter.isDue ? 'translate-x-6' : 'translate-x-1'
-                              }`}
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${chapter.isDue ? 'translate-x-6' : 'translate-x-1'
+                                }`}
                             />
                           </button>
                         </div>
@@ -732,8 +783,8 @@ const ModulesAssignments = () => {
                     <div className="border-t border-gray-200 bg-gray-50/50 p-6 space-y-3 animate-slide-down">
                       {chapter.modules && chapter.modules.length > 0 ? (
                         chapter.modules.map((module, moduleIndex) => (
-                          <div 
-                            key={module.id} 
+                          <div
+                            key={module.id}
                             className="bg-white rounded-xl p-4 border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all duration-200"
                           >
                             <div className="flex items-center justify-between">
@@ -754,15 +805,13 @@ const ModulesAssignments = () => {
                                       e.stopPropagation();
                                       handleToggleChapterDue(module, chapter, !module.isDue);
                                     }}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 ${
-                                      module.isDue ? '' : 'bg-gray-300'
-                                    }`}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 ${module.isDue ? '' : 'bg-gray-300'
+                                      }`}
                                     style={module.isDue ? { backgroundColor: '#00167a' } : {}}
                                   >
                                     <span
-                                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
-                                        module.isDue ? 'translate-x-6' : 'translate-x-1'
-                                      }`}
+                                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${module.isDue ? 'translate-x-6' : 'translate-x-1'
+                                        }`}
                                     />
                                   </button>
                                 </div>
@@ -781,11 +830,21 @@ const ModulesAssignments = () => {
                                   <span className="text-sm font-medium">View</span>
                                 </button>
                                 <button
-                                  onClick={() => handleCreateQuestion(module, chapter)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCreateQuestion(module, chapter);
+                                  }}
                                   className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
                                 >
                                   <Plus className="h-4 w-4" />
                                   <span className="text-sm font-medium">Question</span>
+                                </button>
+                                <button
+                                  onClick={(e) => initiateDelete(e, module, 'chapter')}
+                                  className="flex items-center space-x-2 px-3 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all duration-200"
+                                  title="Delete Assignment"
+                                >
+                                  <Trash2 className="h-5 w-5" />
                                 </button>
                               </div>
                             </div>
@@ -810,6 +869,79 @@ const ModulesAssignments = () => {
                 </div>
               ))
             )}
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirmModal && (
+          <div className="fixed inset-0 z-[100] overflow-y-auto">
+            <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <div className="fixed inset-0 transition-opacity z-[90]" aria-hidden="true" onClick={() => !isDeleting && setShowDeleteConfirmModal(false)}>
+                <div className="absolute inset-0 bg-gray-900 opacity-75 backdrop-blur-sm"></div>
+              </div>
+              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+              <div className="relative z-[100] inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-100">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <AlertCircle className="h-6 w-6 text-red-600" />
+                    </div>
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                      <h3 className="text-lg leading-6 font-semibold text-gray-900">
+                        Delete {deleteType === 'module' ? 'Module' : 'Assignment'}
+                      </h3>
+                      <div className="mt-2 text-sm text-gray-500 space-y-2">
+                        <p>
+                          Are you sure you want to delete the {deleteType === 'module' ? 'module' : 'assignment'} <strong>"{itemToDelete?.title || itemToDelete?.name}"</strong>?
+                        </p>
+                        {deleteType === 'module' && (
+                          <div className="bg-red-50 p-3 rounded-lg flex items-start space-x-2 mt-3">
+                            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                            <p className="text-red-800 text-sm font-medium">
+                              Warning: This will also delete all assignments within this module. This action cannot be undone.
+                            </p>
+                          </div>
+                        )}
+                        {deleteType === 'chapter' && (
+                          <p className="text-red-600 text-sm mt-2">
+                            This action cannot be undone.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={handleDeleteConfirm}
+                    disabled={isDeleting}
+                    className="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2.5 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed items-center"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                        Deleting...
+                      </>
+                    ) : (
+                      'Delete'
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDeleteConfirmModal(false);
+                      setItemToDelete(null);
+                      setDeleteType(null);
+                    }}
+                    disabled={isDeleting}
+                    className="mt-3 w-full inline-flex justify-center rounded-xl border border-gray-300 shadow-sm px-4 py-2.5 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -883,7 +1015,7 @@ const ModulesAssignments = () => {
                     </button>
                   </div>
                 </div>
-                
+
                 <div className="p-6 overflow-y-auto flex-1 bg-gray-50">
                   {loadingQuestions ? (
                     <div className="flex flex-col items-center justify-center py-20">
@@ -960,9 +1092,8 @@ const ModulesAssignments = () => {
                                 {question.options.map((option, optIndex) => (
                                   <div
                                     key={option.id || optIndex}
-                                    className={`flex items-center space-x-2 p-2 rounded-lg ${
-                                      option.is_correct ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
-                                    }`}
+                                    className={`flex items-center space-x-2 p-2 rounded-lg ${option.is_correct ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
+                                      }`}
                                   >
                                     <span className="text-sm text-gray-600">{String.fromCharCode(65 + optIndex)}.</span>
                                     <span className="text-sm text-gray-800 flex-1">{option.option_text}</span>
@@ -1003,7 +1134,7 @@ const ModulesAssignments = () => {
             }} />
             <div className="flex min-h-screen items-center justify-center p-4">
               <div className="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-                <div 
+                <div
                   className="px-8 py-6"
                   style={{ background: editingQuestion ? 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' : 'linear-gradient(135deg, #16a34a 0%, #059669 100%)' }}
                 >
@@ -1031,21 +1162,21 @@ const ModulesAssignments = () => {
                           <span>Generate with AI</span>
                         </button>
                       )}
-                    <button
-                      onClick={() => {
-                        setShowCreateQuestionModal(false);
-                        setSelectedChapterForQuestion(null);
-                        setEditingQuestion(null);
-                        setCreateQuestionError(null);
-                      }}
-                      className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all duration-200"
-                    >
-                      <X className="h-6 w-6" />
-                    </button>
+                      <button
+                        onClick={() => {
+                          setShowCreateQuestionModal(false);
+                          setSelectedChapterForQuestion(null);
+                          setEditingQuestion(null);
+                          setCreateQuestionError(null);
+                        }}
+                        className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all duration-200"
+                      >
+                        <X className="h-6 w-6" />
+                      </button>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="p-6 overflow-y-auto flex-1 bg-gray-50">
                   <CreateQuestionForm
                     onSave={handleSaveQuestion}
@@ -1170,7 +1301,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
         use_matplot: useMatplot,
       };
 
-      const response = aiProvider === 'gemini' 
+      const response = aiProvider === 'gemini'
         ? await aiService.generateAIQuestionsGemini(requestData)
         : await aiService.generateAIQuestions(requestData);
       const responseData = response.data || response;
@@ -1223,7 +1354,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
       const result = response.data || response;
 
       setSuccess(`Successfully saved! ${result.deactivated_count || 0} unselected questions marked as inactive.`);
-      
+
       setTimeout(() => {
         onSuccess();
       }, 1000);
@@ -1376,7 +1507,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                       <div>
                         <p className="text-sm font-medium text-amber-800">HOTS Questions</p>
                         <p className="text-sm text-amber-700 mt-1">
-                          Level 5 will generate Higher Order Thinking Skills (HOTS) questions. 
+                          Level 5 will generate Higher Order Thinking Skills (HOTS) questions.
                           These questions will also be added to the Assignment HOTS section.
                         </p>
                       </div>
@@ -1479,11 +1610,10 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                     {generatedQuestions.map((question, index) => (
                       <div
                         key={question.id}
-                        className={`bg-gray-50 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                          selectedQuestionIds.has(question.id)
-                            ? 'border-primary-500 shadow-md bg-primary-50/30'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                        className={`bg-gray-50 rounded-xl border-2 transition-all duration-200 cursor-pointer ${selectedQuestionIds.has(question.id)
+                          ? 'border-primary-500 shadow-md bg-primary-50/30'
+                          : 'border-gray-200 hover:border-gray-300'
+                          }`}
                         onClick={() => toggleQuestionSelection(question.id)}
                       >
                         <div className="p-4">
@@ -1523,22 +1653,19 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                                   {question.options.map((option, optIdx) => (
                                     <div
                                       key={option.id || optIdx}
-                                      className={`flex items-center space-x-3 p-2 rounded-lg text-sm ${
-                                        option.is_correct
-                                          ? 'bg-green-50 border border-green-200'
-                                          : 'bg-white border border-gray-200'
-                                      }`}
+                                      className={`flex items-center space-x-3 p-2 rounded-lg text-sm ${option.is_correct
+                                        ? 'bg-green-50 border border-green-200'
+                                        : 'bg-white border border-gray-200'
+                                        }`}
                                     >
-                                      <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
-                                        option.is_correct
-                                          ? 'bg-green-500 text-white'
-                                          : 'bg-gray-200 text-gray-600'
-                                      }`}>
+                                      <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${option.is_correct
+                                        ? 'bg-green-500 text-white'
+                                        : 'bg-gray-200 text-gray-600'
+                                        }`}>
                                         {String.fromCharCode(65 + optIdx)}
                                       </span>
-                                      <span className={`${
-                                        option.is_correct ? 'text-green-700 font-medium' : 'text-gray-700'
-                                      }`}>
+                                      <span className={`${option.is_correct ? 'text-green-700 font-medium' : 'text-gray-700'
+                                        }`}>
                                         {option.option_text}
                                       </span>
                                       {option.is_correct && (
@@ -1612,16 +1739,16 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         is_hots: initialData.is_hots || false,
         options: initialData.options && initialData.options.length > 0
           ? initialData.options.map((opt, idx) => ({
-              option_text: opt.option_text || '',
-              is_correct: opt.is_correct || false,
-              order: opt.order || idx + 1,
-            }))
+            option_text: opt.option_text || '',
+            is_correct: opt.is_correct || false,
+            order: opt.order || idx + 1,
+          }))
           : [
-              { option_text: '', is_correct: false, order: 1 },
-              { option_text: '', is_correct: false, order: 2 },
-              { option_text: '', is_correct: false, order: 3 },
-              { option_text: '', is_correct: false, order: 4 },
-            ],
+            { option_text: '', is_correct: false, order: 1 },
+            { option_text: '', is_correct: false, order: 2 },
+            { option_text: '', is_correct: false, order: 3 },
+            { option_text: '', is_correct: false, order: 4 },
+          ],
       };
     }
     return {
@@ -1644,8 +1771,8 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(() => {
     if (initialData?.image) {
-      const imageUrl = initialData.image.startsWith('http') 
-        ? initialData.image 
+      const imageUrl = initialData.image.startsWith('http')
+        ? initialData.image
         : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${initialData.image}`;
       return imageUrl;
     }
@@ -1664,16 +1791,16 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         is_hots: initialData.is_hots || false,
         options: initialData.options && initialData.options.length > 0
           ? initialData.options.map((opt, idx) => ({
-              option_text: opt.option_text || '',
-              is_correct: opt.is_correct || false,
-              order: opt.order || idx + 1,
-            }))
+            option_text: opt.option_text || '',
+            is_correct: opt.is_correct || false,
+            order: opt.order || idx + 1,
+          }))
           : [
-              { option_text: '', is_correct: false, order: 1 },
-              { option_text: '', is_correct: false, order: 2 },
-              { option_text: '', is_correct: false, order: 3 },
-              { option_text: '', is_correct: false, order: 4 },
-            ],
+            { option_text: '', is_correct: false, order: 1 },
+            { option_text: '', is_correct: false, order: 2 },
+            { option_text: '', is_correct: false, order: 3 },
+            { option_text: '', is_correct: false, order: 4 },
+          ],
       });
     } else {
       setFormData({
@@ -1696,8 +1823,8 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
 
   useEffect(() => {
     if (initialData?.image) {
-      const imageUrl = initialData.image.startsWith('http') 
-        ? initialData.image 
+      const imageUrl = initialData.image.startsWith('http')
+        ? initialData.image
         : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${initialData.image}`;
       setImagePreview(imageUrl);
       setImageFile(null);
@@ -1712,14 +1839,14 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
       if ((value === 'mcq_single' || value === 'mcq_multiple')) {
         setFormData(prev => {
           const hasOptions = prev.options && prev.options.length > 0;
-          const options = hasOptions 
-            ? prev.options 
+          const options = hasOptions
+            ? prev.options
             : [
-                { option_text: '', is_correct: false, order: 1 },
-                { option_text: '', is_correct: false, order: 2 },
-                { option_text: '', is_correct: false, order: 3 },
-                { option_text: '', is_correct: false, order: 4 },
-              ];
+              { option_text: '', is_correct: false, order: 1 },
+              { option_text: '', is_correct: false, order: 2 },
+              { option_text: '', is_correct: false, order: 3 },
+              { option_text: '', is_correct: false, order: 4 },
+            ];
           return { ...prev, [field]: value, options };
         });
       } else {
@@ -1760,22 +1887,22 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         setValidationError('Please select a valid image file');
         return;
       }
-      
+
       if (file.size > 5 * 1024 * 1024) {
         setValidationError('Image size must be less than 5MB');
         return;
       }
-      
+
       setImageFile(file);
       setValidationError(null);
-      
+
       if (formData.remove_image) {
         setFormData(prev => {
           const { remove_image, ...rest } = prev;
           return rest;
         });
       }
-      
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -1799,24 +1926,24 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
   const handleSubmit = (e) => {
     e.preventDefault();
     setValidationError(null);
-    
+
     if (formData.question_type === 'mcq_single' || formData.question_type === 'mcq_multiple') {
       const options = formData.options && Array.isArray(formData.options) ? formData.options : [];
       const validOptions = options.filter(opt => opt.option_text && opt.option_text.trim() !== '');
       const hasCorrectOption = validOptions.some(opt => opt.is_correct === true);
-      
+
       if (!hasCorrectOption) {
         setValidationError('Please select at least one correct option.');
         return;
       }
-      
+
       if (validOptions.length === 0) {
         setValidationError('Please add at least one option with text.');
         return;
       }
-      
-      const dataToSave = { 
-        ...formData, 
+
+      const dataToSave = {
+        ...formData,
         options: validOptions.map((opt, idx) => ({
           option_text: opt.option_text.trim(),
           is_correct: opt.is_correct || false,
@@ -1838,7 +1965,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
   };
 
   const getDifficultyColor = (level) => {
-    switch(level) {
+    switch (level) {
       case 'easy': return 'bg-green-100 text-green-800 border-green-200';
       case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'hard': return 'bg-red-100 text-red-800 border-red-200';
@@ -1899,11 +2026,10 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
             />
             <label
               htmlFor="question-image-upload"
-              className={`flex items-center justify-center space-x-2 px-4 py-3 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
-                validationError && validationError.includes('image')
-                  ? 'border-red-300 bg-red-50'
-                  : 'border-gray-300 bg-gray-50 hover:border-green-400 hover:bg-green-50'
-              } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+              className={`flex items-center justify-center space-x-2 px-4 py-3 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${validationError && validationError.includes('image')
+                ? 'border-red-300 bg-red-50'
+                : 'border-gray-300 bg-gray-50 hover:border-green-400 hover:bg-green-50'
+                } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
               <Upload className={`h-5 w-5 ${validationError && validationError.includes('image') ? 'text-red-400' : 'text-gray-500'}`} />
               <span className={`text-sm font-medium ${validationError && validationError.includes('image') ? 'text-red-600' : 'text-gray-700'}`}>
@@ -1911,7 +2037,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
               </span>
             </label>
           </div>
-          
+
           {imagePreview && (
             <div className="relative inline-block">
               <div className="relative max-w-md rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-100">
@@ -1931,7 +2057,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
               </button>
             </div>
           )}
-          
+
           <p className="text-xs text-gray-500">
             Supported formats: JPG, PNG, GIF. Max size: 5MB
           </p>
@@ -2108,7 +2234,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
             ))}
           </div>
           <p className="text-xs text-gray-500 mt-3">
-            {formData.question_type === 'mcq_single' 
+            {formData.question_type === 'mcq_single'
               ? 'Select exactly one correct answer'
               : 'Select one or more correct answers'}
           </p>
@@ -2126,11 +2252,10 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         </button>
         <button
           type="submit"
-          className={`px-6 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 ${
-            initialData 
-              ? 'bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-secondary-500 hover:to-primary-500'
-              : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
-          }`}
+          className={`px-6 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 ${initialData
+            ? 'bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-secondary-500 hover:to-primary-500'
+            : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
+            }`}
           disabled={loading}
         >
           {loading ? (

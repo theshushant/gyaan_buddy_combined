@@ -97,6 +97,34 @@ export const exportReport = createAsyncThunk(
   }
 )
 
+// ── NEW: Teacher-scoped Reports & Analytics page data ──────────────────────
+
+export const fetchTeacherOverview = createAsyncThunk(
+  'reports/fetchTeacherOverview',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await reportsService.getTeacherOverview()
+      return response
+    } catch (error) {
+      return rejectWithValue(error.message)
+    }
+  }
+)
+
+export const fetchTeacherStudentProficiency = createAsyncThunk(
+  'reports/fetchTeacherStudentProficiency',
+  async (filters = {}, { rejectWithValue }) => {
+    try {
+      const response = await reportsService.getTeacherStudentProficiency(filters)
+      return response
+    } catch (error) {
+      return rejectWithValue(error.message)
+    }
+  }
+)
+
+// ──────────────────────────────────────────────────────────────────────────
+
 const initialState = {
   studentPerformanceReport: null,
   progressOverTimeReport: null,
@@ -105,6 +133,9 @@ const initialState = {
   analyticsReport: null,
   customReports: [],
   reportTemplates: [],
+  // Teacher Reports & Analytics page
+  teacherOverview: null,
+  teacherStudentProficiency: [],
   loading: {
     studentPerformance: false,
     progressOverTime: false,
@@ -113,7 +144,9 @@ const initialState = {
     analytics: false,
     customReport: false,
     templates: false,
-    export: false
+    export: false,
+    teacherOverview: false,
+    teacherStudentProficiency: false,
   },
   error: {
     studentPerformance: null,
@@ -123,7 +156,9 @@ const initialState = {
     analytics: null,
     customReport: null,
     templates: null,
-    export: null
+    export: null,
+    teacherOverview: null,
+    teacherStudentProficiency: null,
   },
   filters: {
     dateRange: '30d',
@@ -174,6 +209,8 @@ const reportsSlice = createSlice({
       state.aiInsightsReport = null
       state.analyticsReport = null
       state.customReports = []
+      state.teacherOverview = null
+      state.teacherStudentProficiency = []
     },
     clearCustomReports: (state) => {
       state.customReports = []
@@ -303,6 +340,33 @@ const reportsSlice = createSlice({
         state.error.export = action.payload
         state.exportStatus.isExporting = false
         state.exportStatus.exportProgress = 0
+      })
+
+      // ── Teacher Reports & Analytics ──────────────────────────────────────
+      .addCase(fetchTeacherOverview.pending, (state) => {
+        state.loading.teacherOverview = true
+        state.error.teacherOverview = null
+      })
+      .addCase(fetchTeacherOverview.fulfilled, (state, action) => {
+        state.loading.teacherOverview = false
+        state.teacherOverview = action.payload
+      })
+      .addCase(fetchTeacherOverview.rejected, (state, action) => {
+        state.loading.teacherOverview = false
+        state.error.teacherOverview = action.payload
+      })
+
+      .addCase(fetchTeacherStudentProficiency.pending, (state) => {
+        state.loading.teacherStudentProficiency = true
+        state.error.teacherStudentProficiency = null
+      })
+      .addCase(fetchTeacherStudentProficiency.fulfilled, (state, action) => {
+        state.loading.teacherStudentProficiency = false
+        state.teacherStudentProficiency = action.payload
+      })
+      .addCase(fetchTeacherStudentProficiency.rejected, (state, action) => {
+        state.loading.teacherStudentProficiency = false
+        state.error.teacherStudentProficiency = action.payload
       })
   }
 })

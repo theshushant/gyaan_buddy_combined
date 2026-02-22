@@ -5,23 +5,23 @@ class AuthService {
     try {
       console.log('AuthService: Calling login API with credentials:', credentials);
       console.log('AuthService: About to call apiService.post...');
-      
+
       apiService.removeAuthToken();
-      
-      const response = await apiService.post('/auth/login/', credentials);
+
+      const response = await apiService.requestWithMock('/auth/login/', { method: 'POST', body: credentials });
       console.log('AuthService: Login API response:', response);
 
       if (response.success || response.data) {
         const userData = response.data?.user || response.user;
         const tokenData = response.data?.tokens || response.tokens || response.data?.token || response.token;
-        
+
         if (tokenData) {
           const accessToken = tokenData.access || tokenData;
           if (accessToken) {
             apiService.setAuthToken(accessToken);
           }
         }
-        
+
         return {
           success: true,
           user: userData,
@@ -38,7 +38,7 @@ class AuthService {
 
   async logout() {
     try {
-      await apiService.post('/auth/logout/');
+      await apiService.requestWithMock('/auth/logout', { method: 'POST' });
     } catch (error) {
       console.warn('Logout request failed:', error.message);
     } finally {
@@ -48,10 +48,10 @@ class AuthService {
 
   async getCurrentUser() {
     try {
-      const response = await apiService.get('/auth/me/');
-      
+      const response = await apiService.requestWithMock('/auth/me', { method: 'GET' });
+
       const userData = response.data?.user || response.user || response.data || response;
-      
+
       return userData;
     } catch (error) {
       console.error('AuthService: getCurrentUser error:', error);
@@ -61,7 +61,7 @@ class AuthService {
 
   async updateProfile(profileData) {
     try {
-      return await apiService.put('/auth/profile', profileData);
+      return await apiService.requestWithMock('/auth/profile', { method: 'PUT', body: profileData });
     } catch (error) {
       throw new Error(`Failed to update profile: ${error.message}`);
     }
@@ -69,7 +69,7 @@ class AuthService {
 
   async changePassword(passwordData) {
     try {
-      return await apiService.post('/auth/change-password', passwordData);
+      return await apiService.requestWithMock('/auth/change-password', { method: 'POST', body: passwordData });
     } catch (error) {
       throw new Error(`Failed to change password: ${error.message}`);
     }

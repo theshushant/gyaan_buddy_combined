@@ -172,5 +172,46 @@ export default {
       { subject: 'Mathematics', class: '10B', improvement: '12%' },
       { subject: 'Science', class: '9A', improvement: '8%' }
     ]
+  },
+
+  '/reports/reports-analytics': {
+    summary: { totalStudents: 120, completionRate: 85, averageScore: 72 },
+    filterOptions: {
+      classes: ['Class 9', 'Class 10', 'Class 11', 'Class 12'],
+      subjects: [
+        { id: '1', name: 'Mathematics' },
+        { id: '2', name: 'Science' },
+        { id: '3', name: 'English' },
+        { id: '4', name: 'Hindi' }
+      ],
+      modules: [
+        { id: '1', name: 'Module 1: Basics' },
+        { id: '2', name: 'Module 2: Intermediate' }
+      ],
+      chapters: [
+        { id: '1', name: 'Topic 1' },
+        { id: '2', name: 'Topic 2' }
+      ]
+    },
+    moduleProficiencyData: [],
+    reportsData: {
+      summary: { totalStudents: 120, completionRate: 85, averageScore: 72 },
+      chapterProficiency: []
+    },
+    analyticsData: {
+      overallStats: { totalStudents: 120, averageScore: 78, completionRate: 92, activeStudents: 95 },
+      subjectPerformance: [
+        { subject: 'Mathematics', averageScore: 82, completionRate: 95, students: 30 },
+        { subject: 'Science', averageScore: 76, completionRate: 88, students: 28 }
+      ],
+      classPerformance: [
+        { class: 'Class 9', averageScore: 75, completionRate: 88, students: 40 },
+        { class: 'Class 10', averageScore: 81, completionRate: 95, students: 35 }
+      ],
+      recentActivity: [
+        { action: 'Module Completed', student: 'Arjun Sharma', subject: 'Mathematics', time: '2 hours ago', score: 85 }
+      ]
+    },
+    studentProficiencyData: []
   }
 };

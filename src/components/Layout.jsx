@@ -24,7 +24,8 @@ import {
   Target,
   LogOut,
   Sparkles,
-  Wand2
+  Wand2,
+  Settings
 } from 'lucide-react'
 
 const Layout = ({ children }) => {
@@ -75,6 +76,7 @@ const Layout = ({ children }) => {
     { name: 'Classes', href: '/classes', icon: BookOpen },
     { name: 'Reports', href: '/reports', icon: BarChart3 },
     { name: 'AI Insights', href: '/ai-insights', icon: Brain },
+    { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
   const teacherNavigation = [
@@ -86,6 +88,7 @@ const Layout = ({ children }) => {
     { name: 'Reports & Analytics', href: '/reports', icon: BarChart3 },
     { name: 'Leaderboards', href: '/leaderboards', icon: Trophy },
     { name: 'Daily Missions', href: '/missions', icon: Calendar },
+    { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
   const navigation = role === 'teacher' ? teacherNavigation : principalNavigation

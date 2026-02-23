@@ -302,6 +302,7 @@ class ApiService {
       '/reports/quiz-assignment-summaries': () => import('../data/mockReports'),
       '/reports/ai-insights': () => import('../data/mockReports'),
       '/reports/analytics': () => import('../data/mockReports'),
+      '/reports/reports-analytics': () => import('../data/mockReports'),
       '/reports/generate': () => import('../data/mockReports'),
       '/reports/templates': () => import('../data/mockReports'),
       '/reports/configurations': () => import('../data/mockReports'),

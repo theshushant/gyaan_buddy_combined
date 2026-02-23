@@ -84,6 +84,28 @@ class ReportsService {
     }
   }
 
+  /**
+   * Full reports & analytics payload for the Reports Analytics screen.
+   * @param {Object} filters - { period, class, subject, module, chapter }
+   * @returns {Promise<Object>} - summary, filterOptions, moduleProficiencyData, reportsData, analyticsData, studentProficiencyData
+   */
+  async getReportsAnalytics(filters = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      if (filters.period != null && filters.period !== '') queryParams.append('period', filters.period);
+      if (filters.class) queryParams.append('class', filters.class);
+      if (filters.subject) queryParams.append('subject', filters.subject);
+      if (filters.module) queryParams.append('module', filters.module);
+      if (filters.chapter) queryParams.append('chapter', filters.chapter);
+
+      const endpoint = `/reports/reports-analytics${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await apiService.get(endpoint);
+      return response.data ?? response;
+    } catch (error) {
+      throw new Error(`Failed to fetch reports analytics: ${error.message}`);
+    }
+  }
+
   async generateCustomReport(reportConfig) {
     try {
       const response = await apiService.post('/reports/generate', reportConfig);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, TrendingUp, Target, ChevronDown, GraduationCap, BookOpen, Layers, FileText, Search } from 'lucide-react';
+import { Users, TrendingUp, Target, ChevronDown, ChevronRight, GraduationCap, BookOpen, Layers, FileText, Search } from 'lucide-react';
 
 const ReportsAnalytics = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('Last 30 days');
@@ -11,6 +11,148 @@ const ReportsAnalytics = () => {
   const [reportModule, setReportModule] = useState('');
   const [reportChapter, setReportChapter] = useState('');
   const [showStudentTable, setShowStudentTable] = useState(false);
+  const [expandedModules, setExpandedModules] = useState({ 1: true });
+
+  const moduleProficiencyData = [
+    {
+      id: 1,
+      moduleName: 'Number Systems',
+      weakSubtopics: ['Number Line and Operations'],
+      weakLevels: [1, 2, 3, 4, 5],
+      chapters: [
+        { name: 'Introduction to Number Systems', proficiency: 82, weakLevels: [] },
+        { name: 'Rational Numbers', proficiency: 78, weakLevels: [] },
+        { name: 'Irrational Numbers', proficiency: 65, weakLevels: [1, 2, 3] },
+        { name: 'Real Numbers and Decimal Expansions', proficiency: 71, weakLevels: [1, 2] },
+        { name: 'Laws of Exponents for Real Numbers', proficiency: 58, weakLevels: [1, 2, 3] },
+        { name: 'Number Line and Operations', proficiency: 45, weakLevels: [1, 2, 3, 4, 5] },
+        { name: 'Previous Knowledge Testing', proficiency: 88, weakLevels: [] },
+      ],
+    },
+    {
+      id: 2,
+      moduleName: "Introduction to Euclid's Geometry",
+      weakSubtopics: ['Theorems and Proofs'],
+      weakLevels: [1, 2, 3, 4],
+      chapters: [
+        { name: "Euclid's Definitions", proficiency: 85, weakLevels: [] },
+        { name: "Euclid's Axioms", proficiency: 79, weakLevels: [] },
+        { name: "Euclid's Postulates", proficiency: 72, weakLevels: [1, 2] },
+        { name: 'Equivalent Versions of Fifth Postulate', proficiency: 55, weakLevels: [1, 2, 3] },
+        { name: 'Theorems and Proofs', proficiency: 48, weakLevels: [1, 2, 3, 4] },
+        { name: 'Non-Euclidean Geometry Introduction', proficiency: 62, weakLevels: [1, 2] },
+      ],
+    },
+    {
+      id: 3,
+      moduleName: 'Lines and Angles',
+      weakSubtopics: [],
+      weakLevels: [],
+      chapters: [
+        { name: 'Basic Terms and Definitions', proficiency: 90, weakLevels: [] },
+        { name: 'Types of Angles', proficiency: 88, weakLevels: [] },
+        { name: 'Pairs of Angles', proficiency: 82, weakLevels: [] },
+        { name: 'Parallel Lines and Transversal', proficiency: 76, weakLevels: [] },
+        { name: 'Angle Sum Property', proficiency: 71, weakLevels: [1, 2] },
+        { name: 'Exterior Angle Theorem', proficiency: 65, weakLevels: [1, 2, 3] },
+      ],
+    },
+    {
+      id: 4,
+      moduleName: 'Quadrilaterals',
+      weakSubtopics: ['Mid-Point Theorem'],
+      weakLevels: [1, 2, 3, 4],
+      chapters: [
+        { name: 'Types of Quadrilaterals', proficiency: 75, weakLevels: [] },
+        { name: 'Properties of Parallelograms', proficiency: 68, weakLevels: [1, 2] },
+        { name: 'Rectangles and Squares', proficiency: 79, weakLevels: [] },
+        { name: 'Rhombus and Trapezium', proficiency: 55, weakLevels: [1, 2, 3] },
+        { name: 'Mid-Point Theorem', proficiency: 42, weakLevels: [1, 2, 3, 4] },
+        { name: 'Angle Sum Property', proficiency: 81, weakLevels: [] },
+      ],
+    },
+    {
+      id: 5,
+      moduleName: 'Circles',
+      weakSubtopics: ['Cyclic Quadrilaterals', 'Theorems on Circles'],
+      weakLevels: [1, 2, 3, 4, 5],
+      chapters: [
+        { name: 'Basic Terms Related to Circles', proficiency: 88, weakLevels: [] },
+        { name: 'Angle Subtended by a Chord', proficiency: 72, weakLevels: [1, 2] },
+        { name: 'Perpendicular from Centre to Chord', proficiency: 65, weakLevels: [1, 2, 3] },
+        { name: 'Cyclic Quadrilaterals', proficiency: 48, weakLevels: [1, 2, 3, 4] },
+        { name: 'Tangent to a Circle', proficiency: 55, weakLevels: [1, 2, 3] },
+        { name: 'Theorems on Circles', proficiency: 41, weakLevels: [1, 2, 3, 4, 5] },
+      ],
+    },
+    {
+      id: 6,
+      moduleName: "Heron's Formula",
+      weakSubtopics: [],
+      weakLevels: [],
+      chapters: [
+        { name: "Introduction to Heron's Formula", proficiency: 92, weakLevels: [] },
+        { name: 'Area of Triangle', proficiency: 87, weakLevels: [] },
+        { name: 'Semi-Perimeter', proficiency: 83, weakLevels: [] },
+        { name: 'Application to Scalene Triangles', proficiency: 76, weakLevels: [] },
+        { name: 'Area of Quadrilaterals', proficiency: 68, weakLevels: [1, 2] },
+        { name: 'Word Problems', proficiency: 58, weakLevels: [1, 2, 3] },
+      ],
+    },
+    {
+      id: 7,
+      moduleName: 'Surface Areas and Volumes',
+      weakSubtopics: ['Volume of Cone and Sphere'],
+      weakLevels: [1, 2, 3, 4],
+      chapters: [
+        { name: 'Surface Area of Cuboid and Cube', proficiency: 82, weakLevels: [] },
+        { name: 'Surface Area of Cylinder', proficiency: 74, weakLevels: [1, 2] },
+        { name: 'Surface Area of Cone and Sphere', proficiency: 61, weakLevels: [1, 2] },
+        { name: 'Volume of Cuboid and Cube', proficiency: 78, weakLevels: [] },
+        { name: 'Volume of Cylinder', proficiency: 55, weakLevels: [1, 2, 3] },
+        { name: 'Volume of Cone and Sphere', proficiency: 43, weakLevels: [1, 2, 3, 4] },
+      ],
+    },
+    {
+      id: 8,
+      moduleName: 'Statistics',
+      weakSubtopics: [],
+      weakLevels: [],
+      chapters: [
+        { name: 'Collection of Data', proficiency: 91, weakLevels: [] },
+        { name: 'Presentation of Data', proficiency: 85, weakLevels: [] },
+        { name: 'Graphical Representation', proficiency: 78, weakLevels: [] },
+        { name: 'Measures of Central Tendency', proficiency: 72, weakLevels: [1, 2] },
+        { name: 'Mean of Grouped Data', proficiency: 64, weakLevels: [1, 2, 3] },
+        { name: 'Median and Mode of Grouped Data', proficiency: 55, weakLevels: [1, 2, 3] },
+      ],
+    },
+  ];
+
+  const getModuleProficiency = (chapters) => {
+    const avg = chapters.reduce((sum, ch) => sum + ch.proficiency, 0) / chapters.length;
+    return Math.round(avg * 10) / 10;
+  };
+
+  const getTopicStatus = (proficiency) => {
+    if (proficiency > 75) return 'go';
+    if (proficiency >= 50) return 'watch';
+    return 'stop';
+  };
+
+  const getWeakLevels = (proficiency) => {
+    if (proficiency > 80) return [5];
+    if (proficiency >= 70) return [4, 5];
+    if (proficiency >= 50) return [3, 4, 5];
+    if (proficiency >= 20) return [2, 3, 4, 5];
+    return [1, 2, 3, 4, 5];
+  };
+
+  const getProficiencyColor = (val) => {
+    if (val > 75) return '#22c55e';
+    if (val >= 50) return '#eab308';
+    return '#ef4444';
+  };
 
   const analyticsData = {
     overallStats: {
@@ -328,6 +470,119 @@ const ReportsAnalytics = () => {
             </div>
           </div>
 
+          {/* Module-wise Student Proficiency */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-slide-up mb-8" style={{animationDelay: '0.35s'}}>
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">Module-wise Student Proficiency</h3>
+                <p className="text-sm text-gray-500 mt-1">First-attempt accuracy by module and topic — click a module to expand chapters</p>
+              </div>
+              <div className="flex items-center gap-5 text-sm">
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500 inline-block"></span>≥75% Proficient</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-yellow-400 inline-block"></span>50–74% OK</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-500 inline-block"></span>&lt;50% Weak</span>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/3">Module / Chapter</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/5">Proficiency</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Weak Subtopics</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Weak Levels</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {moduleProficiencyData.map((mod) => {
+                    const modProficiency = getModuleProficiency(mod.chapters);
+                    const modWeakLevels = getWeakLevels(modProficiency);
+                    return (
+                    <>
+                      {/* Module row */}
+                      <tr
+                        key={mod.id}
+                        className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                        onClick={() => setExpandedModules(prev => ({ ...prev, [mod.id]: !prev[mod.id] }))}
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-400">
+                              {expandedModules[mod.id] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            </span>
+                            <span className="font-semibold text-gray-800">{mod.moduleName}</span>
+                            <span className="text-xs text-gray-400 font-normal">{mod.chapters.length} topics</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-32 bg-gray-200 rounded-full h-2">
+                              <div className="h-2 rounded-full" style={{ width: `${modProficiency}%`, backgroundColor: getProficiencyColor(modProficiency) }}></div>
+                            </div>
+                            <span className="text-sm font-semibold" style={{ color: getProficiencyColor(modProficiency) }}>{modProficiency}%</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {mod.weakSubtopics.length === 0
+                            ? <span className="text-gray-400 text-sm">None</span>
+                            : <div className="flex flex-wrap gap-1">{mod.weakSubtopics.map((s, i) => <span key={i} className="px-2 py-0.5 text-xs bg-red-50 text-red-700 border border-red-200 rounded">{s}</span>)}</div>
+                          }
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex gap-1">{modWeakLevels.map((l) => <span key={l} className="w-6 h-6 flex items-center justify-center text-xs font-medium border border-red-300 text-red-600 rounded">{l}</span>)}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-xs text-gray-400 italic">expand</span>
+                        </td>
+                      </tr>
+
+                      {/* Chapter rows */}
+                      {expandedModules[mod.id] && mod.chapters.map((ch, ci) => {
+                        const status = getTopicStatus(ch.proficiency);
+                        const chWeakLevels = getWeakLevels(ch.proficiency);
+                        return (
+                        <tr key={`${mod.id}-${ci}`} className="bg-white border-l-4 border-blue-600 hover:bg-blue-50/30 transition-colors duration-150">
+                          <td className="px-6 py-3 pl-12">
+                            <div className="flex items-center gap-2 text-gray-600">
+                              <span className="text-gray-300 text-xs">└</span>
+                              <span className="text-sm font-medium">{ch.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-32 bg-gray-200 rounded-full h-2">
+                                <div className="h-2 rounded-full" style={{ width: `${ch.proficiency}%`, backgroundColor: getProficiencyColor(ch.proficiency) }}></div>
+                              </div>
+                              <span className="text-sm font-semibold" style={{ color: getProficiencyColor(ch.proficiency) }}>{ch.proficiency}%</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3">
+                            <span className="text-gray-400 text-sm">—</span>
+                          </td>
+                          <td className="px-6 py-3">
+                            <div className="flex gap-1">{chWeakLevels.map((l) => <span key={l} className="w-6 h-6 flex items-center justify-center text-xs font-medium border border-red-300 text-red-600 rounded">{l}</span>)}</div>
+                          </td>
+                          <td className="px-6 py-3">
+                            {status === 'go'
+                              ? <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-green-50 text-green-600 border border-green-200"><span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>GO</span>
+                              : status === 'watch'
+                              ? <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block"></span>WATCH</span>
+                              : <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-200"><span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>STOP</span>
+                            }
+                          </td>
+                        </tr>
+                        );
+                      })}
+                    </>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Topic-wise Student Proficiency */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-slide-up" style={{animationDelay: '0.4s'}}>
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
               <h3 className="text-lg font-semibold text-gray-800">Topic-wise Student Proficiency</h3>

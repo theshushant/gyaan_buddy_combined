@@ -156,7 +156,7 @@ const ReportsAnalytics = () => {
 
   const analyticsData = {
     overallStats: {
-      totalStudents: 120,
+      totalStudents: 40,
       averageScore: 78,
       completionRate: 92,
       activeStudents: 95
@@ -184,9 +184,9 @@ const ReportsAnalytics = () => {
 
   const reportsData = {
     summary: {
-      totalStudents: 120,
-      completionRate: 85,
-      averageScore: 72
+      totalStudents: 40,
+      completionRate: 82,
+      averageScore: 74.2
     },
     chapterProficiency: [
       { id: 1, chapterName: 'Introduction to Algebra', proficient: 45, satisfactory: 35, needsImprovement: 20 },
@@ -474,8 +474,8 @@ const ReportsAnalytics = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-slide-up mb-8" style={{animationDelay: '0.35s'}}>
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-800">Module-wise Student Proficiency</h3>
-                <p className="text-sm text-gray-500 mt-1">First-attempt accuracy by module and topic — click a module to expand chapters</p>
+                <h3 className="text-lg font-semibold text-gray-800">Chapter-wise Student Proficiency</h3>
+                <p className="text-sm text-gray-500 mt-1">First-attempt accuracy by chapter and topic — Click on chapter name to expand</p>
               </div>
               <div className="flex items-center gap-5 text-sm">
                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500 inline-block"></span>≥75% Proficient</span>
@@ -582,87 +582,6 @@ const ReportsAnalytics = () => {
             </div>
           </div>
 
-          {/* Topic-wise Student Proficiency */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-slide-up" style={{animationDelay: '0.4s'}}>
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h3 className="text-lg font-semibold text-gray-800">Topic-wise Student Proficiency</h3>
-              <p className="text-sm text-gray-500 mt-1">Performance breakdown by topic</p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">S.No</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Topic Name</th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Proficient Students %
-                      </span>
-                    </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        Satisfactory Students %
-                      </span>
-                    </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        Needs Improvement %
-                      </span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {reportsData.chapterProficiency.map((chapter, index) => (
-                    <tr 
-                      key={chapter.id} 
-                      className="hover:bg-gray-50 transition-colors duration-150"
-                      style={{ animationDelay: `${(index + 5) * 50}ms` }}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">{index + 1}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">{chapter.chapterName}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <div className="flex items-center justify-center">
-                          <div className="w-16 bg-gray-200 rounded-full h-2 mr-3">
-                            <div 
-                              className="bg-green-500 h-2 rounded-full transition-all duration-500" 
-                              style={{ width: `${chapter.proficient}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm font-semibold text-green-600">{chapter.proficient}%</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <div className="flex items-center justify-center">
-                          <div className="w-16 bg-gray-200 rounded-full h-2 mr-3">
-                            <div 
-                              className="bg-yellow-500 h-2 rounded-full transition-all duration-500" 
-                              style={{ width: `${chapter.satisfactory}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm font-semibold text-yellow-600">{chapter.satisfactory}%</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <div className="flex items-center justify-center">
-                          <div className="w-16 bg-gray-200 rounded-full h-2 mr-3">
-                            <div 
-                              className="bg-red-500 h-2 rounded-full transition-all duration-500" 
-                              style={{ width: `${chapter.needsImprovement}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm font-semibold text-red-600">{chapter.needsImprovement}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
 
           <div className="mt-8 bg-gradient-to-r from-slate-50 to-primary-50 rounded-2xl p-6 border border-slate-200 shadow-sm animate-slide-up" style={{animationDelay: '0.5s'}}>
             <div className="flex items-center mb-6">

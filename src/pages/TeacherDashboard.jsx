@@ -20,7 +20,7 @@ const TeacherDashboard = () => {
     subjectPerformance,
     classDistribution,
     alerts,
-    quickSummary,
+    // quickSummary,
     loading,
     error
   } = useSelector(state => state.dashboard)
@@ -113,7 +113,13 @@ const TeacherDashboard = () => {
     )
   }
 
-  const quickSummaryData = quickSummary || []
+  // const quickSummaryData = quickSummary || []
+  const quickSummaryData = [
+    { label: 'My Students', value: '40' },
+    { label: 'Classes Teaching', value: '1' },
+    { label: 'Topics Covered', value: '15' },
+    { label: 'Chapter Covered', value: '3' },
+  ]
 
   return (
     <div className="p-6 animate-fade-in">

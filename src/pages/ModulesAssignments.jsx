@@ -770,10 +770,9 @@ const ModulesAssignments = () => {
                             e.stopPropagation();
                             handleDeleteModule(chapter);
                           }}
-                          className="flex items-center space-x-2 px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-all duration-200"
+                          className="flex items-center px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-all duration-200"
                         >
                           <Trash2 className="h-4 w-4" />
-                          <span className="text-sm font-medium">Delete</span>
                         </button>
                         <div className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg">
                           <span className="text-sm text-gray-600">Due</span>
@@ -867,10 +866,9 @@ const ModulesAssignments = () => {
                                     e.stopPropagation();
                                     handleDeleteChapter(module, chapter);
                                   }}
-                                  className="flex items-center space-x-2 px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-all duration-200"
+                                  className="flex items-center px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-all duration-200"
                                 >
                                   <Trash2 className="h-4 w-4" />
-                                  <span className="text-sm font-medium">Delete</span>
                                 </button>
                               </div>
                             </div>
@@ -1024,10 +1022,9 @@ const ModulesAssignments = () => {
                               </button>
                               <button
                                 onClick={() => handleDeleteQuestion(question)}
-                                className="flex items-center space-x-2 px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-all duration-200"
+                                className="flex items-center px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-all duration-200"
                               >
                                 <Trash2 className="h-4 w-4" />
-                                <span className="text-sm font-medium">Delete</span>
                               </button>
                             </div>
                           </div>

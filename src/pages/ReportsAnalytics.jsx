@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, TrendingUp, Target, ChevronDown, ChevronRight, GraduationCap, BookOpen, Layers, FileText, Search } from 'lucide-react';
+import { Users, TrendingUp, Target, ChevronDown, ChevronRight, GraduationCap, BookOpen, Layers, FileText, Search, Loader2 } from 'lucide-react';
 import reportsService from '../services/reportsService';
 
 const PERIOD_MAP = {
@@ -143,11 +143,15 @@ const ReportsAnalytics = () => {
         </div>
       )}
       {loading && (
-        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-600">
-          Loading reports…
+        <div className="flex flex-col items-center justify-center py-20 min-h-[320px]" aria-busy="true">
+          <Loader2 className="h-12 w-12 text-primary-500 animate-spin mb-4" aria-hidden="true" />
+          <p className="text-gray-600 font-medium">Loading reports…</p>
+          <p className="text-sm text-gray-500 mt-1">Fetching analytics data</p>
         </div>
       )}
 
+      {!loading && (
+      <>
       <div className="border-b border-gray-200 mb-6">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab, index) => (
@@ -667,6 +671,8 @@ const ReportsAnalytics = () => {
           )}
 
         </>
+      )}
+      </>
       )}
     </div>
   );

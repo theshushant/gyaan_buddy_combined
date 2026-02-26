@@ -69,6 +69,7 @@ const ModulesAssignments = () => {
   const [selectedChapterForAI, setSelectedChapterForAI] = useState(null);
   const [selectedModuleForQuestion, setSelectedModuleForQuestion] = useState(null);
   const [chaptersLoadingForModuleId, setChaptersLoadingForModuleId] = useState(null);
+  const [togglingDueKey, setTogglingDueKey] = useState(null);
 
   const toggleChapter = (chapterId) => {
     setExpandedChapters(prev => 
@@ -95,7 +96,7 @@ const ModulesAssignments = () => {
             modules: chaptersList.map((chapter, idx) => ({
               id: chapter.id,
               title: chapter.title || `Assignment ${idx + 1}`,
-              isDue: chapter.is_due || false
+              isDue: chapter.is_due === true
             }))
           };
         });
@@ -134,7 +135,7 @@ const ModulesAssignments = () => {
         subjectId: module.subject || module.subject_id || module.subject?.id,
         title: module.name || `Chapter ${module.order}`,
         completionRate: module.user_percentage || 0,
-        isDue: module.status === 'due',
+        isDue: module.is_due === true || module.status === 'due',
         name: module.name,
         description: module.description || '',
         order: module.order || 1,
@@ -332,23 +333,42 @@ const ModulesAssignments = () => {
     setCreateChapterError(null);
   };
 
-  const handleToggleModuleDue = (module, newDueStatus) => {
-    
-    setAllModulesData(prev => prev.map(m => 
-      m.id === module.id ? { ...m, isDue: newDueStatus } : m
-    ));
+  const handleToggleModuleDue = async (module, newDueStatus) => {
+    const key = `module-${module.id}`;
+    setTogglingDueKey(key);
+    try {
+      await modulesService.setModuleDue(module.id, newDueStatus);
+      setAllModulesData(prev => prev.map(m =>
+        m.id === module.id ? { ...m, isDue: newDueStatus } : m
+      ));
+    } catch (err) {
+      console.error('Error updating module due status:', err);
+      setCreateChapterError(err.message || 'Failed to update due status.');
+    } finally {
+      setTogglingDueKey(null);
+    }
   };
 
-  const handleToggleChapterDue = (chapter, parentModule, newDueStatus) => {
-    setAllModulesData(prev => prev.map(m => {
-      if (m.id !== parentModule.id || !Array.isArray(m.modules)) return m;
-      return {
-        ...m,
-        modules: m.modules.map(ch =>
-          ch.id === chapter.id ? { ...ch, isDue: newDueStatus } : ch
-        )
-      };
-    }));
+  const handleToggleChapterDue = async (chapter, parentModule, newDueStatus) => {
+    const key = `chapter-${chapter.id}`;
+    setTogglingDueKey(key);
+    try {
+      await modulesService.setChapterDue(chapter.id, newDueStatus);
+      setAllModulesData(prev => prev.map(m => {
+        if (m.id !== parentModule.id || !Array.isArray(m.modules)) return m;
+        return {
+          ...m,
+          modules: m.modules.map(ch =>
+            ch.id === chapter.id ? { ...ch, isDue: newDueStatus } : ch
+          )
+        };
+      }));
+    } catch (err) {
+      console.error('Error updating assignment due status:', err);
+      setCreateChapterError(err.message || 'Failed to update due status.');
+    } finally {
+      setTogglingDueKey(null);
+    }
   };
 
   const handleEditChapter = async (chapter, module) => {
@@ -777,20 +797,26 @@ const ModulesAssignments = () => {
                         <div className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg">
                           <span className="text-sm text-gray-600">Due</span>
                           <button
+                            type="button"
+                            disabled={togglingDueKey === `module-${chapter.id}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleToggleModuleDue(chapter, !chapter.isDue);
                             }}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 ${
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 disabled:opacity-60 disabled:pointer-events-none ${
                               chapter.isDue ? '' : 'bg-gray-300'
                             }`}
                             style={chapter.isDue ? { backgroundColor: '#00167a' } : {}}
                           >
-                            <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
-                                chapter.isDue ? 'translate-x-6' : 'translate-x-1'
-                              }`}
-                            />
+                            {togglingDueKey === `module-${chapter.id}` ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-white mx-1" />
+                            ) : (
+                              <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
+                                  chapter.isDue ? 'translate-x-6' : 'translate-x-1'
+                                }`}
+                              />
+                            )}
                           </button>
                         </div>
                       </div>
@@ -824,20 +850,26 @@ const ModulesAssignments = () => {
                                 <div className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg">
                                   <span className="text-sm text-gray-600">Due</span>
                                   <button
+                                    type="button"
+                                    disabled={togglingDueKey === `chapter-${module.id}`}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleToggleChapterDue(module, chapter, !module.isDue);
                                     }}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 ${
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 disabled:opacity-60 disabled:pointer-events-none ${
                                       module.isDue ? '' : 'bg-gray-300'
                                     }`}
                                     style={module.isDue ? { backgroundColor: '#00167a' } : {}}
                                   >
-                                    <span
-                                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
-                                        module.isDue ? 'translate-x-6' : 'translate-x-1'
-                                      }`}
-                                    />
+                                    {togglingDueKey === `chapter-${module.id}` ? (
+                                      <Loader2 className="h-4 w-4 animate-spin text-white mx-1" />
+                                    ) : (
+                                      <span
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
+                                          module.isDue ? 'translate-x-6' : 'translate-x-1'
+                                        }`}
+                                      />
+                                    )}
                                   </button>
                                 </div>
                                 <button

@@ -383,7 +383,9 @@ const TestsQuizzes = () => {
         
         const createdTest = await testsService.createTest(testPayload);
         const resBody = createdTest?.data ?? createdTest;
-        const testData = resBody?.data ?? resBody;
+        const rawData = resBody?.data ?? resBody;
+        const isMultipleTests = Array.isArray(rawData) && rawData.length > 0;
+        const testData = isMultipleTests ? rawData[0] : rawData;
         
         const firstMc = moduleChaptersPayload[0];
         const firstChapterId = firstMc?.chapters?.[0];
@@ -393,6 +395,10 @@ const TestsQuizzes = () => {
           testData._chapterId = firstChapterId;
           testData._moduleChapters = moduleChaptersPayload;
           testData._classGroups = testData.class_groups || (testData.class_group ? [testData.class_group] : []);
+          if (isMultipleTests) {
+            testData._testIds = rawData.map((t) => t.id || t.uuid).filter(Boolean);
+            testData._isMultipleClassTest = true;
+          }
         }
         
         setSelectedTest(testData);
@@ -490,8 +496,14 @@ const TestsQuizzes = () => {
         return;
       }
       
-      const testId = selectedTest.id || selectedTest.uuid;
-      
+      const testIds = selectedTest._testIds;
+      const singleTestId = selectedTest.id || selectedTest.uuid;
+      const useMultipleTests = Array.isArray(testIds) && testIds.length > 0;
+      if (!useMultipleTests && !singleTestId) {
+        setGenerationError('Test ID is missing. Please select the test again or create it first.');
+        return;
+      }
+
       const classGroups = selectedTest._classGroups || selectedTest.class_groups || (selectedTest.class_group ? [selectedTest.class_group] : []);
       const firstClass = Array.isArray(classGroups) && classGroups.length > 0 ? classGroups[0] : null;
       let classContext = null;
@@ -514,7 +526,7 @@ const TestsQuizzes = () => {
         add_image: aiFormData.add_image,
         use_matplot: aiFormData.use_matplot,
         for_test: true,
-        test_id: testId
+        ...(useMultipleTests ? { test_ids: testIds } : { test_id: singleTestId })
       };
       if (classContext) {
         requestData.class_context = classContext;

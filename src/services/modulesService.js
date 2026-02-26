@@ -82,6 +82,22 @@ class ModulesService {
     }
   }
 
+  async setModuleDue(moduleId, isDue) {
+    try {
+      return await apiService.patch(`/modules/${moduleId}/`, { is_due: isDue });
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update module due status.');
+    }
+  }
+
+  async setChapterDue(chapterId, isDue) {
+    try {
+      return await apiService.patch(`/module_chapters/${chapterId}/`, { is_due: isDue });
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update assignment due status.');
+    }
+  }
+
   async updateModule(moduleId, moduleData) {
     try {
       const hasFile = moduleData.logo instanceof File;

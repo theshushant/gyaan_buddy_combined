@@ -113,6 +113,34 @@ const StudentTestPerformance = () => {
     });
   };
 
+  // Derive weak topics from question-wise data: topics where correct_percentage < 50%
+  const WEAK_THRESHOLD = 50;
+  const getWeakTopics = () => {
+    if (!questions || questions.length === 0) return [];
+    const byTopic = {};
+    questions.forEach((q) => {
+      const topic = (q.sub_topic || q.module_chapter_name || '').trim() || '—';
+      if (topic === '—') return;
+      if (!byTopic[topic]) {
+        byTopic[topic] = { total: 0, sumPct: 0, minPct: 101 };
+      }
+      const pct = q.correct_percentage ?? 0;
+      byTopic[topic].total += 1;
+      byTopic[topic].sumPct += pct;
+      byTopic[topic].minPct = Math.min(byTopic[topic].minPct, pct);
+    });
+    const weak = [];
+    Object.entries(byTopic).forEach(([name, data]) => {
+      const avgPct = data.total ? Math.round(data.sumPct / data.total) : 0;
+      if (avgPct < WEAK_THRESHOLD || data.minPct < WEAK_THRESHOLD) {
+        weak.push({ name, avgPct, minPct: data.minPct === 101 ? 0 : data.minPct });
+      }
+    });
+    weak.sort((a, b) => a.avgPct - b.avgPct);
+    return weak;
+  };
+  const weakTopics = getWeakTopics();
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center p-6">
@@ -221,6 +249,27 @@ const StudentTestPerformance = () => {
           );
         })()}
 
+        {weakTopics.length > 0 && (
+          <div className="bg-amber-50/80 border border-amber-200 rounded-2xl shadow-sm p-6 mb-10">
+            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-3">
+              <span className="text-amber-600" aria-hidden="true">⚠</span>
+              Weak topics
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">Topics where average correct % is below 50%. Consider revising these.</p>
+            <div className="flex flex-wrap gap-2">
+              {weakTopics.map((t, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-white text-amber-800 border border-amber-200 rounded-lg shadow-sm"
+                >
+                  {t.name}
+                  <span className="text-amber-600 tabular-nums">({t.avgPct}%)</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {questions.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-10 transition-shadow hover:shadow-md">
             <div className="px-6 py-5 border-b border-gray-100">
@@ -234,6 +283,8 @@ const StudentTestPerformance = () => {
                     <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial no</th>
                     <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Question title</th>
                     <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sub-topic</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty</th>
                     <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% correct</th>
                   </tr>
                 </thead>
@@ -241,11 +292,16 @@ const StudentTestPerformance = () => {
                   {questions.map((q, index) => {
                     const pct = q.correct_percentage ?? 0;
                     const pctColor = pct >= 70 ? 'text-emerald-600' : pct >= 40 ? 'text-amber-600' : 'text-red-600';
+                    const difficulty = q.difficulty ?? q.difficulty_level ?? '—';
+                    const levelNum = q.level != null && q.level !== '' ? Number(q.level) : null;
+                    const levelDisplay = levelNum >= 1 && levelNum <= 5 ? `Level ${levelNum}` : '—';
                     return (
                       <tr key={q.question_id || index} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-5 py-3.5 text-sm font-medium text-gray-500 tabular-nums">{q.order ?? index + 1}</td>
                         <td className="px-5 py-3.5 text-sm text-gray-800 max-w-md">{q.question_title || q.module_chapter_name || '—'}</td>
                         <td className="px-5 py-3.5 text-sm text-gray-600">{q.sub_topic ?? q.module_chapter_name ?? '—'}</td>
+                        <td className="px-5 py-3.5 text-sm font-medium text-gray-600 tabular-nums">{levelDisplay}</td>
+                        <td className="px-5 py-3.5 text-sm text-gray-600 capitalize">{difficulty === '—' ? '—' : String(difficulty).toLowerCase()}</td>
                         <td className={`px-5 py-3.5 text-sm font-semibold tabular-nums ${pctColor}`}>
                           {q.correct_percentage != null ? `${q.correct_percentage}%` : '—'}
                         </td>

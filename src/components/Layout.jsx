@@ -10,7 +10,6 @@ import {
   Users, 
   BookOpen, 
   BarChart3, 
-  Bell,
   Search,
   Menu,
   X,
@@ -23,7 +22,6 @@ import {
   Brain,
   Target,
   LogOut,
-  Sparkles,
   Wand2,
   Settings
 } from 'lucide-react'
@@ -92,7 +90,9 @@ const Layout = ({ children }) => {
   ]
 
   const navigation = role === 'teacher' ? teacherNavigation : principalNavigation
-  const roleLabel = role === 'teacher' ? 'Teacher' : 'Principal'
+  const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
+    [user?.first_name, user?.last_name].filter(Boolean).join(' ') ||
+    user?.name || user?.username || (role === 'teacher' ? 'Teacher' : 'Principal')
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -165,7 +165,7 @@ const Layout = ({ children }) => {
               />
               <div className="ml-2">
                 <span className="text-xl font-bold text-gray-900">GyanBuddy</span>
-                <p className="text-xs text-gray-500">{roleLabel}</p>
+                <p className="text-xs text-gray-500">{displayName}</p>
               </div>
             </div>
           </div>
@@ -223,22 +223,8 @@ const Layout = ({ children }) => {
               >
                 <Menu className="h-6 w-6" />
               </button>
-              <div className="ml-4 lg:ml-0">
-                <div className="relative">
-                  <Sparkles className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Ask with AI..."
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
             </div>
             <div className="flex items-center space-x-4">
-              <button className="text-gray-500 hover:text-gray-700 relative">
-                <Bell className="h-6 w-6" />
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
-              </button>
               <div className="relative" ref={avatarMenuRef}>
                 <div 
                   onClick={toggleAvatarMenu}
@@ -249,14 +235,11 @@ const Layout = ({ children }) => {
                     style={{ background: 'linear-gradient(135deg, #1fb7eb 0%, #00167a 100%)' }}
                   >
                     <span className="text-sm font-medium text-white">
-                      {user?.firstName?.charAt(0) || (role === 'teacher' ? 'T' : 'P')}
+                      {(displayName && displayName.charAt(0)) || (role === 'teacher' ? 'T' : 'P')}
                     </span>
                   </div>
                   <div className="hidden sm:block">
-                    <p className="text-sm font-medium text-gray-900">
-                      {user?.firstName} {user?.lastName}
-                    </p>
-                    <p className="text-xs text-gray-500">{role}</p>
+                    <p className="text-sm font-medium text-gray-900">{displayName}</p>
                   </div>
                 </div>
                 

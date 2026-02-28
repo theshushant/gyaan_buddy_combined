@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Plus, 
   Eye, 
@@ -15,7 +16,6 @@ import {
   Search,
   TrendingUp,
   Calendar,
-  Settings,
   Trash2,
   Edit,
   BarChart3,
@@ -70,6 +70,8 @@ const ModulesAssignments = () => {
   const [selectedModuleForQuestion, setSelectedModuleForQuestion] = useState(null);
   const [chaptersLoadingForModuleId, setChaptersLoadingForModuleId] = useState(null);
   const [togglingDueKey, setTogglingDueKey] = useState(null);
+  const [dueDatePickerFor, setDueDatePickerFor] = useState(null); // { type: 'module'|'chapter', id, parentId?, anchor: { left, top, bottom } }
+  const [updatingDueDateKey, setUpdatingDueDateKey] = useState(null);
 
   const toggleChapter = (chapterId) => {
     setExpandedChapters(prev => 
@@ -96,7 +98,8 @@ const ModulesAssignments = () => {
             modules: chaptersList.map((chapter, idx) => ({
               id: chapter.id,
               title: chapter.title || `Assignment ${idx + 1}`,
-              isDue: chapter.is_due === true
+              isDue: chapter.is_due === true,
+              dueDate: chapter.due_date || null
             }))
           };
         });
@@ -136,6 +139,7 @@ const ModulesAssignments = () => {
         title: module.name || `Chapter ${module.order}`,
         completionRate: module.user_percentage || 0,
         isDue: module.is_due === true || module.status === 'due',
+        dueDate: module.due_date || null,
         name: module.name,
         description: module.description || '',
         order: module.order || 1,
@@ -338,8 +342,9 @@ const ModulesAssignments = () => {
     setTogglingDueKey(key);
     try {
       await modulesService.setModuleDue(module.id, newDueStatus);
+      const today = new Date().toISOString().slice(0, 10);
       setAllModulesData(prev => prev.map(m =>
-        m.id === module.id ? { ...m, isDue: newDueStatus } : m
+        m.id === module.id ? { ...m, isDue: newDueStatus, dueDate: newDueStatus ? today : null } : m
       ));
     } catch (err) {
       console.error('Error updating module due status:', err);
@@ -359,7 +364,7 @@ const ModulesAssignments = () => {
         return {
           ...m,
           modules: m.modules.map(ch =>
-            ch.id === chapter.id ? { ...ch, isDue: newDueStatus } : ch
+            ch.id === chapter.id ? { ...ch, isDue: newDueStatus, dueDate: newDueStatus ? new Date().toISOString().slice(0, 10) : null } : ch
           )
         };
       }));
@@ -368,6 +373,56 @@ const ModulesAssignments = () => {
       setCreateChapterError(err.message || 'Failed to update due status.');
     } finally {
       setTogglingDueKey(null);
+    }
+  };
+
+  const formatDueDate = (dateStr) => {
+    if (!dateStr) return null;
+    try {
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const handleUpdateModuleDueDate = async (module, newDate) => {
+    const key = `module-${module.id}`;
+    setUpdatingDueDateKey(key);
+    setDueDatePickerFor(null);
+    try {
+      await modulesService.updateModuleDueDate(module.id, newDate || null);
+      setAllModulesData(prev => prev.map(m =>
+        m.id === module.id ? { ...m, dueDate: newDate || null, isDue: !!newDate } : m
+      ));
+    } catch (err) {
+      console.error('Error updating module due date:', err);
+      setCreateChapterError(err.message || 'Failed to update due date.');
+    } finally {
+      setUpdatingDueDateKey(null);
+    }
+  };
+
+  const handleUpdateChapterDueDate = async (chapter, parentModule, newDate) => {
+    const key = `chapter-${chapter.id}`;
+    setUpdatingDueDateKey(key);
+    setDueDatePickerFor(null);
+    try {
+      await modulesService.updateChapterDueDate(chapter.id, newDate || null);
+      setAllModulesData(prev => prev.map(m => {
+        if (m.id !== parentModule.id || !Array.isArray(m.modules)) return m;
+        return {
+          ...m,
+          modules: m.modules.map(ch =>
+            ch.id === chapter.id ? { ...ch, dueDate: newDate || null, isDue: !!newDate } : ch
+          )
+        };
+      }));
+    } catch (err) {
+      console.error('Error updating assignment due date:', err);
+      setCreateChapterError(err.message || 'Failed to update due date.');
+    } finally {
+      setUpdatingDueDateKey(null);
     }
   };
 
@@ -794,30 +849,44 @@ const ModulesAssignments = () => {
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
-                        <div className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg">
-                          <span className="text-sm text-gray-600">Due</span>
+                        <div className="flex items-center space-x-2">
                           <button
                             type="button"
-                            disabled={togglingDueKey === `module-${chapter.id}`}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleToggleModuleDue(chapter, !chapter.isDue);
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setDueDatePickerFor(prev => prev?.type === 'module' && prev?.id === chapter.id ? null : { type: 'module', id: chapter.id, anchor: { left: rect.left, top: rect.top, bottom: rect.bottom } });
                             }}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 disabled:opacity-60 disabled:pointer-events-none ${
-                              chapter.isDue ? '' : 'bg-gray-300'
-                            }`}
-                            style={chapter.isDue ? { backgroundColor: '#00167a' } : {}}
+                            className="p-2 bg-gray-50 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+                            title={chapter.dueDate ? `Due ${formatDueDate(chapter.dueDate)}` : 'Set due date'}
                           >
-                            {togglingDueKey === `module-${chapter.id}` ? (
-                              <Loader2 className="h-4 w-4 animate-spin text-white mx-1" />
-                            ) : (
-                              <span
-                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
-                                  chapter.isDue ? 'translate-x-6' : 'translate-x-1'
-                                }`}
-                              />
-                            )}
+                            <Calendar className="h-4 w-4" />
                           </button>
+                          <div className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg">
+                            <span className="text-sm text-gray-600">Due</span>
+                            <button
+                              type="button"
+                              disabled={togglingDueKey === `module-${chapter.id}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleModuleDue(chapter, !chapter.isDue);
+                              }}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 disabled:opacity-60 disabled:pointer-events-none ${
+                                chapter.isDue ? '' : 'bg-gray-300'
+                              }`}
+                              style={chapter.isDue ? { backgroundColor: '#00167a' } : {}}
+                            >
+                              {togglingDueKey === `module-${chapter.id}` ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-white mx-1" />
+                              ) : (
+                                <span
+                                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
+                                    chapter.isDue ? 'translate-x-6' : 'translate-x-1'
+                                  }`}
+                                />
+                              )}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -847,6 +916,18 @@ const ModulesAssignments = () => {
                                 </div>
                               </div>
                               <div className="flex items-center space-x-2">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setDueDatePickerFor(prev => prev?.type === 'chapter' && prev?.id === module.id ? null : { type: 'chapter', id: module.id, parentId: chapter.id, anchor: { left: rect.left, top: rect.top, bottom: rect.bottom } });
+                                  }}
+                                  className="p-2 bg-gray-50 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+                                  title={module.dueDate ? `Due ${formatDueDate(module.dueDate)}` : 'Set due date'}
+                                >
+                                  <Calendar className="h-4 w-4" />
+                                </button>
                                 <div className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg">
                                   <span className="text-sm text-gray-600">Due</span>
                                   <button
@@ -1217,6 +1298,75 @@ const ModulesAssignments = () => {
             }}
           />
         )}
+
+        {dueDatePickerFor?.anchor && createPortal(
+          <div
+            className="fixed inset-0 z-[100]"
+            onClick={() => setDueDatePickerFor(null)}
+          >
+            <div
+              className="fixed z-[101] bg-white border border-gray-200 rounded-lg shadow-xl p-3 flex flex-col gap-2 min-w-[220px]"
+              style={{
+                left: dueDatePickerFor.anchor.left,
+                top: dueDatePickerFor.anchor.bottom + 6,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <label className="text-xs font-semibold text-gray-600">Due date</label>
+              <input
+                type="date"
+                defaultValue={
+                  dueDatePickerFor.type === 'module'
+                    ? (allModulesData.find(m => m.id === dueDatePickerFor.id)?.dueDate || '')
+                    : (() => {
+                        const parent = allModulesData.find(m => m.id === dueDatePickerFor.parentId);
+                        return parent?.modules?.find(m => m.id === dueDatePickerFor.id)?.dueDate || '';
+                      })()
+                }
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                onChange={(e) => {
+                  const v = e.target.value || null;
+                  if (!v) return;
+                  if (dueDatePickerFor.type === 'module') {
+                    const chapter = allModulesData.find(m => m.id === dueDatePickerFor.id);
+                    if (chapter) handleUpdateModuleDueDate(chapter, v);
+                  } else {
+                    const parentModule = allModulesData.find(m => m.id === dueDatePickerFor.parentId);
+                    const assignment = parentModule?.modules?.find(m => m.id === dueDatePickerFor.id);
+                    if (assignment && parentModule) handleUpdateChapterDueDate(assignment, parentModule, v);
+                  }
+                }}
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (dueDatePickerFor.type === 'module') {
+                      const chapter = allModulesData.find(m => m.id === dueDatePickerFor.id);
+                      if (chapter) handleUpdateModuleDueDate(chapter, null);
+                    } else {
+                      const parentModule = allModulesData.find(m => m.id === dueDatePickerFor.parentId);
+                      const assignment = parentModule?.modules?.find(m => m.id === dueDatePickerFor.id);
+                      if (assignment && parentModule) handleUpdateChapterDueDate(assignment, parentModule, null);
+                    }
+                    setDueDatePickerFor(null);
+                  }}
+                  className="flex-1 px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded"
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDueDatePickerFor(null)}
+                  className="flex-1 px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       </div>
     </div>
   );
@@ -1242,7 +1392,6 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
   const questionTypeOptions = [
     { value: 'mcq_single', label: 'MCQ - Single Correct' },
     { value: 'mcq_multiple', label: 'MCQ - Multiple Correct' },
-    { value: 'short_answer', label: 'Short Answer' },
     { value: 'rearrange', label: 'Re-arrange' },
   ];
 

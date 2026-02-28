@@ -80,6 +80,27 @@ const ReportsAnalytics = () => {
     fetchReportsAnalytics();
   }, [selectedPeriod, selectedClass]);
 
+  const handleSubjectChange = (e) => {
+    const val = e.target.value;
+    setReportSubject(val);
+    setReportModule('');
+    setReportChapter('');
+    fetchReportsAnalytics({ subject: val, module: '', chapter: '' });
+  };
+
+  const handleModuleChange = (e) => {
+    const val = e.target.value;
+    setReportModule(val);
+    setReportChapter('');
+    fetchReportsAnalytics({ subject: reportSubject, module: val, chapter: '' });
+  };
+
+  const handleChapterChange = (e) => {
+    const val = e.target.value;
+    setReportChapter(val);
+    fetchReportsAnalytics({ subject: reportSubject, module: reportModule, chapter: val });
+  };
+
   const getModuleProficiency = (chapters) => {
     if (!chapters?.length) return 0;
     const avg = chapters.reduce((sum, ch) => sum + (ch.proficiency ?? 0), 0) / chapters.length;
@@ -536,7 +557,7 @@ const ReportsAnalytics = () => {
                   </div>
                   <select
                     value={reportSubject}
-                    onChange={(e) => setReportSubject(e.target.value)}
+                    onChange={handleSubjectChange}
                     className="w-full pl-12 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-gray-700 font-medium appearance-none cursor-pointer focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all duration-200 hover:border-green-300"
                   >
                     <option value="">Select Subject</option>
@@ -556,8 +577,9 @@ const ReportsAnalytics = () => {
                   </div>
                   <select
                     value={reportModule}
-                    onChange={(e) => setReportModule(e.target.value)}
-                    className="w-full pl-12 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-gray-700 font-medium appearance-none cursor-pointer focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-purple-300"
+                    onChange={handleModuleChange}
+                    disabled={!reportSubject}
+                    className={`w-full pl-12 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl font-medium appearance-none transition-all duration-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 hover:border-purple-300 ${!reportSubject ? 'cursor-not-allowed opacity-60 text-gray-400' : 'cursor-pointer text-gray-700'}`}
                   >
                     <option value="">Select Module</option>
                     {modulesList.map((mod) => (
@@ -576,8 +598,9 @@ const ReportsAnalytics = () => {
                   </div>
                   <select
                     value={reportChapter}
-                    onChange={(e) => setReportChapter(e.target.value)}
-                    className="w-full pl-12 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-gray-700 font-medium appearance-none cursor-pointer focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all duration-200 hover:border-orange-300"
+                    onChange={handleChapterChange}
+                    disabled={!reportModule}
+                    className={`w-full pl-12 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl font-medium appearance-none transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 hover:border-orange-300 ${!reportModule ? 'cursor-not-allowed opacity-60 text-gray-400' : 'cursor-pointer text-gray-700'}`}
                   >
                     <option value="">Select Topic</option>
                     {chaptersList.map((chap) => (

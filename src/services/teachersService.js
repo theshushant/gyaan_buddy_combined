@@ -134,6 +134,10 @@ class TeachersService {
         payload.assignments = [];
         payload.subject_ids = [];
       }
+      if (teacherData.subject_ids !== undefined || teacherData.subjectIds !== undefined) {
+        const ids = teacherData.subject_ids || teacherData.subjectIds;
+        payload.subject_ids = Array.isArray(ids) ? ids : [];
+      }
       
       if (isClassTeacher && !payload.class_id) {
         console.warn('TeachersService: is_class_teacher is true but no class_id provided');

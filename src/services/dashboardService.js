@@ -1,9 +1,14 @@
 import apiService from './api';
 
 class DashboardService {
-  async getDashboardMetrics(role = 'principal') {
+  async getDashboardMetrics(role = 'principal', filters = {}) {
     try {
-      return await apiService.get(`/dashboard/metrics?role=${role}`);
+      const queryParams = new URLSearchParams();
+      queryParams.append('role', role);
+      if (filters.class) queryParams.append('class', filters.class);
+      if (filters.subject) queryParams.append('subject', filters.subject);
+      const endpoint = `/dashboard/metrics?${queryParams.toString()}`;
+      return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch dashboard metrics: ${error.message}`);
     }
@@ -46,9 +51,9 @@ class DashboardService {
     }
   }
 
-  async getQuickSummary() {
+  async getQuickSummary(role = 'principal', filters = {}) {
     try {
-      return await apiService.get('/dashboard/metrics');
+      return await this.getDashboardMetrics(role, filters);
     } catch (error) {
       throw new Error(`Failed to fetch quick summary: ${error.message}`);
     }

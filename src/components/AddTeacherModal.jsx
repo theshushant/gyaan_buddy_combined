@@ -13,6 +13,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
     confirmPassword: '',
     employeeId: '',
     isClassTeacher: false,
+    subjectIds: [],
     assignments: []
   })
 
@@ -40,14 +41,16 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
         hasClasses: !!teacher.classes,
         classes: teacher.classes
       })
+      const teacherSubjectIds = (teacher.subject_ids || teacher.subjectIds || (teacher.subjects || []).map(s => (typeof s === 'object' && s?.id) ? s.id : s)).filter(Boolean).map(String)
       setFormData({
         firstName: teacher.firstName || teacher.first_name || '',
         lastName: teacher.lastName || teacher.last_name || '',
         email: teacher.email || '',
-        password: '', // Don't pre-fill password for security
+        password: '',
         confirmPassword: '',
         employeeId: teacher.employeeId || teacher.employee_id || '',
         isClassTeacher: teacher.isClassTeacher || teacher.is_class_teacher || false,
+        subjectIds: teacherSubjectIds,
         assignments: teacher.assignments || teacher.classes || []
       })
       console.log('AddTeacherModal: Initial formData.assignments set to:', teacher.assignments || teacher.classes || [])
@@ -61,6 +64,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
         confirmPassword: '',
         employeeId: '',
         isClassTeacher: false,
+        subjectIds: [],
         assignments: []
       })
       setNewAssignment({ class: '', subjects: [] })
@@ -352,9 +356,22 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
       email: submitData.email
     })
     
+    submitData.subject_ids = formData.subjectIds || []
+    submitData.subjectIds = formData.subjectIds || []
     const saveHandler = onSubmit || onSave
     saveHandler(submitData)
     onClose()
+  }
+
+  const handleTeacherSubjectChange = (subjectId) => {
+    const sid = subjectId?.id ?? subjectId
+    const sidStr = String(sid)
+    setFormData(prev => ({
+      ...prev,
+      subjectIds: prev.subjectIds.some(id => String(id) === sidStr)
+        ? prev.subjectIds.filter(id => String(id) !== sidStr)
+        : [...prev.subjectIds, sidStr]
+    }))
   }
 
   const handleAssignmentSubjectChange = (subject) => {
@@ -522,6 +539,36 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                       )}
                     </div>
                   </>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-md font-semibold text-gray-900 mb-2">Subjects this teacher teaches</h4>
+              <p className="text-sm text-gray-500 mb-3">Select all subjects this teacher teaches (across any class).</p>
+              <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 min-h-[80px] max-h-40 overflow-y-auto">
+                {loadingSubjects ? (
+                  <div className="text-sm text-gray-500 py-2">Loading subjects...</div>
+                ) : subjects.length === 0 ? (
+                  <div className="text-sm text-gray-500 py-2">No subjects available.</div>
+                ) : (
+                  <div className="flex flex-wrap gap-x-4 gap-y-2">
+                    {subjects.map((s) => {
+                      const sid = s.id ?? s.uuid
+                      const isChecked = formData.subjectIds.some(id => String(id) === String(sid))
+                      return (
+                        <label key={sid} className="flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => handleTeacherSubjectChange(sid)}
+                            className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-700">{s.name}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
                 )}
               </div>
             </div>

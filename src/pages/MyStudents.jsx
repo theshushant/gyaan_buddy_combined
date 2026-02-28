@@ -279,15 +279,12 @@ const MyStudents = () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex space-x-2">
-                    <button 
-                      onClick={() => navigate(`/students/${student.id}`)}
-                      className="text-primary-500 hover:text-primary-700 transform transition-all duration-200 hover:scale-105"
-                    >
-                      View
-                    </button>
-                    <button className="text-green-600 hover:text-green-900 transform transition-all duration-200 hover:scale-105">Message</button>
-                  </div>
+                  <button 
+                    onClick={() => navigate(`/students/${student.id}`)}
+                    className="text-primary-500 hover:text-primary-700 transform transition-all duration-200 hover:scale-105"
+                  >
+                    View
+                  </button>
                 </td>
               </tr>
                 ))

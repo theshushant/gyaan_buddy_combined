@@ -90,11 +90,27 @@ class ModulesService {
     }
   }
 
+  async updateModuleDueDate(moduleId, dueDate) {
+    try {
+      return await apiService.patch(`/modules/${moduleId}/`, { due_date: dueDate ?? null });
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update module due date.');
+    }
+  }
+
   async setChapterDue(chapterId, isDue) {
     try {
       return await apiService.patch(`/module_chapters/${chapterId}/`, { is_due: isDue });
     } catch (error) {
       throw new Error(error.message || 'Failed to update assignment due status.');
+    }
+  }
+
+  async updateChapterDueDate(chapterId, dueDate) {
+    try {
+      return await apiService.patch(`/module_chapters/${chapterId}/`, { due_date: dueDate ?? null });
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update assignment due date.');
     }
   }
 

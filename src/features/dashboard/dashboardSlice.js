@@ -3,9 +3,11 @@ import dashboardService from '../../services/dashboardService'
 
 export const fetchDashboardMetrics = createAsyncThunk(
   'dashboard/fetchDashboardMetrics',
-  async (role = 'principal', { rejectWithValue }) => {
+  async (payload = {}, { rejectWithValue }) => {
     try {
-      const response = await dashboardService.getDashboardMetrics(role)
+      const role = typeof payload === 'string' ? payload : (payload.role ?? 'principal')
+      const filters = typeof payload === 'object' && payload.filters ? payload.filters : {}
+      const response = await dashboardService.getDashboardMetrics(role, filters)
       return response
     } catch (error) {
       return rejectWithValue(error.message)
@@ -75,9 +77,11 @@ export const fetchRecentActivities = createAsyncThunk(
 
 export const fetchQuickSummary = createAsyncThunk(
   'dashboard/fetchQuickSummary',
-  async (role = 'principal', { rejectWithValue }) => {
+  async (payload = {}, { rejectWithValue }) => {
     try {
-      const response = await dashboardService.getQuickSummary()
+      const role = typeof payload === 'string' ? payload : (payload.role ?? 'principal')
+      const filters = typeof payload === 'object' && payload.filters ? payload.filters : {}
+      const response = await dashboardService.getQuickSummary(role, filters)
       return response
     } catch (error) {
       return rejectWithValue(error.message)
@@ -93,6 +97,8 @@ const initialState = {
   alerts: [],
   recentActivities: [],
   quickSummary: [],
+  weakTopicCount: 0,
+  subjectWise: [],
   loading: {
     metrics: false,
     progressTrends: false,
@@ -169,6 +175,8 @@ const dashboardSlice = createSlice({
       state.alerts = []
       state.recentActivities = []
       state.quickSummary = []
+      state.weakTopicCount = 0
+      state.subjectWise = []
       state.lastUpdated = null
     }
   },
@@ -187,7 +195,10 @@ const dashboardSlice = createSlice({
         if (response.quickSummary) {
           state.quickSummary = Array.isArray(response.quickSummary) ? response.quickSummary : []
         }
-        
+        if (response.weakTopicCount !== undefined) {
+          state.weakTopicCount = response.weakTopicCount
+        }
+        state.subjectWise = Array.isArray(response.subjectWise) ? response.subjectWise : []
         state.lastUpdated = new Date().toISOString()
       })
       .addCase(fetchDashboardMetrics.rejected, (state, action) => {

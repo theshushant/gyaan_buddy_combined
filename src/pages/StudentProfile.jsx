@@ -70,7 +70,7 @@ const StudentProfile = () => {
       overallScore,
       averageGrade,
       attendance: student.attendance || 0,
-      weakTopics: student.weakTopics || [],
+      weakTopics: student.weakTopics || student.weak_topics || [],
       recentTests: student.recentTests || []
     }
   }
@@ -294,20 +294,26 @@ const StudentProfile = () => {
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Weak Topics</h3>
+              <p className="text-sm text-gray-500 mb-3">Chapters where incorrect answers are more than 50% of attempts.</p>
               <div className="flex flex-wrap gap-3">
-                {studentData.weakTopics.map((topic, index) => (
-                  <span
-                    key={index}
-                    className="px-4 py-2 bg-red-100 text-red-800 text-sm rounded-full font-medium"
-                  >
-                    {topic}
-                  </span>
-                ))}
+                {studentData.weakTopics.length === 0 ? (
+                  <span className="text-sm text-gray-500">No weak topics identified yet.</span>
+                ) : (
+                  studentData.weakTopics.map((topic, index) => (
+                    <span
+                      key={index}
+                      className="px-4 py-2 bg-red-100 text-red-800 text-sm rounded-full font-medium"
+                    >
+                      {topic}
+                    </span>
+                  ))
+                )}
               </div>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Progress Trends</h3>
+              <p className="text-sm text-gray-500 mb-4">Subject-wise: correct answers / total questions in due module chapters × 100.</p>
               {loading.progressTrends ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>

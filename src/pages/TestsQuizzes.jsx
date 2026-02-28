@@ -7,7 +7,6 @@ import {
   Loader2,
   X,
   Trash2,
-  Edit,
   Sparkles,
   BookOpen,
   FileText,
@@ -73,7 +72,8 @@ const TestsQuizzes = () => {
   const [addingBankToTest, setAddingBankToTest] = useState(false);
   const [manualModeTestQuestions, setManualModeTestQuestions] = useState([]);
   const [loadingManualModeQuestions, setLoadingManualModeQuestions] = useState(false);
-  
+  const [deletingTestId, setDeletingTestId] = useState(null);
+
   const [aiFormData, setAiFormData] = useState({
     number_of_questions: 10,
     add_image: false,
@@ -610,6 +610,26 @@ const TestsQuizzes = () => {
     setShowQuestionGenerator(false);
   };
 
+  const handleDeleteTest = async (test) => {
+    const testId = test.id || test.uuid;
+    const testTitle = test.title || `Test (${test.subject?.name || 'N/A'})`;
+    if (!window.confirm(`Are you sure you want to delete "${testTitle}"? This cannot be undone.`)) {
+      return;
+    }
+    setDeletingTestId(testId);
+    setError(null);
+    setSuccess(false);
+    try {
+      await testsService.deleteTest(testId);
+      setSuccess(true);
+      await fetchTests();
+    } catch (err) {
+      setError(err.message || 'Failed to delete test. Please try again.');
+    } finally {
+      setDeletingTestId(null);
+    }
+  };
+
   const handleBackToForm = () => {
     setShowQuestionGenerator(false);
     setSelectedTest(null);
@@ -906,6 +926,34 @@ const TestsQuizzes = () => {
 
       {activeTab === 'tests' && (
         <div className="space-y-6">
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-start justify-between space-x-3">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-red-800">Error</p>
+                  <p className="text-sm text-red-700 mt-1">{error}</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => setError(null)} className="text-red-600 hover:text-red-800 p-1">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          {success && (
+            <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 flex items-start justify-between space-x-3">
+              <div className="flex items-start space-x-3">
+                <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-green-800">Success</p>
+                  <p className="text-sm text-green-700 mt-1">Test deleted successfully.</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => setSuccess(false)} className="text-green-600 hover:text-green-800 p-1">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           {loadingTests ? (
             <div className="text-center py-12 bg-white rounded-lg shadow-sm">
               <Loader2 className="h-8 w-8 animate-spin text-primary-500 mx-auto mb-4" />
@@ -969,11 +1017,17 @@ const TestsQuizzes = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
-                        onClick={() => handleEdit(test)}
-                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105"
+                    type="button"
+                    onClick={() => handleDeleteTest(test)}
+                    disabled={deletingTestId === (test.id || test.uuid)}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center space-x-2"
                   >
-                    <Edit className="h-4 w-4" />
-                        <span>Edit</span>
+                    {deletingTestId === (test.id || test.uuid) ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    <span>{deletingTestId === (test.id || test.uuid) ? 'Deleting...' : 'Delete'}</span>
                   </button>
                   <Link 
                         to={`/tests/performance/${test.id || test.uuid}`}

@@ -106,21 +106,21 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
         const subjectIdsArray = student.subject_ids || student.subjectIds
         subjectIds = subjectIdsArray.map(subj => {
           if (typeof subj === 'object' && (subj.id || subj.uuid)) {
-            return subj.id || subj.uuid
+            return String(subj.id || subj.uuid)
           }
-          return subj
+          return String(subj)
         })
       } else if (student.subjects && Array.isArray(student.subjects)) {
         subjectIds = student.subjects.map(subj => {
           if (typeof subj === 'object' && (subj.id || subj.uuid)) {
-            return subj.id || subj.uuid
+            return String(subj.id || subj.uuid)
           }
           if (typeof subj === 'string') {
             const foundSubject = subjects.find(s => s.name === subj || s.id === subj)
-            return foundSubject ? foundSubject.id : null
+            return foundSubject ? String(foundSubject.id) : null
           }
-          return subj
-        }).filter(id => id !== null) // Remove null values
+          return subj != null ? String(subj) : null
+        }).filter(id => id !== null)
       }
 
       let parentContact = ''
@@ -309,9 +309,11 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
   }
 
   const handleSubjectChange = (subjectId) => {
-    const newSubjectIds = formData.subjectIds.includes(subjectId)
-      ? formData.subjectIds.filter(id => id !== subjectId)
-      : [...formData.subjectIds, subjectId]
+    const sid = subjectId?.id ?? subjectId
+    const sidStr = String(sid)
+    const newSubjectIds = formData.subjectIds.some(id => String(id) === sidStr)
+      ? formData.subjectIds.filter(id => String(id) !== sidStr)
+      : [...formData.subjectIds, sidStr]
     
     setFormData(prev => ({ ...prev, subjectIds: newSubjectIds }))
     
@@ -454,19 +456,23 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     ) : (
                       <>
                         <div className="space-y-2">
-                          {subjects.map(subject => (
-                            <label key={subject.id} className="flex items-center space-x-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={formData.subjectIds.includes(subject.id)}
-                                onChange={() => handleSubjectChange(subject.id)}
-                                className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
-                              />
-                              <span className="text-sm text-gray-700">{subject.name}</span>
-                            </label>
-                          ))}
+                          {subjects.map(subject => {
+                            const sid = subject.id || subject.uuid
+                            const isChecked = formData.subjectIds.some(id => String(id) === String(sid))
+                            return (
+                              <label key={sid} className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => handleSubjectChange(sid)}
+                                  className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                                />
+                                <span className="text-sm text-gray-700">{subject.name}</span>
+                              </label>
+                            )
+                          })}
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">Hold Ctrl/Cmd to select multiple subjects.</p>
+                        <p className="text-xs text-gray-500 mt-2">Select all subjects this student is enrolled in.</p>
                       </>
                     )}
                   </div>

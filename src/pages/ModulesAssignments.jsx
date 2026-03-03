@@ -850,18 +850,6 @@ const ModulesAssignments = () => {
                           <Trash2 className="h-4 w-4" />
                         </button>
                         <div className="flex items-center space-x-2">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const rect = e.currentTarget.getBoundingClientRect();
-                              setDueDatePickerFor(prev => prev?.type === 'module' && prev?.id === chapter.id ? null : { type: 'module', id: chapter.id, anchor: { left: rect.left, top: rect.top, bottom: rect.bottom } });
-                            }}
-                            className="p-2 bg-gray-50 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
-                            title={chapter.dueDate ? `Due ${formatDueDate(chapter.dueDate)}` : 'Set due date'}
-                          >
-                            <Calendar className="h-4 w-4" />
-                          </button>
                           <div className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg">
                             <span className="text-sm text-gray-600">Due</span>
                             <button

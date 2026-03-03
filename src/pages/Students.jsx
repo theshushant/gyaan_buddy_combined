@@ -43,14 +43,11 @@ const Students = () => {
 
   useEffect(() => {
     const hasError = error.students !== null || error.stats !== null
-    if (hasError) {
-      return // Don't retry if there's already an error
-    }
+    if (hasError) return
 
     const fetchData = async () => {
       try {
         await Promise.all([
-          dispatch(fetchStudents({})), // Fetch all students without filters
           dispatch(fetchStudentStats()),
           dispatch(fetchClasses({})),
           dispatch(fetchSubjects({}))
@@ -63,16 +60,29 @@ const Students = () => {
     fetchData()
   }, [dispatch, error.students, error.stats])
 
+  // Pre-select the first class and fetch its students once classes are loaded
+  useEffect(() => {
+    if (classes.length > 0 && !filters.class) {
+      const firstId = (classes[0].id ?? classes[0].uuid ?? '').toString()
+      if (firstId) {
+        dispatch(setFilters({ class: firstId }))
+        dispatch(fetchStudents({ class: firstId }))
+      }
+    }
+  }, [classes, filters.class, dispatch])
+
   const handleSearch = (value) => {
     dispatch(setFilters({ search: value }))
   }
 
   const handleClassFilter = (value) => {
     dispatch(setFilters({ class: value }))
+    dispatch(fetchStudents({ class: value, subject: filters.subject }))
   }
 
   const handleSubjectFilter = (value) => {
     dispatch(setFilters({ subject: value }))
+    dispatch(fetchStudents({ class: filters.class, subject: value }))
   }
 
   const handleAddStudent = async (studentData) => {
@@ -80,7 +90,7 @@ const Students = () => {
       await dispatch(createStudent(studentData)).unwrap()
       setShowAddModal(false)
       await Promise.all([
-        dispatch(fetchStudents({})), // Fetch all students without filters
+        dispatch(fetchStudents({ class: filters.class, subject: filters.subject })),
         dispatch(fetchStudentStats())
       ])
       setSuccessData({
@@ -99,7 +109,7 @@ const Students = () => {
       setEditingStudent(null)
       setShowAddModal(false)
       await Promise.all([
-        dispatch(fetchStudents({})), // Fetch all students without filters
+        dispatch(fetchStudents({ class: filters.class, subject: filters.subject })),
         dispatch(fetchStudentStats())
       ])
       setSuccessData({
@@ -123,7 +133,7 @@ const Students = () => {
     try {
       await dispatch(deleteStudent(studentToDelete.id)).unwrap()
       await Promise.all([
-        dispatch(fetchStudents({})), // Fetch all students without filters
+        dispatch(fetchStudents({ class: filters.class, subject: filters.subject })),
         dispatch(fetchStudentStats())
       ])
       setSuccessData({
@@ -160,66 +170,18 @@ const Students = () => {
   }
 
   const clearFilters = () => {
-    dispatch(setFilters({
-      search: '',
-      class: '',
-      subject: ''
-    }))
+    const firstClassId = classes.length > 0 ? (classes[0].id ?? classes[0].uuid ?? '').toString() : ''
+    dispatch(setFilters({ search: '', class: firstClassId, subject: '' }))
+    dispatch(fetchStudents({ class: firstClassId }))
   }
 
+  // Class and subject filtering is done server-side; only apply local search for instant feedback
   const filteredStudents = (students || []).filter(student => {
-    if (filters.search) {
-      const firstName = (student.first_name || student.firstName || '').toLowerCase()
-      const lastName = (student.last_name || student.lastName || '').toLowerCase()
-      const fullName = `${firstName} ${lastName}`.trim()
-      const searchTerm = filters.search.toLowerCase()
-      
-      if (!fullName.includes(searchTerm)) {
-        return false
-      }
-    }
-
-    if (filters.class) {
-      const studentClassId = (
-        student.class_id?.toString() || 
-        student.class_instance?.toString() || 
-        student.profile?.class_instance?.id?.toString() ||
-        ''
-      )
-      const studentClassName = (
-        student.class_name || 
-        student.class || 
-        student.profile?.class_instance?.name ||
-        ''
-      ).toString()
-      const filterClassValue = filters.class.toString()
-      
-      if (studentClassId !== filterClassValue && studentClassName !== filterClassValue) {
-        return false
-      }
-    }
-
-    if (filters.subject) {
-      const studentSubjects = student.subjects || student.subject_ids || []
-      const filterSubjectValue = filters.subject.toString()
-      
-      const hasSubject = studentSubjects.some(subject => {
-        if (typeof subject === 'object') {
-          const subjectId = (subject.id || subject.uuid || '').toString()
-          const subjectName = (subject.name || subject.subject_name || '').toString().toLowerCase()
-          return subjectId === filterSubjectValue || subjectName === filterSubjectValue.toLowerCase()
-        } else {
-          const subjectStr = subject.toString()
-          return subjectStr === filterSubjectValue || subjectStr === filterSubjectValue.toLowerCase()
-        }
-      })
-      
-      if (!hasSubject) {
-        return false
-      }
-    }
-
-    return true
+    if (!filters.search) return true
+    const firstName = (student.first_name || student.firstName || '').toLowerCase()
+    const lastName = (student.last_name || student.lastName || '').toLowerCase()
+    const fullName = `${firstName} ${lastName}`.trim()
+    return fullName.includes(filters.search.toLowerCase())
   })
 
   const summaryCards = [

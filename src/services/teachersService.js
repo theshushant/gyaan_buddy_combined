@@ -67,7 +67,7 @@ class TeachersService {
       if (teacherData.assignments && teacherData.assignments.length > 0) {
         payload.assignments = teacherData.assignments.map(assignment => {
           let classId = null;
-          
+
           if (assignment.class) {
             if (typeof assignment.class === 'string' || typeof assignment.class === 'number') {
               classId = assignment.class;
@@ -75,7 +75,7 @@ class TeachersService {
               classId = assignment.class.id;
             }
           }
-          
+
           const subjectIds = [];
           if (assignment.subjects && Array.isArray(assignment.subjects)) {
             assignment.subjects.forEach(subjectId => {
@@ -88,12 +88,12 @@ class TeachersService {
               }
             });
           }
-          
+
           return {
-            class_id: classId,
-            subject_ids: subjectIds
+            class: classId,
+            subjects: subjectIds
           };
-        }).filter(assignment => assignment.class_id && assignment.subject_ids.length > 0);
+        }).filter(assignment => assignment.class && assignment.subjects.length > 0);
         
         const firstAssignment = teacherData.assignments[0];
         if (firstAssignment && firstAssignment.class) {

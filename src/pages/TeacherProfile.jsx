@@ -383,42 +383,43 @@ const TeacherProfile = () => {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Activity Insights</h3>
-            <div className="space-y-6">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Dashboard Usage</p>
-                <p className="text-lg font-medium text-gray-900">{transformedData.activityInsights.dashboardUsage}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Content Creation</p>
-                <p className="text-lg font-medium text-gray-900">{transformedData.activityInsights.contentCreation} items/month</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-6">Student Performance</h3>
-            <div className="text-center">
+            <div className="text-center mb-6">
               <p className="text-sm text-gray-600 mb-2">Average Student Score</p>
               <p className="text-4xl font-bold text-gray-900 mb-2">{transformedData.studentPerformance.averageScore}%</p>
               {transformedData.studentPerformance.improvement > 0 && (
-                <div className="flex items-center justify-center mb-6">
+                <div className="flex items-center justify-center">
                   <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
                   <span className="text-sm text-green-600">
                     +{transformedData.studentPerformance.improvement}% {transformedData.studentPerformance.period}
                   </span>
                 </div>
               )}
-              {classNames.length > 0 && (
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="flex justify-end gap-4 text-sm text-gray-600">
-                    {classNames.slice(0, 4).map((className, idx) => (
-                      <span key={idx}>{className}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
+            {transformedData.studentPerformance.classBreakdown.length > 0 && (
+              <div className="border-t border-gray-200 pt-4 space-y-3">
+                <p className="text-sm font-medium text-gray-700">Score by Class</p>
+                {transformedData.studentPerformance.classBreakdown.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">{item.class || item.class_name}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${item.average_score || item.averageScore || 0}%`,
+                            backgroundColor: '#00167a'
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium text-gray-900 w-10 text-right">
+                        {item.average_score || item.averageScore || 0}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

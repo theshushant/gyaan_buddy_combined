@@ -28,6 +28,10 @@ const ReportsAnalytics = () => {
   const [reportSubject, setReportSubject] = useState('');
   const [reportModule, setReportModule] = useState('');
   const [reportChapter, setReportChapter] = useState('');
+  const [studentClass, setStudentClass] = useState('');
+  const [studentSubject, setStudentSubject] = useState('');
+  const [studentModule, setStudentModule] = useState('');
+  const [studentChapter, setStudentChapter] = useState('');
   const [showStudentTable, setShowStudentTable] = useState(false);
   const [expandedModules, setExpandedModules] = useState({ 1: true });
 
@@ -35,6 +39,7 @@ const ReportsAnalytics = () => {
   const [error, setError] = useState(null);
   const [summary, setSummary] = useState(defaultSummary);
   const [filterOptions, setFilterOptions] = useState(defaultFilterOptions);
+  const [studentFilterOptions, setStudentFilterOptions] = useState(defaultFilterOptions);
   const [moduleProficiencyData, setModuleProficiencyData] = useState([]);
   const [reportsData, setReportsData] = useState({ summary: defaultSummary, chapterProficiency: [] });
   const [analyticsData, setAnalyticsData] = useState({
@@ -60,6 +65,7 @@ const ReportsAnalytics = () => {
       const data = await reportsService.getReportsAnalytics(params);
       setSummary(data.summary ?? defaultSummary);
       setFilterOptions(data.filterOptions ?? defaultFilterOptions);
+      setStudentFilterOptions(data.filterOptions ?? defaultFilterOptions);
       setModuleProficiencyData(Array.isArray(data.moduleProficiencyData) ? data.moduleProficiencyData : []);
       setReportsData(data.reportsData ?? { summary: (data.summary ?? defaultSummary), chapterProficiency: [] });
       setAnalyticsData({
@@ -80,25 +86,69 @@ const ReportsAnalytics = () => {
     fetchReportsAnalytics();
   }, [selectedPeriod, selectedClass]);
 
+  const handleReportClassChange = (e) => {
+    const val = e.target.value;
+    setReportClass(val);
+    fetchReportsAnalytics({ class: val || undefined, subject: reportSubject, module: reportModule, chapter: reportChapter });
+  };
+
   const handleSubjectChange = (e) => {
     const val = e.target.value;
     setReportSubject(val);
     setReportModule('');
     setReportChapter('');
-    fetchReportsAnalytics({ subject: val, module: '', chapter: '' });
+    fetchReportsAnalytics({ class: reportClass || undefined, subject: val, module: '', chapter: '' });
   };
 
   const handleModuleChange = (e) => {
     const val = e.target.value;
     setReportModule(val);
     setReportChapter('');
-    fetchReportsAnalytics({ subject: reportSubject, module: val, chapter: '' });
+    fetchReportsAnalytics({ class: reportClass || undefined, subject: reportSubject, module: val, chapter: '' });
   };
 
   const handleChapterChange = (e) => {
     const val = e.target.value;
     setReportChapter(val);
-    fetchReportsAnalytics({ subject: reportSubject, module: reportModule, chapter: val });
+    fetchReportsAnalytics({ class: reportClass || undefined, subject: reportSubject, module: reportModule, chapter: val });
+  };
+
+  const fetchStudentProficiencyOnly = useCallback(async (opts = {}) => {
+    try {
+      const params = {
+        period: String(PERIOD_MAP[selectedPeriod] ?? 30),
+        class: (opts.class ?? studentClass) || '',
+        subject: (opts.subject ?? studentSubject) || '',
+        module: (opts.module ?? studentModule) || '',
+        chapter: (opts.chapter ?? studentChapter) || '',
+      };
+      const data = await reportsService.getReportsAnalytics(params);
+      setStudentFilterOptions(data.filterOptions ?? defaultFilterOptions);
+      setStudentProficiencyData(Array.isArray(data.studentProficiencyData) ? data.studentProficiencyData : []);
+    } catch (err) {
+      setError(err.message || 'Failed to load student proficiency');
+    }
+  }, [selectedPeriod, studentClass, studentSubject, studentModule, studentChapter]);
+
+  const handleStudentSubjectChange = (e) => {
+    const val = e.target.value;
+    setStudentSubject(val);
+    setStudentModule('');
+    setStudentChapter('');
+    fetchStudentProficiencyOnly({ class: studentClass, subject: val, module: '', chapter: '' });
+  };
+
+  const handleStudentModuleChange = (e) => {
+    const val = e.target.value;
+    setStudentModule(val);
+    setStudentChapter('');
+    fetchStudentProficiencyOnly({ class: studentClass, subject: studentSubject, module: val, chapter: '' });
+  };
+
+  const handleStudentChapterChange = (e) => {
+    const val = e.target.value;
+    setStudentChapter(val);
+    fetchStudentProficiencyOnly({ class: studentClass, subject: studentSubject, module: studentModule, chapter: val });
   };
 
   const getModuleProficiency = (chapters) => {
@@ -133,11 +183,11 @@ const ReportsAnalytics = () => {
   };
 
   const handleApplyFilters = async () => {
-    await fetchReportsAnalytics({
-      class: reportClass || undefined,
-      subject: reportSubject || undefined,
-      module: reportModule || undefined,
-      chapter: reportChapter || undefined,
+    await fetchStudentProficiencyOnly({
+      class: studentClass || undefined,
+      subject: studentSubject || undefined,
+      module: studentModule || undefined,
+      chapter: studentChapter || undefined,
     });
     setShowStudentTable(true);
   };
@@ -151,6 +201,11 @@ const ReportsAnalytics = () => {
   const subjectsList = normalizeOptions(filterOptions.subjects);
   const modulesList = normalizeOptions(filterOptions.modules);
   const chaptersList = normalizeOptions(filterOptions.chapters);
+
+  const studentClassesList = Array.isArray(studentFilterOptions.classes) ? studentFilterOptions.classes : [];
+  const studentSubjectsList = normalizeOptions(studentFilterOptions.subjects);
+  const studentModulesList = normalizeOptions(studentFilterOptions.modules);
+  const studentChaptersList = normalizeOptions(studentFilterOptions.chapters);
 
   return (
     <div className="p-6 animate-fade-in">
@@ -368,6 +423,69 @@ const ReportsAnalytics = () => {
 
       {activeTab === 'reports' && (
         <>
+          {/* Chapter-wise filter (top) – drives summary and chapter-wise proficiency table */}
+          <div className="mb-6 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Chapter-wise filter</h3>
+            <p className="text-xs text-gray-500 mb-4">Filter report data and chapter-wise proficiency by subject, module, and topic.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Class</label>
+                <select
+                  value={reportClass}
+                  onChange={handleReportClassChange}
+                  className="w-full px-3 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-gray-700 font-medium focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                >
+                  <option value="">All Classes</option>
+                  {classesList.map((cls) => {
+                    const name = typeof cls === 'string' ? cls : cls?.name;
+                    return <option key={name} value={name}>{name}</option>;
+                  })}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Subject</label>
+                <select
+                  value={reportSubject}
+                  onChange={handleSubjectChange}
+                  className="w-full px-3 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-gray-700 font-medium focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                >
+                  <option value="">Select Subject</option>
+                  {subjectsList.map((sub) => (
+                    <option key={sub.id} value={sub.id}>{sub.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Module</label>
+                <select
+                  value={reportModule}
+                  onChange={handleModuleChange}
+                  disabled={!reportSubject}
+                  className={`w-full px-3 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-medium focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${!reportSubject ? 'cursor-not-allowed opacity-60 text-gray-400' : 'text-gray-700'}`}
+                >
+                  <option value="">Select Module</option>
+                  {modulesList.map((mod) => (
+                    <option key={mod.id} value={mod.id}>{mod.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Topic</label>
+                <select
+                  value={reportChapter}
+                  onChange={handleChapterChange}
+                  disabled={!reportModule}
+                  className={`w-full px-3 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-medium focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${!reportModule ? 'cursor-not-allowed opacity-60 text-gray-400' : 'text-gray-700'}`}
+                >
+                  <option value="">Select Topic</option>
+                  {chaptersList.map((chap) => (
+                    <option key={chap.id} value={chap.id}>{chap.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.1s'}}>
               <div className="flex items-center justify-between">
@@ -526,7 +644,7 @@ const ReportsAnalytics = () => {
               <Search className="h-5 w-5 text-primary-500 mr-2" />
               <h3 className="text-lg font-semibold text-gray-800">Filter Student Performance</h3>
             </div>
-            
+            <p className="text-sm text-gray-500 mb-4">Use these filters only for the student proficiency table below. Apply to load results.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="relative group">
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Class</label>
@@ -535,13 +653,13 @@ const ReportsAnalytics = () => {
                     <GraduationCap className="h-4 w-4 text-primary-500" />
                   </div>
                   <select
-                    value={reportClass}
-                    onChange={(e) => setReportClass(e.target.value)}
+                    value={studentClass}
+                    onChange={(e) => setStudentClass(e.target.value)}
                     className="w-full pl-12 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-gray-700 font-medium appearance-none cursor-pointer focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all duration-200 hover:border-primary-500/50"
                   >
                     <option value="">Select Class</option>
-                    {classesList.map((cls) => {
-                      const name = typeof cls === 'string' ? cls : cls.name;
+                    {studentClassesList.map((cls) => {
+                      const name = typeof cls === 'string' ? cls : cls?.name;
                       return <option key={name} value={name}>{name}</option>;
                     })}
                   </select>
@@ -556,12 +674,12 @@ const ReportsAnalytics = () => {
                     <BookOpen className="h-4 w-4 text-green-600" />
                   </div>
                   <select
-                    value={reportSubject}
-                    onChange={handleSubjectChange}
+                    value={studentSubject}
+                    onChange={handleStudentSubjectChange}
                     className="w-full pl-12 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-gray-700 font-medium appearance-none cursor-pointer focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all duration-200 hover:border-green-300"
                   >
                     <option value="">Select Subject</option>
-                    {subjectsList.map((sub) => (
+                    {studentSubjectsList.map((sub) => (
                       <option key={sub.id} value={sub.id}>{sub.name}</option>
                     ))}
                   </select>
@@ -576,13 +694,13 @@ const ReportsAnalytics = () => {
                     <Layers className="h-4 w-4 text-purple-600" />
                   </div>
                   <select
-                    value={reportModule}
-                    onChange={handleModuleChange}
-                    disabled={!reportSubject}
-                    className={`w-full pl-12 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl font-medium appearance-none transition-all duration-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 hover:border-purple-300 ${!reportSubject ? 'cursor-not-allowed opacity-60 text-gray-400' : 'cursor-pointer text-gray-700'}`}
+                    value={studentModule}
+                    onChange={handleStudentModuleChange}
+                    disabled={!studentSubject}
+                    className={`w-full pl-12 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl font-medium appearance-none transition-all duration-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 hover:border-purple-300 ${!studentSubject ? 'cursor-not-allowed opacity-60 text-gray-400' : 'cursor-pointer text-gray-700'}`}
                   >
                     <option value="">Select Module</option>
-                    {modulesList.map((mod) => (
+                    {studentModulesList.map((mod) => (
                       <option key={mod.id} value={mod.id}>{mod.name}</option>
                     ))}
                   </select>
@@ -597,13 +715,13 @@ const ReportsAnalytics = () => {
                     <FileText className="h-4 w-4 text-orange-600" />
                   </div>
                   <select
-                    value={reportChapter}
-                    onChange={handleChapterChange}
-                    disabled={!reportModule}
-                    className={`w-full pl-12 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl font-medium appearance-none transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 hover:border-orange-300 ${!reportModule ? 'cursor-not-allowed opacity-60 text-gray-400' : 'cursor-pointer text-gray-700'}`}
+                    value={studentChapter}
+                    onChange={handleStudentChapterChange}
+                    disabled={!studentModule}
+                    className={`w-full pl-12 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl font-medium appearance-none transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 hover:border-orange-300 ${!studentModule ? 'cursor-not-allowed opacity-60 text-gray-400' : 'cursor-pointer text-gray-700'}`}
                   >
                     <option value="">Select Topic</option>
-                    {chaptersList.map((chap) => (
+                    {studentChaptersList.map((chap) => (
                       <option key={chap.id} value={chap.id}>{chap.name}</option>
                     ))}
                   </select>
@@ -619,8 +737,8 @@ const ReportsAnalytics = () => {
                 style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
               >
                 Apply Filters
-        </button>
-      </div>
+              </button>
+            </div>
           </div>
 
           {showStudentTable && (
@@ -628,7 +746,7 @@ const ReportsAnalytics = () => {
               <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-secondary-500/10 to-primary-500/10">
                 <h3 className="text-lg font-semibold text-gray-800">Student Proficiency Results</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  Showing results for: {reportClass || 'All Classes'} • {subjectsList.find(s => s.id === reportSubject)?.name || reportSubject || 'All Subjects'} • {modulesList.find(m => m.id === reportModule)?.name || reportModule || 'All Modules'} • {chaptersList.find(c => c.id === reportChapter)?.name || reportChapter || 'All Topics'}
+                  Showing results for: {studentClass || 'All Classes'} • {studentSubjectsList.find(s => s.id === studentSubject)?.name || studentSubject || 'All Subjects'} • {studentModulesList.find(m => m.id === studentModule)?.name || studentModule || 'All Modules'} • {studentChaptersList.find(c => c.id === studentChapter)?.name || studentChapter || 'All Topics'}
                 </p>
               </div>
               <div className="overflow-x-auto">

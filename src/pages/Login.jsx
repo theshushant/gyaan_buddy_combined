@@ -69,20 +69,6 @@ const Login = () => {
     }
   }
 
-  const handleDemoLogin = (role) => {
-    const demoCredentials = {
-      principal: {
-        username: 'admin', // Replace with actual principal username from backend
-        password: 'admin123' // Replace with actual password
-      },
-      teacher: {
-        username: 'teacher1', // Replace with actual teacher username from backend
-        password: 'teacher123' // Replace with actual password
-      }
-    }
-    setFormData(demoCredentials[role])
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#00167a' }}>
       <div className="max-w-md w-full">
@@ -170,29 +156,6 @@ const Login = () => {
                 <p className="text-xs text-gray-600 mt-2">Backend unavailable? Try demo login below.</p>
               </div>
             )}
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData({ username: 'principal', password: 'principal123' })
-                  setFormErrors({})
-                }}
-                className="flex-1 py-2 px-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-700 text-sm hover:bg-gray-100"
-              >
-                Demo: Principal
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData({ username: 'teacher1', password: 'teacher123' })
-                  setFormErrors({})
-                }}
-                className="flex-1 py-2 px-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-700 text-sm hover:bg-gray-100"
-              >
-                Demo: Teacher
-              </button>
-            </div>
 
             <button
               type="submit"

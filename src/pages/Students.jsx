@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Search, Filter, Plus, Eye, Trash2, AlertTriangle } from 'lucide-react'
+import { Search, Filter, Plus, Eye, Trash2, AlertTriangle, Upload } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import studentsService from '../services/studentsService'
 import AddStudentModal from '../components/AddStudentModal'
 import SuccessModal from '../components/SuccessModal'
 import Modal from '../components/Modal'
@@ -40,11 +41,13 @@ const Students = () => {
   const [editingStudent, setEditingStudent] = useState(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [studentToDelete, setStudentToDelete] = useState(null)
+  const [bulkImporting, setBulkImporting] = useState(false)
+  const [showBulkResultModal, setShowBulkResultModal] = useState(false)
+  const [bulkResult, setBulkResult] = useState(null)
+  const bulkFileRef = useRef(null)
 
+  // On mount: load supporting data and students for whatever class is already selected
   useEffect(() => {
-    const hasError = error.students !== null || error.stats !== null
-    if (hasError) return
-
     const fetchData = async () => {
       try {
         await Promise.all([
@@ -56,20 +59,28 @@ const Students = () => {
         console.error('Error fetching students data:', err)
       }
     }
-
     fetchData()
-  }, [dispatch, error.students, error.stats])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch])
 
-  // Pre-select the first class and fetch its students once classes are loaded
+  // Pre-select the first class (first visit) OR re-fetch students when returning to page
   useEffect(() => {
-    if (classes.length > 0 && !filters.class) {
+    if (classes.length === 0) return
+
+    if (!filters.class) {
+      // First visit: auto-select first class and fetch its students
       const firstId = (classes[0].id ?? classes[0].uuid ?? '').toString()
       if (firstId) {
         dispatch(setFilters({ class: firstId }))
         dispatch(fetchStudents({ class: firstId }))
       }
+    } else {
+      // Returning to page with a previously selected class: re-fetch students
+      dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
     }
-  }, [classes, filters.class, dispatch])
+  // Run when classes finish loading (length goes from 0 → N); not on every filter change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classes.length, dispatch])
 
   const handleSearch = (value) => {
     dispatch(setFilters({ search: value }))
@@ -166,6 +177,28 @@ const Students = () => {
       console.error('Error fetching student details:', error)
       setEditingStudent(student)
       setShowAddModal(true)
+    }
+  }
+
+  const handleBulkImport = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Reset so the same file can be re-selected if needed
+    e.target.value = ''
+    setBulkImporting(true)
+    try {
+      const response = await studentsService.bulkImportStudents(file)
+      const data = response?.data ?? response
+      setBulkResult(data)
+      setShowBulkResultModal(true)
+      // Refresh list with current filters after import
+      dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
+      dispatch(fetchStudentStats())
+    } catch (err) {
+      setBulkResult({ error: err.message })
+      setShowBulkResultModal(true)
+    } finally {
+      setBulkImporting(false)
     }
   }
 
@@ -302,13 +335,37 @@ const Students = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-900">Students</h2>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}
-          >
-            <Plus className="h-4 w-4" />
-            Add Student
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Hidden file input for bulk import */}
+            <input
+              ref={bulkFileRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleBulkImport}
+            />
+            <button
+              onClick={() => bulkFileRef.current?.click()}
+              disabled={bulkImporting}
+              className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-60"
+              style={{ backgroundColor: '#1fb7eb' }}
+            >
+              {bulkImporting ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
+              {bulkImporting ? 'Importing…' : 'Bulk Add'}
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors"
+              style={{ backgroundColor: '#00167a' }}
+            >
+              <Plus className="h-4 w-4" />
+              Add Student
+            </button>
+          </div>
         </div>
         
         <div className="overflow-x-auto">
@@ -461,6 +518,77 @@ const Students = () => {
                 <p className="text-sm text-red-800">{error.delete}</p>
               </div>
             )}
+          </div>
+        </Modal>
+      )}
+
+      {/* Bulk Import Result Modal */}
+      {showBulkResultModal && bulkResult && (
+        <Modal
+          isOpen={showBulkResultModal}
+          onClose={() => setShowBulkResultModal(false)}
+          title="Bulk Import Result"
+          size="md"
+        >
+          <div className="space-y-4">
+            {bulkResult.error ? (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800 font-medium">Import failed</p>
+                <p className="text-sm text-red-600 mt-1">{bulkResult.error}</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: 'Created', value: bulkResult.created ?? 0, color: 'green' },
+                    { label: 'Updated', value: bulkResult.updated ?? 0, color: 'blue' },
+                    { label: 'Skipped', value: bulkResult.skipped ?? 0, color: 'yellow' },
+                    { label: 'Errors', value: bulkResult.errors ?? 0, color: 'red' },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} className={`p-3 bg-${color}-50 border border-${color}-200 rounded-lg text-center`}>
+                      <div className={`text-2xl font-bold text-${color}-700`}>{value}</div>
+                      <div className={`text-sm text-${color}-600`}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {Array.isArray(bulkResult.sheets) && bulkResult.sheets.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 mb-2">Per sheet</p>
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      {bulkResult.sheets.map((s, i) => (
+                        <div key={i} className="flex justify-between text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded">
+                          <span className="font-medium">{s.sheet}</span>
+                          <span>{s.created} created · {s.updated} updated · {s.skipped} skipped · {s.errors} errors{s.note ? ` · ${s.note}` : ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {Array.isArray(bulkResult.rowErrors) && bulkResult.rowErrors.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-red-700 mb-2">Row errors</p>
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {bulkResult.rowErrors.map((e, i) => (
+                        <div key={i} className="text-xs text-red-600 bg-red-50 px-3 py-1.5 rounded">
+                          [{e.sheet}] {e.student}: {e.error}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            <div className="flex justify-end pt-3 border-t border-gray-200">
+              <button
+                onClick={() => setShowBulkResultModal(false)}
+                className="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors"
+                style={{ backgroundColor: '#00167a' }}
+              >
+                Done
+              </button>
+            </div>
           </div>
         </Modal>
       )}

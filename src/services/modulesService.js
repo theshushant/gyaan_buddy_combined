@@ -4,8 +4,9 @@ class ModulesService {
   async getModules(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
-      
+
       if (filters.subject) queryParams.append('subject', filters.subject);
+      if (filters.class) queryParams.append('class', filters.class);
       if (filters.search) queryParams.append('search', filters.search);
       if (filters.page) queryParams.append('page', filters.page);
       if (filters.limit) queryParams.append('limit', filters.limit);
@@ -50,7 +51,8 @@ class ModulesService {
         payload = new FormData();
         payload.append('name', moduleData.name);
         payload.append('subject', moduleData.subject);
-        
+        payload.append('class_instance', moduleData.class_instance);
+
         if (moduleData.description) payload.append('description', moduleData.description);
         if (moduleData.order !== undefined) payload.append('order', moduleData.order);
         if (moduleData.logo) payload.append('logo', moduleData.logo);
@@ -60,8 +62,9 @@ class ModulesService {
         payload = {
           name: moduleData.name,
           subject: moduleData.subject,
+          class_instance: moduleData.class_instance,
         };
-        
+
         if (moduleData.description) payload.description = moduleData.description;
         if (moduleData.order !== undefined) payload.order = moduleData.order;
         if (moduleData.logo) payload.logo = moduleData.logo;
@@ -121,9 +124,10 @@ class ModulesService {
       let payload;
       if (hasFile) {
         payload = new FormData();
-        
+
         if (moduleData.name) payload.append('name', moduleData.name);
         if (moduleData.subject) payload.append('subject', moduleData.subject);
+        if (moduleData.class_instance) payload.append('class_instance', moduleData.class_instance);
         if (moduleData.description !== undefined) payload.append('description', moduleData.description);
         if (moduleData.order !== undefined) payload.append('order', moduleData.order);
         if (moduleData.logo) payload.append('logo', moduleData.logo);
@@ -132,9 +136,10 @@ class ModulesService {
         if (moduleData.is_due !== undefined) payload.append('is_due', moduleData.is_due);
       } else {
         payload = {};
-        
+
         if (moduleData.name) payload.name = moduleData.name;
         if (moduleData.subject) payload.subject = moduleData.subject;
+        if (moduleData.class_instance) payload.class_instance = moduleData.class_instance;
         if (moduleData.description !== undefined) payload.description = moduleData.description;
         if (moduleData.order !== undefined) payload.order = moduleData.order;
         if (moduleData.logo !== undefined) payload.logo = moduleData.logo;

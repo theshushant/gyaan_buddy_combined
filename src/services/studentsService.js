@@ -219,6 +219,16 @@ class StudentsService {
     }
   }
 
+  async bulkImportStudents(file) {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      return await apiService.post('/students/bulk-import/', formData);
+    } catch (error) {
+      throw new Error(`Failed to import students: ${error.message}`);
+    }
+  }
+
   async getStudentProgressTrends(studentId, filters = {}) {
     try {
       const queryParams = new URLSearchParams();

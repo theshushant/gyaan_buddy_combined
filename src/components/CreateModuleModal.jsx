@@ -1,20 +1,23 @@
 import { useState, useEffect, useCallback } from 'react'
-import { X, BookOpen, FileText, Hash, ToggleLeft, ToggleRight, CheckCircle2, AlertCircle, Loader2, Image as ImageIcon, Upload } from 'lucide-react'
+import { X, BookOpen, FileText, Hash, ToggleLeft, ToggleRight, CheckCircle2, AlertCircle, Loader2, Image as ImageIcon, Upload, GraduationCap } from 'lucide-react'
 import subjectsService from '../services/subjectsService'
 import apiService from '../services/api'
 
-const CreateModuleModal = ({ 
-  isOpen, 
-  onClose, 
-  onSave, 
-  loading = false, 
-  error = null, 
-  moduleData = null, 
-  selectedSubject = null 
+const CreateModuleModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  loading = false,
+  error = null,
+  moduleData = null,
+  selectedSubject = null,
+  classes = [],
+  selectedClass = null
 }) => {
   const [formData, setFormData] = useState({
     name: '',
     subject: '',
+    class_instance: '',
     description: '',
     order: 1,
     is_active: true,
@@ -81,6 +84,7 @@ const CreateModuleModal = ({
         setFormData({
           name: moduleData.name || '',
           subject: moduleData.subject || moduleData.subject?.id || '',
+          class_instance: moduleData.class_instance || '',
           description: moduleData.description || '',
           order: moduleData.order || 1,
           is_active: moduleData.is_active !== undefined ? moduleData.is_active : true,
@@ -107,6 +111,7 @@ const CreateModuleModal = ({
         setFormData({
           name: '',
           subject: selectedSubject,
+          class_instance: selectedClass || '',
           description: '',
           order: 1,
           is_active: true,
@@ -121,6 +126,7 @@ const CreateModuleModal = ({
         setFormData({
           name: '',
           subject: '',
+          class_instance: selectedClass || '',
           description: '',
           order: 1,
           is_active: true,
@@ -133,7 +139,7 @@ const CreateModuleModal = ({
         setValidationErrors(null)
       }
     }
-  }, [moduleData, selectedSubject, isOpen])
+  }, [moduleData, selectedSubject, selectedClass, isOpen])
 
   const fetchSubjects = async () => {
     setLoadingSubjects(true)
@@ -155,6 +161,7 @@ const CreateModuleModal = ({
     setFormData({
       name: '',
       subject: '',
+      class_instance: '',
       description: '',
       order: 1,
       is_active: true,
@@ -238,6 +245,11 @@ const CreateModuleModal = ({
       case 'subject':
         if (!value) {
           error = 'Subject is required'
+        }
+        break
+      case 'class_instance':
+        if (!value) {
+          error = 'Class is required'
         }
         break
       case 'order':
@@ -420,6 +432,42 @@ const CreateModuleModal = ({
                     <p className="mt-2 text-sm text-red-600 flex items-center space-x-1">
                       <AlertCircle className="h-4 w-4" />
                       <span>{errors.subject}</span>
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
+                    <GraduationCap className="h-4 w-4 text-gray-500" />
+                    <span>Class <span className="text-red-500">*</span></span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={formData.class_instance}
+                      onChange={(e) => handleFieldChange('class_instance', e.target.value)}
+                      onBlur={() => handleFieldBlur('class_instance')}
+                      className={`w-full px-4 py-3 pl-11 border-2 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white appearance-none cursor-pointer ${
+                        touched.class_instance && errors.class_instance
+                          ? 'border-red-300 bg-red-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      } ${loading || !!selectedClass ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      disabled={loading || !!selectedClass}
+                    >
+                      <option value="">Select a class</option>
+                      {classes.map(cls => (
+                        <option key={cls.id} value={cls.id}>
+                          {cls.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                      <GraduationCap className={`h-5 w-5 ${touched.class_instance && errors.class_instance ? 'text-red-400' : 'text-gray-400'}`} />
+                    </div>
+                  </div>
+                  {touched.class_instance && errors.class_instance && (
+                    <p className="mt-2 text-sm text-red-600 flex items-center space-x-1">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>{errors.class_instance}</span>
                     </p>
                   )}
                 </div>

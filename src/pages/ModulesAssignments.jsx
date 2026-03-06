@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import modulesService from '../services/modulesService';
 import subjectsService from '../services/subjectsService';
+import classesService from '../services/classesService';
 import questionsService from '../services/questionsService';
 import aiService from '../services/aiService';
 import CreateModuleModal from '../components/CreateModuleModal';
@@ -44,6 +45,8 @@ const ModulesAssignments = () => {
   const [allModulesData, setAllModulesData] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState('');
+  const [classes, setClasses] = useState([]);
+  const [selectedClass, setSelectedClass] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -129,7 +132,8 @@ const ModulesAssignments = () => {
     setError(null);
 
     try {
-      const modulesResponse = await modulesService.getModules();
+      const filters = selectedClass ? { class: selectedClass } : {};
+      const modulesResponse = await modulesService.getModules(filters);
       const modulesData = modulesResponse.data || modulesResponse;
       const modulesList = Array.isArray(modulesData) ? modulesData : [];
 
@@ -146,6 +150,7 @@ const ModulesAssignments = () => {
         is_active: module.is_active !== undefined ? module.is_active : true,
         is_enabled: module.is_enabled !== undefined ? module.is_enabled : false,
         subject: module.subject || module.subject_id || module.subject?.id,
+        class_instance: module.class_instance || '',
         logo: module.logo || null,
         modules: undefined
       }));
@@ -157,7 +162,7 @@ const ModulesAssignments = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedClass]);
 
   const prevSubjectRef = useRef(selectedSubject);
 
@@ -183,19 +188,30 @@ const ModulesAssignments = () => {
   }, [selectedSubject, allModulesData]);
 
   useEffect(() => {
-    const fetchSubjects = async () => {
+    const fetchInitialData = async () => {
       try {
-        const response = await subjectsService.getSubjects();
-        const subjectsData = response.data || response;
+        const [subjectsResponse, classesResponse] = await Promise.all([
+          subjectsService.getSubjects(),
+          classesService.getClasses(),
+        ]);
+
+        const subjectsData = subjectsResponse.data || subjectsResponse;
         setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
         if (subjectsData.length > 0 && !selectedSubject) {
           setSelectedSubject(subjectsData[0].id);
         }
+
+        const classesData = classesResponse.data || classesResponse;
+        const classesList = Array.isArray(classesData) ? classesData : [];
+        setClasses(classesList);
+        if (classesList.length > 0) {
+          setSelectedClass(classesList[0].id.toString());
+        }
       } catch (err) {
-        console.error('Error fetching subjects:', err);
+        console.error('Error fetching initial data:', err);
       }
     };
-    fetchSubjects();
+    fetchInitialData();
   }, []);
 
   useEffect(() => {
@@ -681,17 +697,40 @@ const ModulesAssignments = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex-1 w-full md:w-auto">
+          <div className="flex flex-wrap items-end gap-4">
+            <div>
+              <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
+                <Filter className="h-4 w-4 text-gray-500" />
+                <span>Filter by Class</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedClass}
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                  className="w-56 px-4 py-3 pl-11 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white appearance-none cursor-pointer hover:border-gray-300"
+                >
+                  <option value="">All Classes</option>
+                  {classes.map((cls) => (
+                    <option key={cls.id} value={cls.id}>
+                      {cls.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <BookOpen className="h-5 w-5 text-gray-400" />
+                </div>
+              </div>
+            </div>
+            <div>
               <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
                 <Filter className="h-4 w-4 text-gray-500" />
                 <span>Filter by Subject</span>
               </label>
               <div className="relative">
-                <select 
+                <select
                   value={selectedSubject}
                   onChange={(e) => setSelectedSubject(e.target.value)}
-                  className="w-full md:w-64 px-4 py-3 pl-11 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white appearance-none cursor-pointer hover:border-gray-300"
+                  className="w-56 px-4 py-3 pl-11 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white appearance-none cursor-pointer hover:border-gray-300"
                 >
                   <option value="">Select Subject</option>
                   {subjects.map((subject) => (
@@ -705,13 +744,14 @@ const ModulesAssignments = () => {
                 </div>
               </div>
             </div>
-            <div className="flex items-end">
+            <div>
               <button
                 onClick={() => {
                   if (!selectedSubject) {
                     alert('Please select a subject first');
                     return;
                   }
+                  setEditingModule(null);
                   setShowCreateModal(true);
                   setCreateError(null);
                 }}
@@ -1009,6 +1049,8 @@ const ModulesAssignments = () => {
             loading={creatingModule}
             error={createError}
             selectedSubject={editingModule ? null : selectedSubject}
+            selectedClass={editingModule ? null : selectedClass}
+            classes={classes}
             moduleData={editingModule}
           />
         )}

@@ -91,17 +91,15 @@ const AISuggestions = () => {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 animate-slide-down">AI Suggestions</h1>
         <p className="text-gray-600 mt-2 animate-slide-right" style={{animationDelay: '0.1s'}}>Personalized recommendations to enhance your teaching and student learning experience.</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.2s'}}>
           <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600 mb-2 animate-count-up">{suggestions.length}</div>
+            <div className="text-3xl font-bold text-primary-500 mb-2 animate-count-up">{suggestions.length}</div>
             <div className="text-sm text-gray-600">Total Suggestions</div>
           </div>
         </div>
@@ -137,16 +135,16 @@ const AISuggestions = () => {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="mb-6">
         <div className="flex space-x-4">
           <button
             onClick={() => setSelectedCategory('all')}
             className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 ${
               selectedCategory === 'all' 
-                ? 'bg-blue-600 text-white' 
+                ? 'text-white' 
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            style={selectedCategory === 'all' ? { backgroundColor: '#00167a' } : {}}
           >
             All Categories
           </button>
@@ -154,9 +152,10 @@ const AISuggestions = () => {
             onClick={() => setSelectedCategory('content')}
             className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 ${
               selectedCategory === 'content' 
-                ? 'bg-blue-600 text-white' 
+                ? 'text-white' 
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            style={selectedCategory === 'content' ? { backgroundColor: '#00167a' } : {}}
           >
             Content
           </button>
@@ -164,9 +163,10 @@ const AISuggestions = () => {
             onClick={() => setSelectedCategory('assessment')}
             className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 ${
               selectedCategory === 'assessment' 
-                ? 'bg-blue-600 text-white' 
+                ? 'text-white' 
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            style={selectedCategory === 'assessment' ? { backgroundColor: '#00167a' } : {}}
           >
             Assessment
           </button>
@@ -174,16 +174,16 @@ const AISuggestions = () => {
             onClick={() => setSelectedCategory('engagement')}
             className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 ${
               selectedCategory === 'engagement' 
-                ? 'bg-blue-600 text-white' 
+                ? 'text-white' 
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            style={selectedCategory === 'engagement' ? { backgroundColor: '#00167a' } : {}}
           >
             Engagement
           </button>
         </div>
       </div>
 
-      {/* Suggestions Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {filteredSuggestions.map((suggestion, index) => (
           <div
@@ -193,7 +193,7 @@ const AISuggestions = () => {
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center transform transition-transform duration-200 hover:scale-110">
+                <div className="w-10 h-10 bg-primary-500/20 rounded-full flex items-center justify-center transform transition-transform duration-200 hover:scale-110">
                   <span className="text-lg">{getCategoryIcon(suggestion.category)}</span>
                 </div>
                 <div>
@@ -223,7 +223,7 @@ const AISuggestions = () => {
             </div>
 
             <div className="flex space-x-3">
-              <button className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
+              <button className="flex-1 text-white px-4 py-2 rounded-lg hover:bg-secondary-500 transition-all duration-300 transform hover:scale-105 hover:shadow-lg" style={{ backgroundColor: '#00167a' }}>
                 Implement
               </button>
               <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-300 transform hover:scale-105">
@@ -243,10 +243,9 @@ const AISuggestions = () => {
         </div>
       )}
 
-      {/* AI Insights */}
-      <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '1.2s'}}>
+      <div className="mt-8 bg-gradient-to-r from-primary-50 to-secondary-50 rounded-lg p-6 border border-primary-500/30 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '1.2s'}}>
         <div className="flex items-start space-x-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center transform transition-transform duration-200 hover:rotate-12">
+          <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center transform transition-transform duration-200 hover:rotate-12">
             <span className="text-white text-lg">✨</span>
           </div>
           <div>
@@ -254,7 +253,7 @@ const AISuggestions = () => {
             <p className="text-gray-600 mb-3">
               Based on your teaching patterns and student performance data, we recommend focusing on interactive content creation and personalized assessments. Your students show high engagement with gamified elements and perform better with visual learning materials.
             </p>
-            <button className="text-blue-600 hover:text-blue-800 font-medium transform transition-all duration-200 hover:scale-105 hover:translate-x-1">
+            <button className="text-primary-500 hover:text-secondary-500 font-medium transform transition-all duration-200 hover:scale-105 hover:translate-x-1">
               View Detailed Analysis →
             </button>
           </div>

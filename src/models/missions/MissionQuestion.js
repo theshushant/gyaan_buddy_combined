@@ -1,8 +1,5 @@
 import TimeStampUUID from '../base/TimeStampUUID.js';
 
-/**
- * Intermediate model for Mission-Question relationship with ordering.
- */
 export default class MissionQuestion extends TimeStampUUID {
   constructor(data = {}) {
     super(data);
@@ -11,10 +8,6 @@ export default class MissionQuestion extends TimeStampUUID {
     this.order = data.order || 1;
   }
 
-  /**
-   * Validate mission question data
-   * @returns {Object} Validation result with isValid and errors
-   */
   validate() {
     const errors = {};
 
@@ -36,44 +29,24 @@ export default class MissionQuestion extends TimeStampUUID {
     };
   }
 
-  /**
-   * Get mission ID
-   * @returns {string|null} Mission ID
-   */
   getMissionId() {
     return typeof this.mission === 'object' ? this.mission.id : this.mission;
   }
 
-  /**
-   * Get question ID
-   * @returns {string|null} Question ID
-   */
   getQuestionId() {
     return typeof this.question === 'object' ? this.question.id : this.question;
   }
 
-  /**
-   * Set mission
-   * @param {string|Object} mission - Mission ID or Mission object
-   */
   setMission(mission) {
     this.mission = mission;
     this.touch();
   }
 
-  /**
-   * Set question
-   * @param {string|Object} question - Question ID or Question object
-   */
   setQuestion(question) {
     this.question = question;
     this.touch();
   }
 
-  /**
-   * Update order
-   * @param {number} order - New order
-   */
   updateOrder(order) {
     if (order >= 1) {
       this.order = order;
@@ -81,10 +54,6 @@ export default class MissionQuestion extends TimeStampUUID {
     }
   }
 
-  /**
-   * Convert to plain object
-   * @returns {Object} Plain object representation
-   */
   toJSON() {
     return {
       ...super.toJSON(),
@@ -94,10 +63,6 @@ export default class MissionQuestion extends TimeStampUUID {
     };
   }
 
-  /**
-   * String representation
-   * @returns {string} String representation
-   */
   toString() {
     const missionTitle = typeof this.mission === 'object' ? 
       this.mission.title : 'Unknown Mission';

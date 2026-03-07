@@ -1,8 +1,6 @@
-// Teachers API service
 import apiService from './api';
 
 class TeachersService {
-  // Get all teachers with optional filters
   async getTeachers(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -13,26 +11,23 @@ class TeachersService {
       if (filters.page) queryParams.append('page', filters.page);
       if (filters.limit) queryParams.append('limit', filters.limit);
 
-      const endpoint = `/users/teachers${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const endpoint = `/teachers${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch teachers: ${error.message}`);
     }
   }
 
-  // Get teacher by ID
-  async getTeacherById(teacherId) {
+  async getTeacherById(teacherId, options = {}) {
     try {
-      return await apiService.get(`/users/${teacherId}`);
+      return await apiService.get(`/users/${teacherId}`, options);
     } catch (error) {
       throw new Error(`Failed to fetch teacher: ${error.message}`);
     }
   }
 
-  // Create new teacher
   async createTeacher(teacherData) {
     try {
-      // Transform frontend field names to backend field names
       const payload = {
         first_name: teacherData.firstName || teacherData.first_name,
         last_name: teacherData.lastName || teacherData.last_name,
@@ -40,7 +35,6 @@ class TeachersService {
         user_type: 'teacher'
       };
       
-      // Add password and confirm password if provided
       if (teacherData.password) {
         payload.password = teacherData.password;
       }
@@ -48,7 +42,6 @@ class TeachersService {
         payload.confirm_password = teacherData.confirmPassword || teacherData.confirm_password;
       }
       
-      // Add optional fields if they exist
       if (teacherData.phone_number || teacherData.phoneNumber) {
         payload.phone_number = teacherData.phone_number || teacherData.phoneNumber;
       }
@@ -63,57 +56,111 @@ class TeachersService {
         payload.employee_id = teacherData.employeeId || teacherData.employee_id;
       }
       
-      // Add is_class_teacher field
-      if (teacherData.isClassTeacher !== undefined || teacherData.is_class_teacher !== undefined) {
-        payload.is_class_teacher = teacherData.isClassTeacher !== undefined 
-          ? teacherData.isClassTeacher 
-          : teacherData.is_class_teacher;
+      const isClassTeacher = teacherData.isClassTeacher !== undefined 
+        ? teacherData.isClassTeacher 
+        : (teacherData.is_class_teacher !== undefined ? teacherData.is_class_teacher : false);
+      
+      if (isClassTeacher !== undefined) {
+        payload.is_class_teacher = isClassTeacher;
       }
       
-      // Handle class and subject assignments
-      // If there are assignments, use the first assignment's class_id and collect all subject_ids
       if (teacherData.assignments && teacherData.assignments.length > 0) {
-        // Get the first assignment's class_id
-        const firstAssignment = teacherData.assignments[0];
-        if (firstAssignment.class) {
-          payload.class_id = firstAssignment.class;
-        }
-        
-        // Collect all subject IDs from all assignments
-        const allSubjectIds = new Set();
-        teacherData.assignments.forEach(assignment => {
+        payload.assignments = teacherData.assignments.map(assignment => {
+          let classId = null;
+
+          if (assignment.class) {
+            if (typeof assignment.class === 'string' || typeof assignment.class === 'number') {
+              classId = assignment.class;
+            } else if (typeof assignment.class === 'object' && assignment.class.id) {
+              classId = assignment.class.id;
+            }
+          }
+
+          const subjectIds = [];
           if (assignment.subjects && Array.isArray(assignment.subjects)) {
             assignment.subjects.forEach(subjectId => {
-              allSubjectIds.add(subjectId);
+              let id = subjectId;
+              if (typeof subjectId === 'object' && subjectId !== null && subjectId.id) {
+                id = subjectId.id;
+              }
+              if (id) {
+                subjectIds.push(id);
+              }
             });
           }
-        });
+
+          return {
+            class: classId,
+            subjects: subjectIds
+          };
+        }).filter(assignment => assignment.class && assignment.subjects.length > 0);
         
-        if (allSubjectIds.size > 0) {
-          payload.subject_ids = Array.from(allSubjectIds);
+        const firstAssignment = teacherData.assignments[0];
+        if (firstAssignment && firstAssignment.class) {
+          let classId = null;
+          if (typeof firstAssignment.class === 'string' || typeof firstAssignment.class === 'number') {
+            classId = firstAssignment.class;
+          } else if (typeof firstAssignment.class === 'object' && firstAssignment.class.id) {
+            classId = firstAssignment.class.id;
+          }
+          if (classId) {
+            payload.class_id = classId;
+          }
+          
+          const subjectIds = [];
+          if (firstAssignment.subjects && Array.isArray(firstAssignment.subjects)) {
+            firstAssignment.subjects.forEach(subjectId => {
+              let id = subjectId;
+              if (typeof subjectId === 'object' && subjectId !== null && subjectId.id) {
+                id = subjectId.id;
+              }
+              if (id) {
+                subjectIds.push(id);
+              }
+            });
+          }
+          payload.subject_ids = subjectIds;
         }
+      } else if (teacherData.class_id || teacherData.classId) {
+        payload.class_id = teacherData.class_id || teacherData.classId;
+        if (teacherData.subject_ids || teacherData.subjectIds) {
+          payload.subject_ids = Array.isArray(teacherData.subject_ids || teacherData.subjectIds) 
+            ? (teacherData.subject_ids || teacherData.subjectIds)
+            : [];
+        } else {
+          payload.subject_ids = [];
+        }
+      } else {
+        payload.assignments = [];
+        payload.subject_ids = [];
+      }
+      if (teacherData.subject_ids !== undefined || teacherData.subjectIds !== undefined) {
+        const ids = teacherData.subject_ids || teacherData.subjectIds;
+        payload.subject_ids = Array.isArray(ids) ? ids : [];
+      }
+      
+      if (isClassTeacher && !payload.class_id) {
+        console.warn('TeachersService: is_class_teacher is true but no class_id provided');
       }
       
       console.log('TeachersService: Transformed payload:', payload);
       
-      // Use /users/ endpoint with user_type parameter
       return await apiService.post('/users/', payload);
     } catch (error) {
       throw new Error(`Failed to create teacher: ${error.message}`);
     }
   }
 
-  // Update teacher
   async updateTeacher(teacherId, teacherData) {
     try {
-      // Transform frontend field names to backend field names
+      console.log('TeachersService: updateTeacher called with teacherData:', teacherData);
+      
       const payload = {
         first_name: teacherData.firstName || teacherData.first_name,
         last_name: teacherData.lastName || teacherData.last_name,
         email: teacherData.email || null,
       };
       
-      // Add password and confirm password if provided
       if (teacherData.password) {
         payload.password = teacherData.password;
       }
@@ -121,7 +168,6 @@ class TeachersService {
         payload.confirm_password = teacherData.confirmPassword || teacherData.confirm_password;
       }
       
-      // Add optional fields if they exist
       if (teacherData.phone_number || teacherData.phoneNumber) {
         payload.phone_number = teacherData.phone_number || teacherData.phoneNumber;
       }
@@ -136,73 +182,109 @@ class TeachersService {
         payload.employee_id = teacherData.employeeId || teacherData.employee_id;
       }
       
-      // Add is_class_teacher field
-      if (teacherData.isClassTeacher !== undefined || teacherData.is_class_teacher !== undefined) {
-        payload.is_class_teacher = teacherData.isClassTeacher !== undefined 
-          ? teacherData.isClassTeacher 
-          : teacherData.is_class_teacher;
+      const isClassTeacher = teacherData.isClassTeacher !== undefined 
+        ? teacherData.isClassTeacher 
+        : (teacherData.is_class_teacher !== undefined ? teacherData.is_class_teacher : false);
+      
+      if (isClassTeacher !== undefined) {
+        payload.is_class_teacher = isClassTeacher;
       }
       
-      // Handle class and subject assignments
-      // If there are assignments, use the first assignment's class_id and collect all subject_ids
-      if (teacherData.assignments && teacherData.assignments.length > 0) {
-        // Get the first assignment's class_id
-        const firstAssignment = teacherData.assignments[0];
-        let classId = null;
+      const hasExplicitAssignments = teacherData.assignments !== undefined;
+      const hasExplicitClassId = teacherData.class_id !== undefined || teacherData.classId !== undefined;
+      const hasExplicitSubjectIds = teacherData.subject_ids !== undefined || teacherData.subjectIds !== undefined;
+      
+      if (hasExplicitAssignments && teacherData.assignments && teacherData.assignments.length > 0) {
+        console.log('TeachersService: Processing explicit assignments:', teacherData.assignments);
         
-        // Extract class_id - handle both string ID and object with id property
-        if (firstAssignment.class) {
+        payload.assignments = teacherData.assignments.map(assignment => {
+          let classId = null;
+          
+          if (assignment.class) {
+            if (typeof assignment.class === 'string' || typeof assignment.class === 'number') {
+              classId = assignment.class;
+            } else if (typeof assignment.class === 'object' && assignment.class.id) {
+              classId = assignment.class.id;
+            }
+          }
+          
+          const subjectIds = [];
+          if (assignment.subjects && Array.isArray(assignment.subjects)) {
+            assignment.subjects.forEach(subjectId => {
+              let id = subjectId;
+              if (typeof subjectId === 'object' && subjectId !== null && subjectId.id) {
+                id = subjectId.id;
+              }
+              if (id) {
+                subjectIds.push(id);
+              }
+            });
+          }
+          
+          return {
+            class_id: classId,
+            subject_ids: subjectIds
+          };
+        }).filter(assignment => assignment.class_id && assignment.subject_ids.length > 0);
+        
+        console.log('TeachersService: Formatted assignments for payload:', payload.assignments);
+        
+        const firstAssignment = teacherData.assignments[0];
+        if (firstAssignment && firstAssignment.class) {
+          let classId = null;
           if (typeof firstAssignment.class === 'string' || typeof firstAssignment.class === 'number') {
             classId = firstAssignment.class;
           } else if (typeof firstAssignment.class === 'object' && firstAssignment.class.id) {
             classId = firstAssignment.class.id;
           }
-        }
-        
-        if (classId) {
-          payload.class_id = classId;
-        }
-        
-        // Collect all subject IDs from all assignments
-        const allSubjectIds = new Set();
-        teacherData.assignments.forEach(assignment => {
-          if (assignment.subjects && Array.isArray(assignment.subjects)) {
-            assignment.subjects.forEach(subjectId => {
-              // Handle both string ID and object with id property
+          if (classId) {
+            payload.class_id = classId;
+            console.log('TeachersService: Extracted class_id from first assignment:', classId);
+          }
+          
+          const subjectIds = [];
+          if (firstAssignment.subjects && Array.isArray(firstAssignment.subjects)) {
+            firstAssignment.subjects.forEach(subjectId => {
               let id = subjectId;
               if (typeof subjectId === 'object' && subjectId !== null && subjectId.id) {
                 id = subjectId.id;
               }
-              // Ensure subjectId is a valid UUID string
               if (id) {
-                allSubjectIds.add(id);
+                subjectIds.push(id);
               }
             });
           }
-        });
-        
-        // Always include subject_ids as an array, even if empty
-        payload.subject_ids = Array.from(allSubjectIds);
-      } else if (teacherData.class_id || teacherData.classId) {
-        // Handle direct class_id and subject_ids if provided
-        payload.class_id = teacherData.class_id || teacherData.classId;
-        if (teacherData.subject_ids || teacherData.subjectIds) {
+          payload.subject_ids = subjectIds;
+          console.log('TeachersService: Extracted subject_ids from first assignment:', subjectIds);
+        }
+      } else if (hasExplicitClassId || hasExplicitSubjectIds) {
+        if (hasExplicitClassId) {
+          payload.class_id = teacherData.class_id || teacherData.classId;
+        }
+        if (hasExplicitSubjectIds) {
           payload.subject_ids = Array.isArray(teacherData.subject_ids || teacherData.subjectIds) 
             ? (teacherData.subject_ids || teacherData.subjectIds)
             : [];
+        } else if (hasExplicitClassId) {
+          payload.subject_ids = [];
         }
+        console.log('TeachersService: Using explicit class_id and subject_ids:', payload.class_id, payload.subject_ids);
+      } else {
+        console.log('TeachersService: No assignments provided - ignoring assignments to preserve existing ones');
       }
       
-      console.log('TeachersService: Transformed update payload:', payload);
+      if (isClassTeacher && !payload.class_id) {
+        console.warn('TeachersService: is_class_teacher is true but no class_id provided');
+      }
       
-      // Use /users/{id}/ endpoint for updating
+      console.log('TeachersService: Final update payload:', payload);
+      
       return await apiService.put(`/users/${teacherId}/`, payload);
     } catch (error) {
       throw new Error(`Failed to update teacher: ${error.message}`);
     }
   }
 
-  // Delete teacher
   async deleteTeacher(teacherId) {
     try {
       return await apiService.delete(`/users/${teacherId}/`);
@@ -211,7 +293,6 @@ class TeachersService {
     }
   }
 
-  // Get teacher's classes
   async getTeacherClasses(teacherId) {
     try {
       return await apiService.get(`/classes?teacher_id=${teacherId}`);
@@ -220,7 +301,6 @@ class TeachersService {
     }
   }
 
-  // Assign teacher to class
   async assignTeacherToClass(teacherId, classData) {
     try {
       return await apiService.get(`/teachers/${teacherId}/classes`, {
@@ -232,7 +312,6 @@ class TeachersService {
     }
   }
 
-  // Get teacher performance metrics
   async getTeacherPerformance(teacherId, filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -247,7 +326,6 @@ class TeachersService {
     }
   }
 
-  // Get teacher dashboard usage
   async getTeacherDashboardUsage(teacherId) {
     try {
       return await apiService.get(`/teachers/${teacherId}/dashboard-usage`);
@@ -256,10 +334,9 @@ class TeachersService {
     }
   }
 
-  // Get teacher statistics
   async getTeacherStats() {
     try {
-      return await apiService.get('/users/teachers/stats');
+      return await apiService.get('/teachers/stats');
     } catch (error) {
       throw new Error(`Failed to fetch teacher statistics: ${error.message}`);
     }

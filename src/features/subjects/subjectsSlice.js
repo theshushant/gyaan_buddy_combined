@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import subjectsService from '../../services/subjectsService'
 
-// Async thunks for subjects API calls
 export const fetchSubjects = createAsyncThunk(
   'subjects/fetchSubjects',
   async (filters = {}, { rejectWithValue }) => {
@@ -59,7 +58,6 @@ const subjectsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch subjects
       .addCase(fetchSubjects.pending, (state) => {
         state.loading.subjects = true
         state.error.subjects = null
@@ -68,7 +66,6 @@ const subjectsSlice = createSlice({
         state.loading.subjects = false
         console.log('Subjects payload:', action.payload)
         
-        // Handle different response structures
         if (Array.isArray(action.payload)) {
           state.subjects = action.payload
         } else if (action.payload && action.payload.subjects && Array.isArray(action.payload.subjects)) {
@@ -92,7 +89,6 @@ const subjectsSlice = createSlice({
         state.error.subjects = action.payload
       })
 
-      // Fetch subject by ID
       .addCase(fetchSubjectById.pending, (state) => {
         state.loading.currentSubject = true
         state.error.currentSubject = null

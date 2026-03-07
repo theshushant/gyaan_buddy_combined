@@ -22,13 +22,11 @@ const AIInsights = () => {
   } = useSelector(state => state.ai)
 
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = Object.values(error).some(err => err !== null)
     if (hasError) {
       return // Don't retry if there's already an error
     }
 
-    // Fetch AI insights data when component mounts
     const fetchAIInsightsData = async () => {
       try {
         await Promise.all([
@@ -50,16 +48,14 @@ const AIInsights = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     )
   }
 
   if (hasError) {
     const handleRetry = async () => {
-      // Clear error first
       dispatch(clearError())
-      // Then retry fetching data
       try {
         await Promise.all([
           dispatch(fetchAIInsights()),
@@ -80,7 +76,7 @@ const AIInsights = () => {
         <div className="mt-4 flex gap-3">
           <button
             onClick={handleRetry}
-            className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+            className="px-4 py-2 bg-primary-500 dark:bg-primary-600 text-white rounded hover:bg-primary-600 dark:hover:bg-primary-500 transition-colors"
           >
             Retry
           </button>
@@ -95,7 +91,6 @@ const AIInsights = () => {
     )
   }
 
-  // Use data from Redux state or fallback to default data
   const weakTopics = insights?.weakTopics || [
     {
       topic: 'Algebraic Equations',
@@ -134,7 +129,7 @@ const AIInsights = () => {
       title: 'Algebraic Equations Practice',
       icon: Calculator,
       description: 'Focuses on solving linear and quadratic equations with real-world applications.',
-      color: 'bg-blue-500',
+      color: 'bg-primary-500',
       link: 'View Activity →'
     },
     {
@@ -200,7 +195,6 @@ const AIInsights = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between animate-fade-in">
         <div className="flex items-center space-x-4">
           <button
@@ -215,13 +209,12 @@ const AIInsights = () => {
             <p className="text-gray-600 dark:text-gray-300 mt-2">Analyze student performance and identify areas for improvement.</p>
           </div>
         </div>
-        <button className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 hover:scale-105 transition-all duration-200">
+        <button className="flex items-center px-4 py-2 bg-primary-500 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-600 dark:hover:bg-primary-500 hover:scale-105 transition-all duration-200">
           <Download className="h-4 w-4 mr-2" />
           Export Report
         </button>
       </div>
 
-      {/* Common Weak Topics */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300 ease-in-out">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Common Weak Topics</h2>
@@ -268,7 +261,6 @@ const AIInsights = () => {
         </div>
       </div>
 
-      {/* AI-Generated Remedial Activities */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">AI-Generated Remedial Activities</h2>
@@ -285,7 +277,7 @@ const AIInsights = () => {
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{activity.title}</h3>
                     <p className="text-gray-600 dark:text-gray-300 text-sm mb-3">{activity.description}</p>
-                    <a href="#" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
+                    <a href="#" className="text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 text-sm font-medium">
                       {activity.link}
                     </a>
                   </div>
@@ -296,14 +288,12 @@ const AIInsights = () => {
         </div>
       </div>
 
-      {/* Topic Mastery Heatmap */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Topic Mastery Heatmap</h2>
           <p className="text-gray-600 dark:text-gray-300 mt-2">Visualize student mastery across topics. Darker shades indicate lower proficiency.</p>
         </div>
         <div className="p-6">
-          {/* Color Legend */}
           <div className="flex items-center justify-center mb-6 space-x-4">
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 bg-red-600 rounded"></div>
@@ -327,7 +317,6 @@ const AIInsights = () => {
             </div>
           </div>
 
-          {/* Heatmap Table */}
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-700">
@@ -369,7 +358,6 @@ const AIInsights = () => {
         </div>
       </div>
 
-      {/* AI Recommendations */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">AI Recommendations</h2>
@@ -383,7 +371,7 @@ const AIInsights = () => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Weak Topics</h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-4">Identify topics where students are struggling the most.</p>
-                <button className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
+                <button className="text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 text-sm font-medium">
                   View Details →
                 </button>
               </div>
@@ -396,7 +384,7 @@ const AIInsights = () => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Remedial Suggestions</h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-4">Get suggestions for remedial actions to improve student performance.</p>
-                <button className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
+                <button className="text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 text-sm font-medium">
                   View Suggestions →
                 </button>
               </div>

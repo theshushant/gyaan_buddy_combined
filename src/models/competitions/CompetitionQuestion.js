@@ -1,8 +1,5 @@
 import TimeStampUUID from '../base/TimeStampUUID.js';
 
-/**
- * Intermediate model for Competition-Question relationship with ordering.
- */
 export default class CompetitionQuestion extends TimeStampUUID {
   constructor(data = {}) {
     super(data);
@@ -12,10 +9,6 @@ export default class CompetitionQuestion extends TimeStampUUID {
     this.points = data.points || 1;
   }
 
-  /**
-   * Validate competition question data
-   * @returns {Object} Validation result with isValid and errors
-   */
   validate() {
     const errors = {};
 
@@ -41,44 +34,24 @@ export default class CompetitionQuestion extends TimeStampUUID {
     };
   }
 
-  /**
-   * Get competition ID
-   * @returns {string|null} Competition ID
-   */
   getCompetitionId() {
     return typeof this.competition === 'object' ? this.competition.id : this.competition;
   }
 
-  /**
-   * Get question ID
-   * @returns {string|null} Question ID
-   */
   getQuestionId() {
     return typeof this.question === 'object' ? this.question.id : this.question;
   }
 
-  /**
-   * Set competition
-   * @param {string|Object} competition - Competition ID or Competition object
-   */
   setCompetition(competition) {
     this.competition = competition;
     this.touch();
   }
 
-  /**
-   * Set question
-   * @param {string|Object} question - Question ID or Question object
-   */
   setQuestion(question) {
     this.question = question;
     this.touch();
   }
 
-  /**
-   * Update order
-   * @param {number} order - New order
-   */
   updateOrder(order) {
     if (order >= 1) {
       this.order = order;
@@ -86,10 +59,6 @@ export default class CompetitionQuestion extends TimeStampUUID {
     }
   }
 
-  /**
-   * Update points
-   * @param {number} points - New points
-   */
   updatePoints(points) {
     if (points >= 1) {
       this.points = points;
@@ -97,10 +66,6 @@ export default class CompetitionQuestion extends TimeStampUUID {
     }
   }
 
-  /**
-   * Convert to plain object
-   * @returns {Object} Plain object representation
-   */
   toJSON() {
     return {
       ...super.toJSON(),
@@ -111,10 +76,6 @@ export default class CompetitionQuestion extends TimeStampUUID {
     };
   }
 
-  /**
-   * String representation
-   * @returns {string} String representation
-   */
   toString() {
     const competitionTitle = typeof this.competition === 'object' ? 
       this.competition.title : 'Unknown Competition';

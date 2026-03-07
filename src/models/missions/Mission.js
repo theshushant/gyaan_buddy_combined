@@ -1,8 +1,5 @@
 import SoftDeleteModel from '../base/SoftDeleteModel.js';
 
-/**
- * Model for managing missions in the educational system.
- */
 export default class Mission extends SoftDeleteModel {
   constructor(data = {}) {
     super(data);
@@ -17,10 +14,6 @@ export default class Mission extends SoftDeleteModel {
     this.class_group = data.class_group || null; // Class ID or Class object
   }
 
-  /**
-   * Validate mission data
-   * @returns {Object} Validation result with isValid and errors
-   */
   validate() {
     const errors = {};
 
@@ -52,26 +45,16 @@ export default class Mission extends SoftDeleteModel {
     };
   }
 
-  /**
-   * Activate the mission
-   */
   activate() {
     this.is_active = true;
     this.touch();
   }
 
-  /**
-   * Deactivate the mission
-   */
   deactivate() {
     this.is_active = false;
     this.touch();
   }
 
-  /**
-   * Add a question to this mission
-   * @param {string|Object} question - Question ID or Question object
-   */
   addQuestion(question) {
     const questionId = typeof question === 'object' ? question.id : question;
     if (!this.questions.includes(questionId)) {
@@ -80,90 +63,49 @@ export default class Mission extends SoftDeleteModel {
     }
   }
 
-  /**
-   * Remove a question from this mission
-   * @param {string|Object} question - Question ID or Question object
-   */
   removeQuestion(question) {
     const questionId = typeof question === 'object' ? question.id : question;
     this.questions = this.questions.filter(id => id !== questionId);
     this.touch();
   }
 
-  /**
-   * Check if mission has a specific question
-   * @param {string|Object} question - Question ID or Question object
-   * @returns {boolean} True if mission has the question
-   */
   hasQuestion(question) {
     const questionId = typeof question === 'object' ? question.id : question;
     return this.questions.includes(questionId);
   }
 
-  /**
-   * Get total experience points for this mission
-   * @returns {number} Total experience points
-   */
   get total_exp() {
     return this.base_exp * this.exp_multiplier;
   }
 
-  /**
-   * Get question count
-   * @returns {number} Number of questions
-   */
   get question_count() {
     return this.questions.length;
   }
 
-  /**
-   * Get created by user ID
-   * @returns {string|null} User ID
-   */
   getCreatedById() {
     return typeof this.created_by === 'object' ? this.created_by.id : this.created_by;
   }
 
-  /**
-   * Get class group ID
-   * @returns {string|null} Class ID
-   */
   getClassGroupId() {
     return typeof this.class_group === 'object' ? this.class_group.id : this.class_group;
   }
 
-  /**
-   * Get question IDs
-   * @returns {Array<string>} Array of question IDs
-   */
   getQuestionIds() {
     return this.questions.map(question => 
       typeof question === 'object' ? question.id : question
     );
   }
 
-  /**
-   * Set created by user
-   * @param {string|Object} user - User ID or User object
-   */
   setCreatedBy(user) {
     this.created_by = user;
     this.touch();
   }
 
-  /**
-   * Set class group
-   * @param {string|Object} classGroup - Class ID or Class object
-   */
   setClassGroup(classGroup) {
     this.class_group = classGroup;
     this.touch();
   }
 
-  /**
-   * Convert to plain object
-   * @returns {Object} Plain object representation
-   */
   toJSON() {
     return {
       ...super.toJSON(),
@@ -179,10 +121,6 @@ export default class Mission extends SoftDeleteModel {
     };
   }
 
-  /**
-   * String representation
-   * @returns {string} String representation
-   */
   toString() {
     const className = typeof this.class_group === 'object' ? 
       this.class_group.name : 'Unknown Class';

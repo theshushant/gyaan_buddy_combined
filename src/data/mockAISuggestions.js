@@ -1,4 +1,3 @@
-// Mock AI suggestions data
 export default {
   '/ai/suggestions': {
     suggestions: [

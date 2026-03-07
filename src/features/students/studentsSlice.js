@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import studentsService from '../../services/studentsService'
 
-// Async thunks for students API calls
 export const fetchStudents = createAsyncThunk(
   'students/fetchStudents',
   async (filters = {}, { rejectWithValue }) => {
@@ -211,7 +210,6 @@ const studentsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch students
       .addCase(fetchStudents.pending, (state) => {
         state.loading.students = true
         state.error.students = null
@@ -219,7 +217,6 @@ const studentsSlice = createSlice({
       .addCase(fetchStudents.fulfilled, (state, action) => {
         state.loading.students = false
         console.log('Students payload:', action.payload)
-        // Handle both array and object responses
         if (Array.isArray(action.payload)) {
           state.students = action.payload
         } else if (action.payload && action.payload.students && Array.isArray(action.payload.students)) {
@@ -230,8 +227,11 @@ const studentsSlice = createSlice({
           if (action.payload.summary) {
             state.summary = action.payload.summary
           }
+        } else if (action.payload && action.payload.results && Array.isArray(action.payload.results)) {
+          state.students = action.payload.results
+          if (action.payload.pagination) state.pagination = action.payload.pagination
+          if (action.payload.summary) state.summary = action.payload.summary
         } else if (action.payload && action.payload.data) {
-          // Handle nested data response
           const data = action.payload.data
           if (Array.isArray(data)) {
             state.students = data
@@ -243,6 +243,8 @@ const studentsSlice = createSlice({
             if (data.summary) {
               state.summary = data.summary
             }
+          } else if (data.results && Array.isArray(data.results)) {
+            state.students = data.results
           } else {
             state.students = []
           }
@@ -256,14 +258,12 @@ const studentsSlice = createSlice({
         state.error.students = action.payload
       })
 
-      // Fetch student by ID
       .addCase(fetchStudentById.pending, (state) => {
         state.loading.currentStudent = true
         state.error.currentStudent = null
       })
       .addCase(fetchStudentById.fulfilled, (state, action) => {
         state.loading.currentStudent = false
-        // Extract student data from response (handle different response structures)
         if (action.payload && action.payload.data) {
           state.currentStudent = Array.isArray(action.payload.data) ? action.payload.data[0] : action.payload.data
         } else {
@@ -275,7 +275,6 @@ const studentsSlice = createSlice({
         state.error.currentStudent = action.payload
       })
 
-      // Create student
       .addCase(createStudent.pending, (state) => {
         state.loading.create = true
         state.error.create = null
@@ -284,10 +283,8 @@ const studentsSlice = createSlice({
         state.loading.create = false
         console.log('Create student payload:', action.payload)
         
-        // Extract student data from response (handle different response structures)
         let newStudent = null
         if (action.payload && action.payload.data) {
-          // Handle nested data response: { success: true, data: {...}, message: "..." }
           newStudent = Array.isArray(action.payload.data) ? action.payload.data[0] : action.payload.data
         } else if (action.payload && action.payload.student) {
           newStudent = action.payload.student
@@ -297,7 +294,6 @@ const studentsSlice = createSlice({
           newStudent = action.payload
         }
         
-        // Add new student to the list
         if (newStudent) {
           state.students.push(newStudent)
         }
@@ -307,14 +303,12 @@ const studentsSlice = createSlice({
         state.error.create = action.payload
       })
 
-      // Update student
       .addCase(updateStudent.pending, (state) => {
         state.loading.update = true
         state.error.update = null
       })
       .addCase(updateStudent.fulfilled, (state, action) => {
         state.loading.update = false
-        // Extract student data from response (handle different response structures)
         let updatedStudent = null
         if (action.payload && action.payload.data) {
           updatedStudent = Array.isArray(action.payload.data) ? action.payload.data[0] : action.payload.data
@@ -337,7 +331,6 @@ const studentsSlice = createSlice({
         state.error.update = action.payload
       })
 
-      // Delete student
       .addCase(deleteStudent.pending, (state) => {
         state.loading.delete = true
         state.error.delete = null
@@ -354,7 +347,6 @@ const studentsSlice = createSlice({
         state.error.delete = action.payload
       })
 
-      // Fetch student performance
       .addCase(fetchStudentPerformance.pending, (state) => {
         state.loading.performance = true
         state.error.performance = null
@@ -368,7 +360,6 @@ const studentsSlice = createSlice({
         state.error.performance = action.payload
       })
 
-      // Fetch student test history
       .addCase(fetchStudentTestHistory.pending, (state) => {
         state.loading.testHistory = true
         state.error.testHistory = null
@@ -382,12 +373,10 @@ const studentsSlice = createSlice({
         state.error.testHistory = action.payload
       })
 
-      // Fetch students by class
       .addCase(fetchStudentsByClass.fulfilled, (state, action) => {
         state.studentsByClass[action.payload.className] = action.payload.students
       })
 
-      // Fetch student stats
       .addCase(fetchStudentStats.pending, (state) => {
         state.loading.stats = true
         state.error.stats = null
@@ -395,7 +384,6 @@ const studentsSlice = createSlice({
       .addCase(fetchStudentStats.fulfilled, (state, action) => {
         state.loading.stats = false
         console.log('Student stats payload:', action.payload)
-        // Handle different response structures
         state.studentStats = action.payload.data || action.payload
       })
       .addCase(fetchStudentStats.rejected, (state, action) => {
@@ -403,7 +391,6 @@ const studentsSlice = createSlice({
         state.error.stats = action.payload
       })
 
-      // Fetch student progress trends
       .addCase(fetchStudentProgressTrends.pending, (state) => {
         state.loading.progressTrends = true
         state.error.progressTrends = null

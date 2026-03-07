@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import classesService from '../../services/classesService'
 
-// Async thunks for classes API calls
 export const fetchClasses = createAsyncThunk(
   'classes/fetchClasses',
   async (filters = {}, { rejectWithValue }) => {
@@ -114,7 +113,6 @@ const classesSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch classes
       .addCase(fetchClasses.pending, (state) => {
         state.loading.classes = true
         state.error.classes = null
@@ -123,10 +121,8 @@ const classesSlice = createSlice({
         state.loading.classes = false
         console.log('Classes payload:', action.payload)
         
-        // Handle different response structures
         if (Array.isArray(action.payload)) {
           state.classes = action.payload
-          // Calculate summary from array
           state.summary = calculateSummary(action.payload)
         } else if (action.payload && action.payload.classes && Array.isArray(action.payload.classes)) {
           state.classes = action.payload.classes
@@ -139,7 +135,6 @@ const classesSlice = createSlice({
             state.summary = calculateSummary(action.payload.classes)
           }
         } else if (action.payload && action.payload.data) {
-          // Handle nested data response
           const data = action.payload.data
           if (Array.isArray(data)) {
             state.classes = data
@@ -169,14 +164,12 @@ const classesSlice = createSlice({
         state.error.classes = action.payload
       })
 
-      // Fetch class by ID
       .addCase(fetchClassById.pending, (state) => {
         state.loading.currentClass = true
         state.error.currentClass = null
       })
       .addCase(fetchClassById.fulfilled, (state, action) => {
         state.loading.currentClass = false
-        // Handle different response structures
         state.currentClass = action.payload.data || action.payload.class || action.payload
       })
       .addCase(fetchClassById.rejected, (state, action) => {
@@ -184,7 +177,6 @@ const classesSlice = createSlice({
         state.error.currentClass = action.payload
       })
 
-      // Create class
       .addCase(createClass.pending, (state) => {
         state.loading.creating = true
         state.error.creating = null
@@ -193,10 +185,8 @@ const classesSlice = createSlice({
         state.loading.creating = false
         console.log('Create class payload:', action.payload)
         
-        // Extract class data from response (handle different response structures)
         let newClass = null
         if (action.payload && action.payload.data) {
-          // Handle nested data response: { success: true, data: {...}, message: "..." }
           newClass = Array.isArray(action.payload.data) ? action.payload.data[0] : action.payload.data
         } else if (action.payload && action.payload.class) {
           newClass = action.payload.class
@@ -206,10 +196,8 @@ const classesSlice = createSlice({
           newClass = action.payload
         }
         
-        // Add new class to the list
         if (newClass) {
           state.classes.push(newClass)
-          // Update summary
           state.summary.totalClasses = state.classes.length
         }
       })
@@ -218,7 +206,6 @@ const classesSlice = createSlice({
         state.error.creating = action.payload
       })
 
-      // Update class
       .addCase(updateClass.pending, (state) => {
         state.loading.updating = true
         state.error.updating = null
@@ -227,7 +214,6 @@ const classesSlice = createSlice({
         state.loading.updating = false
         console.log('Update class payload:', action.payload)
         
-        // Extract class data from response (handle different response structures)
         let updatedClass = null
         if (action.payload && action.payload.data) {
           updatedClass = Array.isArray(action.payload.data) ? action.payload.data[0] : action.payload.data
@@ -239,7 +225,6 @@ const classesSlice = createSlice({
           updatedClass = action.payload
         }
         
-        // Update class in the list
         if (updatedClass && updatedClass.id) {
           const index = state.classes.findIndex(c => c.id === updatedClass.id || c.uuid === updatedClass.id)
           if (index !== -1) {
@@ -254,7 +239,6 @@ const classesSlice = createSlice({
   }
 })
 
-// Helper function to calculate summary from classes array
 function calculateSummary(classes) {
   if (!Array.isArray(classes) || classes.length === 0) {
     return {

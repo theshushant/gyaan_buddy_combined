@@ -39,13 +39,11 @@ const Teachers = () => {
   const [teacherToDelete, setTeacherToDelete] = useState(null)
 
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = error.teachers !== null || error.stats !== null
     if (hasError) {
       return // Don't retry if there's already an error
     }
 
-    // Fetch teachers, stats, and subjects when component mounts
     const fetchData = async () => {
       try {
         await Promise.all([
@@ -61,9 +59,7 @@ const Teachers = () => {
     fetchData()
   }, [dispatch, error.teachers, error.stats])
 
-  // Update filters when search terms change
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = error.teachers !== null
     if (hasError) {
       return // Don't retry if there's already an error
@@ -132,7 +128,6 @@ const Teachers = () => {
       setShowSuccessModal(true)
     } catch (error) {
       console.error('Error deleting teacher:', error)
-      // Keep modal open on error so user can try again or cancel
     }
   }
 
@@ -159,34 +154,44 @@ const Teachers = () => {
 
   const getProgressBarColor = (percentage, type = 'usage') => {
     if (type === 'usage') {
-      // Dashboard Usage colors: green >= 80, orange >= 60, red < 60
       if (percentage >= 80) return 'bg-green-500'
       if (percentage >= 60) return 'bg-orange-500'
       return 'bg-red-500'
     } else {
-      // Overall Mastery colors: blue >= 80, orange >= 60, red < 60
-      if (percentage >= 80) return 'bg-blue-500'
+      if (percentage >= 80) return 'bg-primary-500'
       if (percentage >= 60) return 'bg-orange-500'
       return 'bg-red-500'
     }
   }
   
-  // Format classes display (e.g., "9A, 10B")
   const formatClasses = (classes) => {
     if (!Array.isArray(classes) || classes.length === 0) {
       return 'No classes assigned'
     }
     return classes.map(cls => {
-      // Handle both string and object formats
       if (typeof cls === 'string') return cls
       return cls.name || cls.class_name || cls.toString()
     }).join(', ')
   }
   
-  // Get teacher's primary subject
   const getTeacherSubject = (teacher) => {
-    if (teacher.subjects){
-      return teacher.subjects[0].name
+    if (Array.isArray(teacher.subjects) && teacher.subjects.length > 0) {
+      const firstSubject = teacher.subjects[0]
+      if (typeof firstSubject === 'object' && firstSubject !== null) {
+        return firstSubject.name || firstSubject.subject_name || 'N/A'
+      } else if (typeof firstSubject === 'string') {
+        return firstSubject
+      } else if (typeof firstSubject === 'number') {
+        const subject = subjects.find(s => s.id === firstSubject)
+        return subject?.name || subject?.subject_name || 'N/A'
+      }
+    }
+    if (teacher.subject) {
+      if (typeof teacher.subject === 'string') {
+        return teacher.subject
+      } else if (typeof teacher.subject === 'object' && teacher.subject !== null) {
+        return teacher.subject.name || teacher.subject.subject_name || 'N/A'
+      }
     }
     return 'N/A'
   }
@@ -197,7 +202,7 @@ const Teachers = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     )
   }
@@ -219,7 +224,6 @@ const Teachers = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Title and Add Button */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Teacher Management</h1>
@@ -227,14 +231,13 @@ const Teachers = () => {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
+          className="flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors shadow-sm hover:shadow-md" style={{ backgroundColor: '#00167a' }}
         >
           <Plus className="h-5 w-5" />
           Add New Teacher
         </button>
       </div>
 
-      {/* Search and Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1">
@@ -245,7 +248,7 @@ const Teachers = () => {
                 placeholder="Search teachers by name, subject..."
                 value={filters.search}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
               />
             </div>
           </div>
@@ -255,7 +258,7 @@ const Teachers = () => {
               <select
                 value={filters.subject || ''}
                 onChange={(e) => handleSubjectFilter(e.target.value)}
-                className="appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer"
+                className="appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 cursor-pointer"
               >
                 <option value="">All Subjects</option>
                 {Array.isArray(subjects) && subjects.map((subject) => {
@@ -274,7 +277,6 @@ const Teachers = () => {
         </div>
       </div>
 
-      {/* Teachers Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -306,8 +308,8 @@ const Teachers = () => {
                   <tr key={teacher.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm font-semibold text-blue-600">
+                        <div className="h-10 w-10 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-semibold text-primary-500">
                             {(teacher.firstName || '').charAt(0).toUpperCase()}{(teacher.lastName || '').charAt(0).toUpperCase()}
                           </span>
                         </div>
@@ -362,7 +364,7 @@ const Teachers = () => {
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => handleViewTeacher(teacher.id)}
-                          className="text-blue-600 hover:text-blue-800 transition-colors"
+                          className="text-primary-500 hover:text-primary-600 transition-colors"
                         >
                           View Profile
                         </button>
@@ -392,7 +394,6 @@ const Teachers = () => {
         </div>
       </div>
 
-      {/* Modals */}
       {showAddModal && (
         <AddTeacherModal
           isOpen={showAddModal}
@@ -447,7 +448,7 @@ const Teachers = () => {
             <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
               <button
                 onClick={handleDeleteCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
               >
                 Cancel
               </button>

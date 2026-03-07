@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   fetchDashboardMetrics,
@@ -7,40 +8,108 @@ import {
   fetchClassDistribution,
   fetchDashboardAlerts,
   fetchQuickSummary,
+  setFilters,
   clearError
 } from '../features/dashboard/dashboardSlice'
+import classesService from '../services/classesService'
+import subjectsService from '../services/subjectsService'
 
 const TeacherDashboard = () => {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { role } = useSelector(state => state.auth)
   const {
-    metrics,
     progressTrends,
     subjectPerformance,
     classDistribution,
     alerts,
+    weakTopicCount,
     quickSummary,
+    filters,
     loading,
     error
   } = useSelector(state => state.dashboard)
 
+  const [classes, setClasses] = useState([])
+  const [subjects, setSubjects] = useState([])
+  const [loadingOptions, setLoadingOptions] = useState(false)
+
+  const labelMapping = {
+    "My Students' Average Score": "Attempt rate",
+    "Module Completed": "Last Assignment Attempt Rate",
+    "Students Engaged": "Last Module Student Engagement",
+    "Questions Created": "Topics covered"
+  }
+
+  const getMappedLabel = (label) => {
+    return labelMapping[label] || label
+  }
+
+  const dashboardFilters = { class: filters.class || '', subject: filters.subject || '' }
+
+  const fetchClassesAndSubjects = useCallback(async () => {
+    setLoadingOptions(true)
+    try {
+      const [classesRes, subjectsRes] = await Promise.all([
+        classesService.getClasses(),
+        subjectsService.getSubjects()
+      ])
+      const classesData = classesRes.data ?? classesRes ?? []
+      const subjectsData = subjectsRes.data ?? subjectsRes ?? []
+      setClasses(Array.isArray(classesData) ? classesData : [])
+      setSubjects(Array.isArray(subjectsData) ? subjectsData : [])
+    } catch (err) {
+      console.error('Error fetching filter options:', err)
+      setClasses([])
+      setSubjects([])
+    } finally {
+      setLoadingOptions(false)
+    }
+  }, [])
+
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
+    fetchClassesAndSubjects()
+  }, [fetchClassesAndSubjects])
+
+  // Set default subject when subjects load and none is selected; then fetch with that subject
+  useEffect(() => {
+    if (subjects.length > 0 && !filters.subject) {
+      const firstId = subjects[0].id ?? subjects[0].uuid ?? ''
+      if (firstId) {
+        dispatch(setFilters({ subject: firstId }))
+        // Fetch immediately with default subject so API gets the filter (state update is async)
+        const applied = { class: filters.class || '', subject: String(firstId) }
+        const payload = { role: role || 'teacher', filters: applied }
+        dispatch(fetchDashboardMetrics(payload))
+        dispatch(fetchQuickSummary(payload))
+        dispatch(fetchProgressTrends(applied))
+        dispatch(fetchSubjectPerformance(applied))
+        dispatch(fetchClassDistribution())
+        dispatch(fetchDashboardAlerts())
+      }
+    }
+  }, [subjects, filters.subject, dispatch, role, filters.class])
+
+  useEffect(() => {
     const hasError = Object.values(error).some(err => err !== null)
     if (hasError) {
-      return // Don't retry if there's already an error
+      return
+    }
+    // When we have subjects but no subject filter, skip (default-subject effect will fetch)
+    if (subjects.length > 0 && !dashboardFilters.subject) {
+      return
     }
 
-    // Fetch dashboard data when component mounts
     const fetchDashboardData = async () => {
+      const payload = { role: role || 'teacher', filters: dashboardFilters }
       try {
         await Promise.all([
-          dispatch(fetchDashboardMetrics(role || 'teacher')),
-          dispatch(fetchProgressTrends()),
-          dispatch(fetchSubjectPerformance()),
+          dispatch(fetchDashboardMetrics(payload)),
+          dispatch(fetchProgressTrends(dashboardFilters)),
+          dispatch(fetchSubjectPerformance(dashboardFilters)),
           dispatch(fetchClassDistribution()),
           dispatch(fetchDashboardAlerts()),
-          dispatch(fetchQuickSummary(role || 'teacher'))
+          dispatch(fetchQuickSummary(payload))
         ])
       } catch (err) {
         console.error('Error fetching dashboard data:', err)
@@ -48,33 +117,31 @@ const TeacherDashboard = () => {
     }
 
     fetchDashboardData()
-  }, [dispatch, role, error])
+  }, [dispatch, role, error, dashboardFilters.subject, dashboardFilters.class, subjects.length])
 
-  // Check if any critical errors occurred
   const hasError = Object.values(error).some(err => err !== null)
   const isLoading = Object.values(loading).some(load => load === true)
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2" style={{ borderColor: '#00167a' }}></div>
       </div>
     )
   }
 
   if (hasError) {
     const handleRetry = async () => {
-      // Clear error first
       dispatch(clearError())
-      // Then retry fetching data
+      const payload = { role: role || 'teacher', filters: dashboardFilters }
       try {
         await Promise.all([
-          dispatch(fetchDashboardMetrics(role || 'teacher')),
-          dispatch(fetchProgressTrends()),
-          dispatch(fetchSubjectPerformance()),
+          dispatch(fetchDashboardMetrics(payload)),
+          dispatch(fetchProgressTrends(dashboardFilters)),
+          dispatch(fetchSubjectPerformance(dashboardFilters)),
           dispatch(fetchClassDistribution()),
           dispatch(fetchDashboardAlerts()),
-          dispatch(fetchQuickSummary(role || 'teacher'))
+          dispatch(fetchQuickSummary(payload))
         ])
       } catch (err) {
         console.error('Error retrying dashboard data:', err)
@@ -90,7 +157,8 @@ const TeacherDashboard = () => {
         <div className="mt-4 flex gap-3">
           <button
             onClick={handleRetry}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 text-white rounded transition-colors"
+            style={{ backgroundColor: '#00167a' }}
           >
             Retry
           </button>
@@ -105,70 +173,167 @@ const TeacherDashboard = () => {
     )
   }
 
-  // Use data from Redux state
-  const metricsData = metrics || []
-  const quickSummaryData = quickSummary || []
+  const handleFilterChange = (key, value) => {
+    const newFilters = { ...filters, [key]: value || '' }
+    dispatch(setFilters(newFilters))
+    const applied = { class: newFilters.class || '', subject: newFilters.subject || '' }
+    const payload = { role: role || 'teacher', filters: applied }
+    dispatch(fetchDashboardMetrics(payload))
+    dispatch(fetchQuickSummary(payload))
+    dispatch(fetchProgressTrends(applied))
+    dispatch(fetchSubjectPerformance(applied))
+  }
+
+  const quickSummaryExcludedLabels = [
+    'Attempt Rate',
+    'Questions Created',
+    'Weak Topics',
+    'Last Assignment Attempt Rate',
+    'Overall Student Percentage',
+  ]
+  const quickSummaryData = Array.isArray(quickSummary) && quickSummary.length > 0
+    ? quickSummary.filter((item) => !quickSummaryExcludedLabels.includes(item.label))
+    : [
+        { label: 'My Students', value: '—' },
+        { label: 'Classes Teaching', value: '—' },
+        { label: 'Chapter Covered', value: '—' },
+      ]
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-bold text-gray-800 animate-slide-down">Teacher Dashboard</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Class</span>
+            <select
+              value={filters.class || ''}
+              onChange={(e) => handleFilterChange('class', e.target.value)}
+              disabled={loadingOptions}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
+              style={{ color: '#00167a' }}
+            >
+              <option value="">All classes</option>
+              {classes.map((c) => (
+                <option key={c.id ?? c.uuid} value={c.id ?? c.uuid}>
+                  {c.name ?? c}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Subject</span>
+            <select
+              value={filters.subject || ''}
+              onChange={(e) => handleFilterChange('subject', e.target.value)}
+              disabled={loadingOptions}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
+              style={{ color: '#00167a' }}
+            >
+              <option value="">All subjects</option>
+              {subjects.map((s) => (
+                <option key={s.id ?? s.uuid} value={s.id ?? s.uuid}>
+                  {s.name ?? s}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
 
-      {/* Class-wise quick stats */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-700 animate-slide-right">Class-wise quick stats</h2>
-          <button className="text-blue-600 hover:text-blue-800 font-medium transform hover:scale-105 transition-all duration-200">
-            More &gt;
-          </button>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {metricsData.map((metric, index) => (
-            <div 
-              key={index}
-              className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" 
-              style={{animationDelay: `${(index + 1) * 0.1}s`}}
-            >
-              <div className="text-center">
-                <div className="text-4xl font-bold text-blue-600 mb-2 animate-count-up">{metric.value}</div>
-                <div className="text-gray-600">{metric.title}</div>
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.1s'}}>
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>
+                {quickSummary?.find((i) => i.label === 'Attempt Rate')?.value ?? '—'}
               </div>
+              <div className="text-gray-600">Attempt Rate</div>
             </div>
-          ))}
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.2s'}}>
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>
+                {quickSummary?.find((i) => i.label === 'Overall Student Percentage')?.value ?? '—'}
+              </div>
+              <div className="text-gray-600">Overall Student Percentage</div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.3s'}}>
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>
+                {quickSummary?.find((i) => i.label === 'Chapter Covered')?.value ?? '0/0'}
+              </div>
+              <div className="text-gray-600">Chapters Covered</div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.4s'}}>
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>
+                {quickSummary?.find((i) => i.label === 'Last Assignment Attempt Rate')?.value ?? '—'}
+              </div>
+              <div className="text-gray-600">Last Assignment Attempt Rate</div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.5s'}}>
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>{weakTopicCount ?? 0}</div>
+              <div className="text-gray-600">Weak Topics</div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.6s'}}>
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>
+                {quickSummary?.find((i) => i.label === 'My Students')?.value ?? '—'}
+              </div>
+              <div className="text-gray-600">Total Students</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Shortcuts to most-used actions */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-gray-700 mb-4 animate-slide-right">Shortcuts to most-used actions</h2>
         
         <div className="flex flex-wrap gap-4">
-          <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.4s'}}>
+          <button
+            className="text-white px-6 py-3 rounded-lg transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up"
+            style={{animationDelay: '0.4s', backgroundColor: '#00167a'}}
+            onClick={() => navigate('/modules')}
+          >
             <span className="text-xl transform transition-transform duration-200 hover:rotate-90">+</span>
             <span>Create Assignment</span>
           </button>
           
-          <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.5s'}}>
+          <button
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up"
+            style={{animationDelay: '0.5s'}}
+            onClick={() => navigate('/reports')}
+          >
             <span className="text-xl">📊</span>
             <span>View Reports</span>
           </button>
           
-          <button className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.6s'}}>
-            <span className="text-xl">🤖</span>
-            <span>AI Suggestions</span>
-          </button>
-          
-          <button className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.7s'}}>
+          <button
+            className="text-white px-6 py-3 rounded-lg transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg animate-slide-up"
+            style={{animationDelay: '0.7s', backgroundColor: '#1fb7eb'}}
+            onClick={() => navigate('/tests')}
+          >
             <span className="text-xl">📝</span>
             <span>Generate Quiz</span>
           </button>
         </div>
       </div>
 
-      {/* Quick Summary */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-gray-700 mb-4 animate-slide-right">Quick Summary</h2>
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -176,7 +341,7 @@ const TeacherDashboard = () => {
             {quickSummaryData.map((item, index) => (
               <div key={index} className="text-center animate-slide-up" style={{animationDelay: `${(index + 1) * 0.1}s`}}>
                 <div className="text-2xl font-bold text-gray-800">{item.value}</div>
-                <div className="text-sm text-gray-600">{item.label}</div>
+                <div className="text-sm text-gray-600">{getMappedLabel(item.label)}</div>
               </div>
             ))}
           </div>

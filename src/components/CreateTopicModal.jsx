@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { X } from 'lucide-react'
+import { X, Upload } from 'lucide-react'
 
-const CreateChapterModal = ({ 
+const CreateTopicModal = ({ 
   isOpen, 
   onClose, 
   onSave, 
@@ -18,10 +18,11 @@ const CreateChapterModal = ({
     is_important: false
   })
 
+  const [logoFile, setLogoFile] = useState(null)
+  const [logoPreview, setLogoPreview] = useState(null)
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
 
-  // Prefill form when chapterData is provided (edit mode)
   useEffect(() => {
     if (isOpen) {
       if (chapterData) {
@@ -32,6 +33,24 @@ const CreateChapterModal = ({
           is_enabled: chapterData.is_enabled !== undefined ? chapterData.is_enabled : true,
           is_important: chapterData.is_important !== undefined ? chapterData.is_important : false
         })
+        
+        if (chapterData.logo) {
+          let logoUrl = chapterData.logo
+          if (logoUrl && typeof logoUrl === 'string') {
+            if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
+            } else if (logoUrl.startsWith('/')) {
+              const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.REACT_APP_API_URL || 'http://localhost:8000'
+              const cleanBaseUrl = baseUrl.replace('/api', '')
+              logoUrl = `${cleanBaseUrl}${logoUrl}`
+            }
+            setLogoPreview(logoUrl)
+          } else {
+            setLogoPreview(null)
+          }
+        } else {
+          setLogoPreview(null)
+        }
+        setLogoFile(null)
         setErrors({})
         setTouched({})
       } else {
@@ -42,6 +61,8 @@ const CreateChapterModal = ({
           is_enabled: true,
           is_important: false
         })
+        setLogoFile(null)
+        setLogoPreview(null)
         setErrors({})
         setTouched({})
       }
@@ -51,7 +72,6 @@ const CreateChapterModal = ({
   const handleClose = useCallback(() => {
     if (loading) return
     
-    // Reset form on close
     setFormData({
       title: '',
       description: '',
@@ -59,12 +79,13 @@ const CreateChapterModal = ({
       is_enabled: true,
       is_important: false
     })
+    setLogoFile(null)
+    setLogoPreview(null)
     setErrors({})
     setTouched({})
     onClose()
   }, [loading, onClose])
 
-  // Handle escape key press
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape' && isOpen && !loading) {
@@ -74,7 +95,6 @@ const CreateChapterModal = ({
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
-      // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden'
     }
 
@@ -86,18 +106,17 @@ const CreateChapterModal = ({
 
   const isEditMode = !!chapterData
 
-  // Validation function
   const validateField = (name, value) => {
     let error = ''
     
     switch (name) {
       case 'title':
         if (!value.trim()) {
-          error = 'Chapter title is required'
+          error = 'Topic title is required'
         } else if (value.trim().length < 2) {
-          error = 'Chapter title must be at least 2 characters'
+          error = 'Topic title must be at least 2 characters'
         } else if (value.trim().length > 200) {
-          error = 'Chapter title must be 200 characters or less'
+          error = 'Topic title must be 200 characters or less'
         }
         break
       case 'order':
@@ -136,7 +155,6 @@ const CreateChapterModal = ({
   const handleFieldChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
     }
@@ -150,10 +168,51 @@ const CreateChapterModal = ({
     }
   }
 
+  const handleLogoChange = (e) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setErrors(prev => ({ ...prev, logo: 'Please select a valid image file' }))
+        return
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, logo: 'Image size must be less than 5MB' }))
+        return
+      }
+      
+      setLogoFile(file)
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors.logo
+        return newErrors
+      })
+      
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setLogoPreview(reader.result)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemoveLogo = () => {
+    setLogoFile(null)
+    setLogoPreview(null)
+    setErrors(prev => {
+      const newErrors = { ...prev }
+      delete newErrors.logo
+      return newErrors
+    })
+    const fileInput = document.getElementById('topic-logo-upload')
+    if (fileInput) {
+      fileInput.value = ''
+    }
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    // Mark all fields as touched
     const allTouched = {}
     Object.keys(formData).forEach(field => {
       allTouched[field] = true
@@ -161,7 +220,11 @@ const CreateChapterModal = ({
     setTouched(allTouched)
     
     if (validateForm()) {
-      onSave(formData)
+      const dataToSave = { ...formData }
+      if (logoFile) {
+        dataToSave.logo = logoFile
+      }
+      onSave(dataToSave)
     }
   }
 
@@ -176,11 +239,11 @@ const CreateChapterModal = ({
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                {isEditMode ? 'Edit Chapter' : 'Create New Chapter'}
+                {isEditMode ? 'Edit Topic' : 'Create New Topic'}
               </h3>
               {selectedModule && (
                 <p className="text-sm text-gray-500 mt-1">
-                  Module: {selectedModule.title || selectedModule.name}
+                  Chapter: {selectedModule.title || selectedModule.name}
                 </p>
               )}
             </div>
@@ -194,27 +257,25 @@ const CreateChapterModal = ({
           </div>
           
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Error message */}
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-800">{error}</p>
               </div>
             )}
 
-            {/* Chapter Information */}
             <div>
-              <h4 className="text-md font-semibold text-gray-900 mb-4">Chapter Information</h4>
+              <h4 className="text-md font-semibold text-gray-900 mb-4">Topic Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Chapter Title <span className="text-red-500">*</span>
+                    Topic Title <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => handleFieldChange('title', e.target.value)}
                     onBlur={() => handleFieldBlur('title')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                       touched.title && errors.title ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="e.g., Introduction to Algebra, Basic Concepts"
@@ -234,10 +295,10 @@ const CreateChapterModal = ({
                     onChange={(e) => handleFieldChange('description', e.target.value)}
                     onBlur={() => handleFieldBlur('description')}
                     rows={3}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                       touched.description && errors.description ? 'border-red-300' : 'border-gray-300'
                     }`}
-                    placeholder="Brief description of the chapter..."
+                    placeholder="Brief description of the topic..."
                     disabled={loading}
                   />
                   {touched.description && errors.description && (
@@ -255,7 +316,7 @@ const CreateChapterModal = ({
                     value={formData.order}
                     onChange={(e) => handleFieldChange('order', parseInt(e.target.value) || 1)}
                     onBlur={() => handleFieldBlur('order')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                       touched.order && errors.order ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="1"
@@ -265,15 +326,68 @@ const CreateChapterModal = ({
                     <p className="mt-1 text-sm text-red-600">{errors.order}</p>
                   )}
                   <p className="mt-1 text-xs text-gray-500">
-                    Order determines the sequence of chapters within the module
+                    Order determines the sequence of topics within the chapter
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Chapter Settings */}
             <div>
-              <h4 className="text-md font-semibold text-gray-900 mb-4">Chapter Settings</h4>
+              <h4 className="text-md font-semibold text-gray-900 mb-4">Topic Logo</h4>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-4">
+                  <input
+                    id="topic-logo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    className="hidden"
+                    disabled={loading}
+                  />
+                  <label
+                    htmlFor="topic-logo-upload"
+                    className={`flex items-center px-4 py-2 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                      errors.logo
+                        ? 'border-red-300 bg-red-50'
+                        : 'border-gray-300 hover:border-primary-500 hover:bg-primary-500/10'
+                    } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <Upload className={`h-5 w-5 mr-2 ${errors.logo ? 'text-red-400' : 'text-gray-500'}`} />
+                    <span className={`text-sm font-medium ${errors.logo ? 'text-red-600' : 'text-gray-700'}`}>
+                      {logoFile ? logoFile.name : 'Choose image file'}
+                    </span>
+                  </label>
+                </div>
+
+                {logoPreview && (
+                  <div className="relative inline-block">
+                    <img
+                      src={logoPreview}
+                      alt="Logo preview"
+                      className="h-32 w-32 object-cover rounded-lg border border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveLogo}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      disabled={loading}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+
+                {errors.logo && (
+                  <p className="mt-1 text-sm text-red-600">{errors.logo}</p>
+                )}
+                <p className="text-xs text-gray-500">
+                  Upload an image for the topic logo (optional). Max size: 5MB
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-md font-semibold text-gray-900 mb-4">Topic Settings</h4>
               
               <div className="space-y-4">
                 <div className="flex items-center">
@@ -282,7 +396,7 @@ const CreateChapterModal = ({
                     id="is_enabled"
                     checked={formData.is_enabled}
                     onChange={(e) => handleFieldChange('is_enabled', e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
                     disabled={loading}
                   />
                   <label htmlFor="is_enabled" className="ml-2 text-sm font-medium text-gray-700">
@@ -296,7 +410,7 @@ const CreateChapterModal = ({
                     id="is_important"
                     checked={formData.is_important}
                     onChange={(e) => handleFieldChange('is_important', e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
                     disabled={loading}
                   />
                   <label htmlFor="is_important" className="ml-2 text-sm font-medium text-gray-700">
@@ -306,7 +420,6 @@ const CreateChapterModal = ({
               </div>
             </div>
             
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
               <button
                 type="button"
@@ -318,12 +431,13 @@ const CreateChapterModal = ({
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 text-white rounded-lg transition-colors"
+                style={{ backgroundColor: '#00167a' }}
                 disabled={loading}
               >
                 {loading 
                   ? (isEditMode ? 'Updating...' : 'Creating...') 
-                  : (isEditMode ? 'Update Chapter' : 'Create Chapter')}
+                  : (isEditMode ? 'Update Topic' : 'Create Topic')}
               </button>
             </div>
           </form>
@@ -333,4 +447,4 @@ const CreateChapterModal = ({
   )
 }
 
-export default CreateChapterModal
+export default CreateTopicModal

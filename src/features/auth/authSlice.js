@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import authService from '../../services/authService'
 
-// Async thunks for authentication API calls
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (credentials, { rejectWithValue }) => {
@@ -147,7 +146,6 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Login user
       .addCase(loginUser.pending, (state) => {
         state.loading.login = true
         state.error.login = null
@@ -156,7 +154,6 @@ const authSlice = createSlice({
         state.loading.login = false
         state.isAuthenticated = true
         state.user = action.payload.user
-        // Map user_type to role for consistency (backend uses user_type, frontend uses role)
         state.role = action.payload.user.role || action.payload.user.user_type
         state.permissions = action.payload.user.permissions || []
         state.lastLogin = new Date().toISOString()
@@ -171,7 +168,6 @@ const authSlice = createSlice({
         state.error.login = action.payload
       })
 
-      // Logout user
       .addCase(logoutUser.pending, (state) => {
         state.loading.logout = true
         state.error.logout = null
@@ -188,7 +184,6 @@ const authSlice = createSlice({
       .addCase(logoutUser.rejected, (state, action) => {
         state.loading.logout = false
         state.error.logout = action.payload
-        // Still logout locally even if server request fails
         state.isAuthenticated = false
         state.user = null
         state.role = null
@@ -196,7 +191,6 @@ const authSlice = createSlice({
         state.lastLogin = null
       })
 
-      // Fetch current user
       .addCase(fetchCurrentUser.pending, (state) => {
         state.loading.fetchUser = true
         state.error.fetchUser = null
@@ -204,7 +198,6 @@ const authSlice = createSlice({
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
         state.loading.fetchUser = false
         state.user = action.payload
-        // Map user_type to role for consistency (backend uses user_type, frontend uses role)
         state.role = action.payload.role || action.payload.user_type
         state.permissions = action.payload.permissions || []
         state.isAuthenticated = true
@@ -214,8 +207,6 @@ const authSlice = createSlice({
         state.loading.fetchUser = false
         state.error.fetchUser = action.payload
         
-        // Only clear auth state if it's not a timeout/connection error
-        // For timeout errors, we might still have a valid token - let user try to access
         const isTimeoutError = action.payload && (
           action.payload.includes('timeout') || 
           action.payload.includes('Cannot connect to server') ||
@@ -223,17 +214,13 @@ const authSlice = createSlice({
         )
         
         if (!isTimeoutError) {
-          // Clear auth state only for real authentication errors
           state.isAuthenticated = false
           state.user = null
           state.role = null
           state.permissions = []
         }
-        // For timeout errors, keep state as-is so app can still load
-        // User will need to refresh or backend will need to be available
       })
 
-      // Update user profile
       .addCase(updateUserProfile.pending, (state) => {
         state.loading.updateProfile = true
         state.error.updateProfile = null
@@ -248,7 +235,6 @@ const authSlice = createSlice({
         state.error.updateProfile = action.payload
       })
 
-      // Change password
       .addCase(changeUserPassword.pending, (state) => {
         state.loading.changePassword = true
         state.error.changePassword = null
@@ -264,7 +250,6 @@ const authSlice = createSlice({
   }
 })
 
-// Export loginUser as login for easier usage
 export const login = loginUser
 
 export const { 

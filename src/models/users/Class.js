@@ -1,8 +1,5 @@
 import TimeStampUUID from '../base/TimeStampUUID.js';
 
-/**
- * Model for managing classes in the educational system.
- */
 export default class Class extends TimeStampUUID {
   constructor(data = {}) {
     super(data);
@@ -12,10 +9,6 @@ export default class Class extends TimeStampUUID {
     this.is_active = data.is_active !== undefined ? data.is_active : true;
   }
 
-  /**
-   * Validate class data
-   * @returns {Object} Validation result with isValid and errors
-   */
   validate() {
     const errors = {};
 
@@ -35,43 +28,25 @@ export default class Class extends TimeStampUUID {
     };
   }
 
-  /**
-   * Activate the class
-   */
   activate() {
     this.is_active = true;
     this.touch();
   }
 
-  /**
-   * Deactivate the class
-   */
   deactivate() {
     this.is_active = false;
     this.touch();
   }
 
-  /**
-   * Get school ID
-   * @returns {string|null} School ID
-   */
   getSchoolId() {
     return typeof this.school === 'object' ? this.school.id : this.school;
   }
 
-  /**
-   * Set school
-   * @param {string|Object} school - School ID or School object
-   */
   setSchool(school) {
     this.school = school;
     this.touch();
   }
 
-  /**
-   * Convert to plain object
-   * @returns {Object} Plain object representation
-   */
   toJSON() {
     return {
       ...super.toJSON(),
@@ -82,10 +57,6 @@ export default class Class extends TimeStampUUID {
     };
   }
 
-  /**
-   * String representation
-   * @returns {string} String representation
-   */
   toString() {
     return this.name;
   }

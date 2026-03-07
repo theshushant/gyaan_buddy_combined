@@ -1,8 +1,5 @@
 import TimeStampUUID from '../base/TimeStampUUID.js';
 
-/**
- * Model for tracking individual user progress in competitions.
- */
 export default class UserCompetitionProgress extends TimeStampUUID {
   constructor(data = {}) {
     super(data);
@@ -17,19 +14,12 @@ export default class UserCompetitionProgress extends TimeStampUUID {
     this.current_question = data.current_question || null; // Question ID or Question object
   }
 
-  /**
-   * Status choices
-   */
   static STATUS_CHOICES = [
     ['not_started', 'Not Started'],
     ['in_progress', 'In Progress'],
     ['completed', 'Completed']
   ];
 
-  /**
-   * Validate progress data
-   * @returns {Object} Validation result with isValid and errors
-   */
   validate() {
     const errors = {};
 
@@ -65,21 +55,12 @@ export default class UserCompetitionProgress extends TimeStampUUID {
     };
   }
 
-  /**
-   * Start the competition
-   */
   start() {
     this.status = 'in_progress';
     this.started_at = new Date();
     this.touch();
   }
 
-  /**
-   * Complete the competition
-   * @param {number} score - Final score
-   * @param {number} timeTaken - Time taken in seconds
-   * @param {number} expEarned - Experience points earned
-   */
   complete(score = 0, timeTaken = 0, expEarned = 0) {
     this.status = 'completed';
     this.completed_at = new Date();
@@ -89,10 +70,6 @@ export default class UserCompetitionProgress extends TimeStampUUID {
     this.touch();
   }
 
-  /**
-   * Update score
-   * @param {number} score - New score
-   */
   updateScore(score) {
     if (score >= 0) {
       this.score = score;
@@ -100,10 +77,6 @@ export default class UserCompetitionProgress extends TimeStampUUID {
     }
   }
 
-  /**
-   * Update time taken
-   * @param {number} timeTaken - Time taken in seconds
-   */
   updateTimeTaken(timeTaken) {
     if (timeTaken >= 0) {
       this.time_taken = timeTaken;
@@ -111,10 +84,6 @@ export default class UserCompetitionProgress extends TimeStampUUID {
     }
   }
 
-  /**
-   * Add experience earned
-   * @param {number} exp - Experience points to add
-   */
   addExpEarned(exp) {
     if (exp > 0) {
       this.exp_earned += exp;
@@ -122,51 +91,27 @@ export default class UserCompetitionProgress extends TimeStampUUID {
     }
   }
 
-  /**
-   * Set current question
-   * @param {string|Object} question - Question ID or Question object
-   */
   setCurrentQuestion(question) {
     this.current_question = question;
     this.touch();
   }
 
-  /**
-   * Get time taken in minutes
-   * @returns {number} Time taken in minutes
-   */
   getTimeTakenInMinutes() {
     return Math.round(this.time_taken / 60 * 100) / 100; // Round to 2 decimal places
   }
 
-  /**
-   * Get user ID
-   * @returns {string|null} User ID
-   */
   getUserId() {
     return typeof this.user === 'object' ? this.user.id : this.user;
   }
 
-  /**
-   * Get competition ID
-   * @returns {string|null} Competition ID
-   */
   getCompetitionId() {
     return typeof this.competition === 'object' ? this.competition.id : this.competition;
   }
 
-  /**
-   * Get current question ID
-   * @returns {string|null} Question ID
-   */
   getCurrentQuestionId() {
     return typeof this.current_question === 'object' ? this.current_question.id : this.current_question;
   }
 
-  /**
-   * Convert to plain object
-   * @returns {Object} Plain object representation
-   */
   toJSON() {
     return {
       ...super.toJSON(),
@@ -182,10 +127,6 @@ export default class UserCompetitionProgress extends TimeStampUUID {
     };
   }
 
-  /**
-   * String representation
-   * @returns {string} String representation
-   */
   toString() {
     const username = typeof this.user === 'object' ? this.user.username : 'Unknown User';
     const competitionTitle = typeof this.competition === 'object' ? this.competition.title : 'Unknown Competition';

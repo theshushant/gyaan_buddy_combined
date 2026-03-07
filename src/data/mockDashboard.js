@@ -1,4 +1,3 @@
-// Mock dashboard data
 export default {
   '/dashboard/metrics': {
     metrics: [

@@ -27,9 +27,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     setLoadingClasses(true)
     try {
       const response = await classesService.getClasses()
-      // Extract data array from response
       const classesData = response.data || response || []
-      // Store full class objects (with id and name)
       const classesList = classesData.map(cls => ({
         id: cls.id || cls.uuid,
         name: cls.name || cls
@@ -37,7 +35,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
       setClasses(classesList)
     } catch (error) {
       console.error('Failed to fetch classes:', error)
-      // Fallback to empty array on error
       setClasses([])
     } finally {
       setLoadingClasses(false)
@@ -48,9 +45,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     setLoadingSubjects(true)
     try {
       const response = await subjectsService.getSubjects()
-      // Extract data array from response
       const subjectsData = response.data || response || []
-      // Store full subject objects (with id and name)
       const subjectsList = subjectsData.map(subject => ({
         id: subject.id || subject.uuid,
         name: subject.name || subject
@@ -58,14 +53,12 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
       setSubjects(subjectsList)
     } catch (error) {
       console.error('Failed to fetch subjects:', error)
-      // Fallback to empty array on error
       setSubjects([])
     } finally {
       setLoadingSubjects(false)
     }
   }, [])
 
-  // Fetch classes and subjects from API when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchClasses()
@@ -73,20 +66,16 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     }
   }, [isOpen, fetchClasses, fetchSubjects])
 
-  // Pre-fill form when editing a student
   useEffect(() => {
     if (isOpen && student) {
-      // Format date of birth (handle both YYYY-MM-DD and danger date formats)
       let dateOfBirth = ''
       if (student.date_of_birth || student.dateOfBirth) {
         const dob = student.date_of_birth || student.dateOfBirth
-        // If it's already in YYYY-MM-DD format, use it directly
         if (dob.includes('T')) {
           dateOfBirth = dob.split('T')[0]
         } else if (dob.match(/^\d{4}-\d{2}-\d{2}$/)) {
           dateOfBirth = dob
         } else {
-          // Try to parse and format
           try {
             const date = new Date(dob)
             dateOfBirth = date.toISOString().split('T')[0]
@@ -96,51 +85,44 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
         }
       }
 
-      // Get class ID - handle both nested class object and direct class_id
       let classId = ''
       if (student.class_id || student.classId) {
         classId = student.class_id || student.classId
       } else if (student.class_instance) {
-        // Handle class_instance UUID from backend
         classId = student.class_instance
       } else if (student.class && typeof student.class === 'object' && student.class.id) {
         classId = student.class.id
       } else if (student.profile?.class_instance?.id) {
-        // Handle nested profile structure from backend
         classId = student.profile.class_instance.id
       } else if (student.class && typeof student.class === 'string') {
-        // If class is a string, we'll try to find it in the classes list
         const foundClass = classes.find(c => c.name === student.class)
         if (foundClass) {
           classId = foundClass.id
         }
       }
 
-      // Get subject IDs - handle both array of objects and array of IDs
       let subjectIds = []
       if (student.subject_ids || student.subjectIds) {
         const subjectIdsArray = student.subject_ids || student.subjectIds
         subjectIds = subjectIdsArray.map(subj => {
           if (typeof subj === 'object' && (subj.id || subj.uuid)) {
-            return subj.id || subj.uuid
+            return String(subj.id || subj.uuid)
           }
-          return subj
+          return String(subj)
         })
       } else if (student.subjects && Array.isArray(student.subjects)) {
         subjectIds = student.subjects.map(subj => {
           if (typeof subj === 'object' && (subj.id || subj.uuid)) {
-            return subj.id || subj.uuid
+            return String(subj.id || subj.uuid)
           }
-          // If subject is just a string (name), we need to find it in the subjects list
           if (typeof subj === 'string') {
             const foundSubject = subjects.find(s => s.name === subj || s.id === subj)
-            return foundSubject ? foundSubject.id : null
+            return foundSubject ? String(foundSubject.id) : null
           }
-          return subj
-        }).filter(id => id !== null) // Remove null values
+          return subj != null ? String(subj) : null
+        }).filter(id => id !== null)
       }
 
-      // Get parent contact - prioritize email, then phone_number
       let parentContact = ''
       if (student.email) {
         parentContact = student.email
@@ -162,7 +144,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
         subjectIds: subjectIds
       })
     } else if (isOpen && !student) {
-      // Reset form when opening for add mode
       setFormData({
         firstName: '',
         lastName: '',
@@ -179,7 +160,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     }
   }, [isOpen, student, classes])
 
-  // Validation functions
   const validateField = (name, value) => {
     let error = ''
     
@@ -269,7 +249,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
   const handleFieldChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
     }
@@ -286,7 +265,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    // Mark all fields as touched
     const allTouched = {}
     Object.keys(formData).forEach(field => {
       allTouched[field] = true
@@ -294,7 +272,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     setTouched(allTouched)
     
     if (validateForm()) {
-      // Prepare data with all required fields properly mapped
       const submitData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -309,12 +286,10 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
         subject_ids: formData.subjectIds
       }
       onSave(submitData)
-      // Don't close modal here - let parent handle it after successful API call
     }
   }
 
   const handleClose = () => {
-    // Reset form on close (only if not editing to avoid clearing data prematurely)
     if (!student) {
       setFormData({
         firstName: '',
@@ -334,13 +309,14 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
   }
 
   const handleSubjectChange = (subjectId) => {
-    const newSubjectIds = formData.subjectIds.includes(subjectId)
-      ? formData.subjectIds.filter(id => id !== subjectId)
-      : [...formData.subjectIds, subjectId]
+    const sid = subjectId?.id ?? subjectId
+    const sidStr = String(sid)
+    const newSubjectIds = formData.subjectIds.some(id => String(id) === sidStr)
+      ? formData.subjectIds.filter(id => String(id) !== sidStr)
+      : [...formData.subjectIds, sidStr]
     
     setFormData(prev => ({ ...prev, subjectIds: newSubjectIds }))
     
-    // Trigger validation for subjects
     setTouched(prev => ({ ...prev, subjectIds: true }))
     const error = validateField('subjectIds', newSubjectIds)
     if (error) {
@@ -372,16 +348,13 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
               {student ? 'Update the student details below.' : 'Fill in the details below to add a new student.'}
             </p>
             
-            {/* Error message */}
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-800">{error}</p>
               </div>
             )}
             
-            {/* Two Column Layout */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Left Column */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Student First Name</label>
@@ -390,7 +363,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     value={formData.firstName}
                     onChange={(e) => handleFieldChange('firstName', e.target.value)}
                     onBlur={() => handleFieldBlur('firstName')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.firstName && errors.firstName ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Enter first name"
@@ -407,7 +380,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     value={formData.rollNumber}
                     onChange={(e) => handleFieldChange('rollNumber', e.target.value)}
                     onBlur={() => handleFieldBlur('rollNumber')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.rollNumber && errors.rollNumber ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Enter roll number"
@@ -423,7 +396,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     value={formData.gender}
                     onChange={(e) => handleFieldChange('gender', e.target.value)}
                     onBlur={() => handleFieldBlur('gender')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.gender && errors.gender ? 'border-red-500' : 'border-gray-300'
                     }`}
                   >
@@ -444,7 +417,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     value={formData.parentName}
                     onChange={(e) => handleFieldChange('parentName', e.target.value)}
                     onBlur={() => handleFieldBlur('parentName')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.parentName && errors.parentName ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Enter parent/guardian name"
@@ -461,7 +434,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     value={formData.parentContact}
                     onChange={(e) => handleFieldChange('parentContact', e.target.value)}
                     onBlur={() => handleFieldBlur('parentContact')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.parentContact && errors.parentContact ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Enter email or phone number"
@@ -483,19 +456,23 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     ) : (
                       <>
                         <div className="space-y-2">
-                          {subjects.map(subject => (
-                            <label key={subject.id} className="flex items-center space-x-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={formData.subjectIds.includes(subject.id)}
-                                onChange={() => handleSubjectChange(subject.id)}
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                              />
-                              <span className="text-sm text-gray-700">{subject.name}</span>
-                            </label>
-                          ))}
+                          {subjects.map(subject => {
+                            const sid = subject.id || subject.uuid
+                            const isChecked = formData.subjectIds.some(id => String(id) === String(sid))
+                            return (
+                              <label key={sid} className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => handleSubjectChange(sid)}
+                                  className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                                />
+                                <span className="text-sm text-gray-700">{subject.name}</span>
+                              </label>
+                            )
+                          })}
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">Hold Ctrl/Cmd to select multiple subjects.</p>
+                        <p className="text-xs text-gray-500 mt-2">Select all subjects this student is enrolled in.</p>
                       </>
                     )}
                   </div>
@@ -505,7 +482,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                 </div>
               </div>
               
-              {/* Right Column */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Student Last Name</label>
@@ -514,7 +490,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     value={formData.lastName}
                     onChange={(e) => handleFieldChange('lastName', e.target.value)}
                     onBlur={() => handleFieldBlur('lastName')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.lastName && errors.lastName ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Enter last name"
@@ -532,7 +508,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                       value={formData.dateOfBirth}
                       onChange={(e) => handleFieldChange('dateOfBirth', e.target.value)}
                       onBlur={() => handleFieldBlur('dateOfBirth')}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                         touched.dateOfBirth && errors.dateOfBirth ? 'border-red-500' : 'border-gray-300'
                       }`}
                     />
@@ -549,7 +525,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     value={formData.classId}
                     onChange={(e) => handleFieldChange('classId', e.target.value)}
                     onBlur={() => handleFieldBlur('classId')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.classId && errors.classId ? 'border-red-500' : 'border-gray-300'
                     }`}
                     disabled={loadingClasses}
@@ -566,7 +542,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
               </div>
             </div>
             
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
               <button
                 type="button"
@@ -578,7 +553,8 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#00167a' }}
                 disabled={loading}
               >
                 {loading ? (student ? 'Updating...' : 'Adding...') : (student ? 'Update Student' : 'Add Student')}

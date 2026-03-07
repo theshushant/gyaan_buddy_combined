@@ -1,8 +1,5 @@
 import SoftDeleteModel from '../base/SoftDeleteModel.js';
 
-/**
- * Model for managing chapters within modules.
- */
 export default class ModuleChapter extends SoftDeleteModel {
   constructor(data = {}) {
     super(data);
@@ -16,10 +13,6 @@ export default class ModuleChapter extends SoftDeleteModel {
     this.created_by = data.created_by || null; // User ID or User object
   }
 
-  /**
-   * Validate chapter data
-   * @returns {Object} Validation result with isValid and errors
-   */
   validate() {
     const errors = {};
 
@@ -43,67 +36,39 @@ export default class ModuleChapter extends SoftDeleteModel {
     };
   }
 
-  /**
-   * Enable the chapter
-   */
   enable() {
     this.is_enabled = true;
     this.touch();
   }
 
-  /**
-   * Disable the chapter
-   */
   disable() {
     this.is_enabled = false;
     this.touch();
   }
 
-  /**
-   * Mark chapter as important
-   */
   markImportant() {
     this.is_important = true;
     this.touch();
   }
 
-  /**
-   * Unmark chapter as important
-   */
   unmarkImportant() {
     this.is_important = false;
     this.touch();
   }
 
-  /**
-   * Get module ID
-   * @returns {string|null} Module ID
-   */
   getModuleId() {
     return typeof this.module === 'object' ? this.module.id : this.module;
   }
 
-  /**
-   * Get created by user ID
-   * @returns {string|null} User ID
-   */
   getCreatedById() {
     return typeof this.created_by === 'object' ? this.created_by.id : this.created_by;
   }
 
-  /**
-   * Set module
-   * @param {string|Object} module - Module ID or Module object
-   */
   setModule(module) {
     this.module = module;
     this.touch();
   }
 
-  /**
-   * Convert to plain object
-   * @returns {Object} Plain object representation
-   */
   toJSON() {
     return {
       ...super.toJSON(),
@@ -118,10 +83,6 @@ export default class ModuleChapter extends SoftDeleteModel {
     };
   }
 
-  /**
-   * String representation
-   * @returns {string} String representation
-   */
   toString() {
     const moduleName = typeof this.module === 'object' ? this.module.name : 'Unknown Module';
     return `${this.title} - ${moduleName}`;

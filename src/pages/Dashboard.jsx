@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import dashboardService from '../services/dashboardService'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -122,6 +123,40 @@ const Dashboard = () => {
       </div>
     )
   }
+
+  // --- Clone School Data state (principal only) ---
+  const [schools, setSchools] = useState([])
+  const [cloneForm, setCloneForm] = useState({ sourceSchoolId: '', targetSchoolId: '', dryRun: false })
+  const [cloneStatus, setCloneStatus] = useState({ loading: false, result: null, error: null })
+
+  const fetchSchools = useCallback(async () => {
+    if (role !== 'principal') return
+    try {
+      const res = await dashboardService.getAllSchools()
+      const data = res?.data ?? res
+      setSchools(Array.isArray(data) ? data : [])
+    } catch {
+      // non-critical — form still shows with empty list
+    }
+  }, [role])
+
+  useEffect(() => { fetchSchools() }, [fetchSchools])
+
+  const handleCloneSubmit = async (e) => {
+    e.preventDefault()
+    setCloneStatus({ loading: true, result: null, error: null })
+    try {
+      const res = await dashboardService.cloneSchoolData({
+        sourceSchoolId: cloneForm.sourceSchoolId,
+        targetSchoolId: cloneForm.targetSchoolId,
+        dryRun: cloneForm.dryRun,
+      })
+      setCloneStatus({ loading: false, result: res?.data ?? res, error: null })
+    } catch (err) {
+      setCloneStatus({ loading: false, result: null, error: err.message })
+    }
+  }
+  // --- end Clone School Data ---
 
   const metricsData = Array.isArray(metrics) ? metrics : []
   
@@ -369,6 +404,143 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {role === 'principal' && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 mb-1">Clone School Data</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Copy all subjects, modules, chapters, questions and theories from one school to another.
+            Student and teacher data are not cloned.
+          </p>
+
+          <form onSubmit={handleCloneSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Source School <span className="text-red-500">*</span>
+                </label>
+                {schools.length > 0 ? (
+                  <select
+                    required
+                    value={cloneForm.sourceSchoolId}
+                    onChange={e => setCloneForm(f => ({ ...f, sourceSchoolId: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select source school…</option>
+                    {schools.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    required
+                    placeholder="Source school ID"
+                    value={cloneForm.sourceSchoolId}
+                    onChange={e => setCloneForm(f => ({ ...f, sourceSchoolId: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Target School <span className="text-red-500">*</span>
+                </label>
+                {schools.length > 0 ? (
+                  <select
+                    required
+                    value={cloneForm.targetSchoolId}
+                    onChange={e => setCloneForm(f => ({ ...f, targetSchoolId: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select target school…</option>
+                    {schools
+                      .filter(s => s.id !== cloneForm.sourceSchoolId)
+                      .map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    required
+                    placeholder="Target school ID"
+                    value={cloneForm.targetSchoolId}
+                    onChange={e => setCloneForm(f => ({ ...f, targetSchoolId: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                )}
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={cloneForm.dryRun}
+                onChange={e => setCloneForm(f => ({ ...f, dryRun: e.target.checked }))}
+                className="w-4 h-4 text-blue-600 rounded"
+              />
+              <span className="text-sm text-gray-700">Dry run (preview counts without saving)</span>
+            </label>
+
+            <button
+              type="submit"
+              disabled={cloneStatus.loading}
+              className="px-5 py-2 rounded-md text-white text-sm font-medium disabled:opacity-50 transition-colors"
+              style={{ backgroundColor: '#00167a' }}
+            >
+              {cloneStatus.loading ? 'Running…' : cloneForm.dryRun ? 'Preview Clone' : 'Clone Data'}
+            </button>
+          </form>
+
+          {cloneStatus.error && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-700">{cloneStatus.error}</p>
+            </div>
+          )}
+
+          {cloneStatus.result && (
+            <div className={`mt-4 p-4 rounded-lg border ${cloneStatus.result.dry_run ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
+              <p className="text-sm font-semibold mb-2 ${cloneStatus.result.dry_run ? 'text-amber-800' : 'text-green-800'}">
+                {cloneStatus.result.dry_run
+                  ? `Preview: ${cloneStatus.result.source_school} → ${cloneStatus.result.target_school}`
+                  : `Cloned: ${cloneStatus.result.source_school} → ${cloneStatus.result.target_school}`}
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                {cloneStatus.result.dry_run ? (
+                  <>
+                    <Stat label="Subjects" value={cloneStatus.result.subjects} />
+                    <Stat label="Classes" value={cloneStatus.result.classes} />
+                    <Stat label="Modules" value={cloneStatus.result.modules} />
+                    <Stat label="Chapters" value={cloneStatus.result.chapters} />
+                    <Stat label="Questions" value={cloneStatus.result.questions} />
+                    <Stat label="Theories" value={cloneStatus.result.theories} />
+                  </>
+                ) : (
+                  <>
+                    <Stat label="Subjects created" value={cloneStatus.result.stats?.subjects_created} />
+                    <Stat label="Subjects reused" value={cloneStatus.result.stats?.subjects_reused} />
+                    <Stat label="Modules created" value={cloneStatus.result.stats?.modules_created} />
+                    <Stat label="Chapters created" value={cloneStatus.result.stats?.chapters_created} />
+                    <Stat label="Questions cloned" value={cloneStatus.result.stats?.questions} />
+                    <Stat label="Theories cloned" value={cloneStatus.result.stats?.theories} />
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Stat({ label, value }) {
+  return (
+    <div className="bg-white rounded px-3 py-2 border border-gray-200">
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="font-semibold text-gray-800">{value ?? 0}</p>
     </div>
   )
 }

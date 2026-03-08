@@ -1775,6 +1775,17 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                                 {question.question_text}
                               </p>
 
+                              {question.image && (
+                                <div className="mt-3">
+                                  <img
+                                    src={question.image.startsWith('http') ? question.image : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${question.image}`}
+                                    alt="Question"
+                                    className="max-w-full max-h-48 rounded-lg border border-gray-200 object-contain"
+                                    onError={(e) => { e.target.style.display = 'none' }}
+                                  />
+                                </div>
+                              )}
+
                               {question.options && question.options.length > 0 && (
                                 <div className="mt-3 space-y-2">
                                   {question.options.map((option, optIdx) => (

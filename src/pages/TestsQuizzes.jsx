@@ -1652,9 +1652,10 @@ const TestsQuizzes = () => {
                             {question.image && (
                               <div className="mb-2">
                                 <img
-                                  src={question.image}
+                                  src={question.image.startsWith('http') ? question.image : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${question.image}`}
                                   alt="Question illustration"
                                   className="max-w-full max-h-48 rounded-lg border border-gray-200 object-contain"
+                                  onError={(e) => { e.target.style.display = 'none' }}
                                 />
                               </div>
                             )}

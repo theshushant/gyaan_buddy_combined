@@ -17,6 +17,7 @@ import TeacherProfile from './pages/TeacherProfile'
 import AIInsights from './pages/AIInsights'
 import APILogicScreen from './pages/APILogicScreen'
 import ClassRoster from './pages/ClassRoster'
+import Subjects from './pages/Subjects'
 
 import TeacherDashboard from './pages/TeacherDashboard'
 import MyStudents from './pages/MyStudents'
@@ -72,6 +73,7 @@ const AppRoutes = () => {
       <Route path="/teachers/:id" element={<TeacherProfile />} />
       <Route path="/classes" element={<Classes />} />
       <Route path="/classes/:id/roster" element={<ClassRoster />} />
+      <Route path="/subjects" element={<Subjects />} />
       <Route path="/reports" element={<Reports />} />
       <Route path="/ai-insights" element={<AIInsights />} />
       <Route path="/api-logic" element={<APILogicScreen />} />

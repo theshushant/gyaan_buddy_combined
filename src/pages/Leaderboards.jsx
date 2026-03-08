@@ -20,11 +20,6 @@ const Leaderboards = () => {
   const [filters, setFilters] = useState({
     class_id: '',
     subject_id: '',
-    grade: '',
-    min_xp: '',
-    max_xp: '',
-    min_score: '',
-    max_score: '',
   });
   const [scope, setScope] = useState('class'); // 'class' or 'grade'
 
@@ -124,39 +119,6 @@ const Leaderboards = () => {
       });
     }
 
-    if (filters.grade) {
-      filtered = filtered.filter(student => {
-        const studentGrade = student.grade || (student.class ? student.class.match(/\d+/)?.[0] : null);
-        return studentGrade && studentGrade.includes(filters.grade);
-      });
-    }
-
-    if (filters.min_xp) {
-      const minXp = parseInt(filters.min_xp);
-      if (!isNaN(minXp)) {
-        filtered = filtered.filter(student => student.xp >= minXp);
-      }
-    }
-    if (filters.max_xp) {
-      const maxXp = parseInt(filters.max_xp);
-      if (!isNaN(maxXp)) {
-        filtered = filtered.filter(student => student.xp <= maxXp);
-      }
-    }
-
-    if (filters.min_score) {
-      const minScore = parseInt(filters.min_score);
-      if (!isNaN(minScore)) {
-        filtered = filtered.filter(student => student.averageScore >= minScore);
-      }
-    }
-    if (filters.max_score) {
-      const maxScore = parseInt(filters.max_score);
-      if (!isNaN(maxScore)) {
-        filtered = filtered.filter(student => student.averageScore <= maxScore);
-      }
-    }
-
     if (activeTab === 'xp') {
       filtered.sort((a, b) => b.xp - a.xp);
     } else {
@@ -238,17 +200,6 @@ const Leaderboards = () => {
         </div>
 
         <div className="animate-slide-right" style={{animationDelay: '0.3s'}}>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Grade</label>
-          <input
-            type="text"
-            value={filters.grade}
-            onChange={(e) => handleFilterChange('grade', e.target.value)}
-            placeholder="e.g., 9, 10"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
-          />
-        </div>
-
-        <div className="animate-slide-right" style={{animationDelay: '0.4s'}}>
           <label className="block text-sm font-medium text-gray-700 mb-2">Scope</label>
           <div className="flex bg-gray-100 rounded-lg p-1">
             <button 
@@ -270,52 +221,6 @@ const Leaderboards = () => {
               Grade
             </button>
           </div>
-        </div>
-      </div>
-
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="animate-slide-right" style={{animationDelay: '0.5s'}}>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Min XP</label>
-          <input
-            type="number"
-            value={filters.min_xp}
-            onChange={(e) => handleFilterChange('min_xp', e.target.value)}
-            placeholder="Minimum XP"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          />
-        </div>
-
-        <div className="animate-slide-right" style={{animationDelay: '0.6s'}}>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Max XP</label>
-          <input
-            type="number"
-            value={filters.max_xp}
-            onChange={(e) => handleFilterChange('max_xp', e.target.value)}
-            placeholder="Maximum XP"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          />
-        </div>
-
-        <div className="animate-slide-right" style={{animationDelay: '0.7s'}}>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Min Score</label>
-          <input
-            type="number"
-            value={filters.min_score}
-            onChange={(e) => handleFilterChange('min_score', e.target.value)}
-            placeholder="Minimum Score"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          />
-        </div>
-
-        <div className="animate-slide-right" style={{animationDelay: '0.8s'}}>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Max Score</label>
-          <input
-            type="number"
-            value={filters.max_score}
-            onChange={(e) => handleFilterChange('max_score', e.target.value)}
-            placeholder="Maximum Score"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          />
         </div>
       </div>
 

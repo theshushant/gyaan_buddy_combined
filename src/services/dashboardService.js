@@ -93,7 +93,7 @@ class DashboardService {
   async getRecentActivities(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
-      
+
       if (filters.type) queryParams.append('type', filters.type);
       if (filters.limit) queryParams.append('limit', filters.limit);
 
@@ -101,6 +101,26 @@ class DashboardService {
       return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch recent activities: ${error.message}`);
+    }
+  }
+
+  async getAllSchools() {
+    try {
+      return await apiService.get('/schools/list_all/');
+    } catch (error) {
+      throw new Error(`Failed to fetch schools: ${error.message}`);
+    }
+  }
+
+  async cloneSchoolData({ sourceSchoolId, targetSchoolId, dryRun = false }) {
+    try {
+      return await apiService.post('/schools/clone/', {
+        source_school_id: sourceSchoolId,
+        target_school_id: targetSchoolId,
+        dry_run: dryRun,
+      });
+    } catch (error) {
+      throw new Error(`Failed to clone school data: ${error.message}`);
     }
   }
 }

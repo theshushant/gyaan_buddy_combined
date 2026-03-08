@@ -15,9 +15,9 @@ export const fetchTeachers = createAsyncThunk(
 
 export const fetchTeacherById = createAsyncThunk(
   'teachers/fetchTeacherById',
-  async (teacherId, options = {}, { rejectWithValue }) => {
+  async (teacherId, { rejectWithValue }) => {
     try {
-      const response = await teachersService.getTeacherById(teacherId, options)
+      const response = await teachersService.getTeacherById(teacherId)
       return response
     } catch (error) {
       return rejectWithValue(error.message)

@@ -87,7 +87,7 @@ class ModulesService {
 
   async setModuleDue(moduleId, isDue) {
     try {
-      return await apiService.patch(`/modules/${moduleId}/`, { is_due: isDue });
+      return await apiService.post(`/modules/${moduleId}/set_due/`, { is_due: isDue });
     } catch (error) {
       throw new Error(error.message || 'Failed to update module due status.');
     }
@@ -95,7 +95,7 @@ class ModulesService {
 
   async updateModuleDueDate(moduleId, dueDate) {
     try {
-      return await apiService.patch(`/modules/${moduleId}/`, { due_date: dueDate ?? null });
+      return await apiService.post(`/modules/${moduleId}/set_due/`, { due_date: dueDate ?? null });
     } catch (error) {
       throw new Error(error.message || 'Failed to update module due date.');
     }

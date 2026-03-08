@@ -7,6 +7,7 @@ import {
   Loader2,
   X,
   Trash2,
+  Pencil,
   Sparkles,
   BookOpen,
   FileText,
@@ -815,7 +816,21 @@ const TestsQuizzes = () => {
   const handleDone = async () => {
     const testId = selectedTest?.id || selectedTest?.uuid;
     const generatedIds = (generatedQuestions || []).map(q => String(q.id || q.uuid)).filter(Boolean);
+    const selectedIds = generatedIds.filter(id => selectedGeneratedQuestionIds.has(id));
     const deselectedIds = generatedIds.filter(id => !selectedGeneratedQuestionIds.has(id));
+
+    // Activate the questions the user kept (they were created inactive when for_test=true)
+    if (selectedIds.length > 0) {
+      try {
+        await aiService.activateAIQuestions(selectedIds);
+      } catch (err) {
+        console.error('Failed to activate selected questions:', err);
+        setGenerationError(err.message || 'Failed to activate selected questions.');
+        return;
+      }
+    }
+
+    // Remove deselected questions from the test
     if (testId && deselectedIds.length > 0) {
       try {
         await testsService.removeTestQuestions(testId, deselectedIds);
@@ -825,6 +840,7 @@ const TestsQuizzes = () => {
         return;
       }
     }
+
     setActiveTab('tests');
     setShowQuestionGenerator(false);
     setSelectedTest(null);
@@ -1016,6 +1032,16 @@ const TestsQuizzes = () => {
                       </div>
                 </div>
                 <div className="flex items-center space-x-2">
+                  {(!test.test_datetime || new Date(test.test_datetime) > new Date()) && (
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(test)}
+                      className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-all duration-300 flex items-center space-x-2"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      <span>Edit</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleDeleteTest(test)}
@@ -1029,7 +1055,7 @@ const TestsQuizzes = () => {
                     )}
                     <span>{deletingTestId === (test.id || test.uuid) ? 'Deleting...' : 'Delete'}</span>
                   </button>
-                  <Link 
+                  <Link
                         to={`/tests/performance/${test.id || test.uuid}`}
                         className="text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2 transform hover:scale-105"
                     style={{ backgroundColor: '#00167a' }}

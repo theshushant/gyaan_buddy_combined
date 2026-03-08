@@ -139,6 +139,15 @@ class AIService {
     }
   }
 
+  async activateAIQuestions(questionIds) {
+    try {
+      const response = await apiService.post('/ai/activate-questions/', { question_ids: questionIds });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to activate AI questions: ${error.message}`);
+    }
+  }
+
   async deactivateAIQuestions(questionIdsToKeep, moduleChapterId) {
     try {
       const response = await apiService.post('/ai/deactivate-questions/', {

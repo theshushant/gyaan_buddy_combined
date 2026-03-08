@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Search, Plus, ChevronDown, AlertTriangle, Trash2 } from 'lucide-react'
+import { Search, Plus, Upload, ChevronDown, AlertTriangle, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import AddTeacherModal from '../components/AddTeacherModal'
+import BulkImportTeachersModal from '../components/BulkImportTeachersModal'
 import SuccessModal from '../components/SuccessModal'
 import Modal from '../components/Modal'
 import {
@@ -32,6 +33,7 @@ const Teachers = () => {
   const { subjects } = useSelector(state => state.subjects)
 
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successData, setSuccessData] = useState({})
   const [editingTeacher, setEditingTeacher] = useState(null)
@@ -82,31 +84,25 @@ const Teachers = () => {
   }
 
   const handleAddTeacher = async (teacherData) => {
-    try {
-      await dispatch(createTeacher(teacherData)).unwrap()
-      setShowAddModal(false)
-      setSuccessData({
-        title: 'Teacher Added Successfully',
-        message: `${teacherData.firstName} ${teacherData.lastName} has been added to the system.`
-      })
-      setShowSuccessModal(true)
-    } catch (error) {
-      console.error('Error adding teacher:', error)
-    }
+    await dispatch(createTeacher(teacherData)).unwrap()
+    setShowAddModal(false)
+    setEditingTeacher(null)
+    setSuccessData({
+      title: 'Teacher Added Successfully',
+      message: `${teacherData.firstName} ${teacherData.lastName} has been added to the system.`
+    })
+    setShowSuccessModal(true)
   }
 
   const handleUpdateTeacher = async (teacherData) => {
-    try {
-      await dispatch(updateTeacher({ teacherId: editingTeacher.id, teacherData })).unwrap()
-      setEditingTeacher(null)
-      setSuccessData({
-        title: 'Teacher Updated Successfully',
-        message: `${teacherData.firstName} ${teacherData.lastName} has been updated.`
-      })
-      setShowSuccessModal(true)
-    } catch (error) {
-      console.error('Error updating teacher:', error)
-    }
+    await dispatch(updateTeacher({ teacherId: editingTeacher.id, teacherData })).unwrap()
+    setEditingTeacher(null)
+    setShowAddModal(false)
+    setSuccessData({
+      title: 'Teacher Updated Successfully',
+      message: `${teacherData.firstName} ${teacherData.lastName} has been updated.`
+    })
+    setShowSuccessModal(true)
   }
 
   const handleDeleteClick = (teacher) => {
@@ -229,13 +225,22 @@ const Teachers = () => {
           <h1 className="text-3xl font-bold text-gray-900">Teacher Management</h1>
           <p className="text-gray-600 mt-2">Oversee teacher activity and class performance.</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors shadow-sm hover:shadow-md" style={{ backgroundColor: '#00167a' }}
-        >
-          <Plus className="h-5 w-5" />
-          Add New Teacher
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowBulkImportModal(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <Upload className="h-4 w-4" />
+            Bulk Import
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors shadow-sm hover:shadow-md" style={{ backgroundColor: '#00167a' }}
+          >
+            <Plus className="h-5 w-5" />
+            Add New Teacher
+          </button>
+        </div>
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -393,6 +398,16 @@ const Teachers = () => {
           </table>
         </div>
       </div>
+
+      <BulkImportTeachersModal
+        isOpen={showBulkImportModal}
+        onClose={() => setShowBulkImportModal(false)}
+        onSuccess={() => {
+          dispatch(fetchTeachers(filters))
+          setSuccessData({ title: 'Import Successful', message: 'Teachers have been imported successfully.' })
+          setShowSuccessModal(true)
+        }}
+      />
 
       {showAddModal && (
         <AddTeacherModal

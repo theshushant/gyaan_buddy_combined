@@ -50,6 +50,24 @@ const Dashboard = () => {
     error
   } = useSelector(state => state.dashboard)
 
+  // --- Clone School Data state (principal only) ---
+  const [schools, setSchools] = useState([])
+  const [cloneForm, setCloneForm] = useState({ sourceSchoolId: '', targetSchoolId: '', dryRun: false })
+  const [cloneStatus, setCloneStatus] = useState({ loading: false, result: null, error: null })
+
+  const fetchSchools = useCallback(async () => {
+    if (role !== 'principal') return
+    try {
+      const res = await dashboardService.getAllSchools()
+      const data = res?.data ?? res
+      setSchools(Array.isArray(data) ? data : [])
+    } catch {
+      // non-critical — form still shows with empty list
+    }
+  }, [role])
+
+  useEffect(() => { fetchSchools() }, [fetchSchools])
+
   useEffect(() => {
     const hasError = Object.values(error).some(err => err !== null)
     if (hasError) {
@@ -76,6 +94,21 @@ const Dashboard = () => {
   const hasError = Object.values(error).some(err => err !== null)
   const isLoading = Object.values(loading).some(load => load === true)
 
+  const handleRetry = async () => {
+    dispatch(clearError())
+    try {
+      await Promise.all([
+        dispatch(fetchDashboardMetrics(role || 'principal')),
+        dispatch(fetchQuickSummary(role || 'principal')),
+        dispatch(fetchProgressTrends()),
+        dispatch(fetchDashboardAlerts()),
+        dispatch(fetchClassDistribution())
+      ])
+    } catch (err) {
+      console.error('Error retrying dashboard data:', err)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -85,21 +118,6 @@ const Dashboard = () => {
   }
 
   if (hasError) {
-    const handleRetry = async () => {
-      dispatch(clearError())
-      try {
-        await Promise.all([
-          dispatch(fetchDashboardMetrics(role || 'principal')),
-          dispatch(fetchQuickSummary(role || 'principal')),
-          dispatch(fetchProgressTrends()),
-          dispatch(fetchDashboardAlerts()),
-          dispatch(fetchClassDistribution())
-        ])
-      } catch (err) {
-        console.error('Error retrying dashboard data:', err)
-      }
-    }
-
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6">
         <h2 className="text-red-800 font-semibold">Error Loading Dashboard</h2>
@@ -123,24 +141,6 @@ const Dashboard = () => {
       </div>
     )
   }
-
-  // --- Clone School Data state (principal only) ---
-  const [schools, setSchools] = useState([])
-  const [cloneForm, setCloneForm] = useState({ sourceSchoolId: '', targetSchoolId: '', dryRun: false })
-  const [cloneStatus, setCloneStatus] = useState({ loading: false, result: null, error: null })
-
-  const fetchSchools = useCallback(async () => {
-    if (role !== 'principal') return
-    try {
-      const res = await dashboardService.getAllSchools()
-      const data = res?.data ?? res
-      setSchools(Array.isArray(data) ? data : [])
-    } catch {
-      // non-critical — form still shows with empty list
-    }
-  }, [role])
-
-  useEffect(() => { fetchSchools() }, [fetchSchools])
 
   const handleCloneSubmit = async (e) => {
     e.preventDefault()

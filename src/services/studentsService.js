@@ -223,7 +223,7 @@ class StudentsService {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      return await apiService.post('/students/bulk-import/', formData);
+      return await apiService.post('/students/bulk-import/', formData, { timeout: 300000 }); // 5 min for large files
     } catch (error) {
       throw new Error(`Failed to import students: ${error.message}`);
     }

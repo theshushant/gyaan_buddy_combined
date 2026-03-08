@@ -4,12 +4,12 @@ import { useSelector, useDispatch } from 'react-redux'
 import { logout, logoutUser } from '../features/auth/authSlice'
 import apiService from '../services/api'
 import authService from '../services/authService'
-import { 
-  Home, 
-  GraduationCap, 
-  Users, 
-  BookOpen, 
-  BarChart3, 
+import {
+  Home,
+  GraduationCap,
+  Users,
+  BookOpen,
+  BarChart3,
   Search,
   Menu,
   X,
@@ -23,7 +23,8 @@ import {
   Target,
   LogOut,
   Wand2,
-  Settings
+  Settings,
+  Layers
 } from 'lucide-react'
 
 const Layout = ({ children }) => {
@@ -72,6 +73,7 @@ const Layout = ({ children }) => {
     { name: 'Students', href: '/students', icon: GraduationCap },
     { name: 'Teachers', href: '/teachers', icon: Users },
     { name: 'Classes', href: '/classes', icon: BookOpen },
+    { name: 'Subjects', href: '/subjects', icon: Layers },
     { name: 'Reports', href: '/reports', icon: BarChart3 },
     { name: 'AI Insights', href: '/ai-insights', icon: Brain },
     { name: 'Settings', href: '/settings', icon: Settings },

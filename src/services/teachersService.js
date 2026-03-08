@@ -195,68 +195,13 @@ class TeachersService {
       const hasExplicitSubjectIds = teacherData.subject_ids !== undefined || teacherData.subjectIds !== undefined;
       
       if (hasExplicitAssignments && teacherData.assignments && teacherData.assignments.length > 0) {
-        console.log('TeachersService: Processing explicit assignments:', teacherData.assignments);
-        
         payload.assignments = teacherData.assignments.map(assignment => {
-          let classId = null;
-          
-          if (assignment.class) {
-            if (typeof assignment.class === 'string' || typeof assignment.class === 'number') {
-              classId = assignment.class;
-            } else if (typeof assignment.class === 'object' && assignment.class.id) {
-              classId = assignment.class.id;
-            }
-          }
-          
-          const subjectIds = [];
-          if (assignment.subjects && Array.isArray(assignment.subjects)) {
-            assignment.subjects.forEach(subjectId => {
-              let id = subjectId;
-              if (typeof subjectId === 'object' && subjectId !== null && subjectId.id) {
-                id = subjectId.id;
-              }
-              if (id) {
-                subjectIds.push(id);
-              }
-            });
-          }
-          
-          return {
-            class_id: classId,
-            subject_ids: subjectIds
-          };
-        }).filter(assignment => assignment.class_id && assignment.subject_ids.length > 0);
-        
-        console.log('TeachersService: Formatted assignments for payload:', payload.assignments);
-        
-        const firstAssignment = teacherData.assignments[0];
-        if (firstAssignment && firstAssignment.class) {
-          let classId = null;
-          if (typeof firstAssignment.class === 'string' || typeof firstAssignment.class === 'number') {
-            classId = firstAssignment.class;
-          } else if (typeof firstAssignment.class === 'object' && firstAssignment.class.id) {
-            classId = firstAssignment.class.id;
-          }
-          if (classId) {
-            payload.class_id = classId;
-            console.log('TeachersService: Extracted class_id from first assignment:', classId);
-          }
-          
-          const subjectIds = [];
-          if (firstAssignment.subjects && Array.isArray(firstAssignment.subjects)) {
-            firstAssignment.subjects.forEach(subjectId => {
-              let id = subjectId;
-              if (typeof subjectId === 'object' && subjectId !== null && subjectId.id) {
-                id = subjectId.id;
-              }
-              if (id) {
-                subjectIds.push(id);
-              }
-            });
-          }
-          payload.subject_ids = subjectIds;
-          console.log('TeachersService: Extracted subject_ids from first assignment:', subjectIds);
-        }
+          const classId = typeof assignment.class === 'object' ? assignment.class?.id : assignment.class;
+          const subjectIds = (assignment.subjects || []).map(s =>
+            typeof s === 'object' && s !== null ? s.id : s
+          ).filter(Boolean);
+          return { class: classId, subjects: subjectIds };
+        }).filter(a => a.class && a.subjects.length > 0);
       } else if (hasExplicitClassId || hasExplicitSubjectIds) {
         if (hasExplicitClassId) {
           payload.class_id = teacherData.class_id || teacherData.classId;
@@ -339,6 +284,17 @@ class TeachersService {
       return await apiService.get('/teachers/stats');
     } catch (error) {
       throw new Error(`Failed to fetch teacher statistics: ${error.message}`);
+    }
+  }
+
+  async bulkImportTeachers(file, dryRun = false) {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const url = `/teachers/bulk_import/${dryRun ? '?dry_run=true' : ''}`;
+      return await apiService.post(url, formData, { isFormData: true });
+    } catch (error) {
+      throw error;
     }
   }
 

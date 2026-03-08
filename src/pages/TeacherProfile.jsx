@@ -343,8 +343,8 @@ const TeacherProfile = () => {
                   </div>
                   
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                    <span className="text-sm font-medium text-gray-500 sm:w-24">Email:</span>
-                    <span className="text-gray-900">{transformedData.email || 'N/A'}</span>
+                    <span className="text-sm font-medium text-gray-500 sm:w-24 shrink-0">Email:</span>
+                    <span className="text-gray-900 break-all">{transformedData.email || 'N/A'}</span>
                   </div>
                   
                   {transformedData.employeeId && (

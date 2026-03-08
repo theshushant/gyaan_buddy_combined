@@ -231,6 +231,13 @@ const studentsSlice = createSlice({
           state.students = action.payload.results
           if (action.payload.pagination) state.pagination = action.payload.pagination
           if (action.payload.summary) state.summary = action.payload.summary
+          // Capture DRF total count as fallback for studentStats
+          if (action.payload.count != null && !state.studentStats?.totalStudents) {
+            state.studentStats = {
+              ...(state.studentStats || {}),
+              totalStudents: action.payload.count,
+            }
+          }
         } else if (action.payload && action.payload.data) {
           const data = action.payload.data
           if (Array.isArray(data)) {
@@ -384,7 +391,12 @@ const studentsSlice = createSlice({
       .addCase(fetchStudentStats.fulfilled, (state, action) => {
         state.loading.stats = false
         console.log('Student stats payload:', action.payload)
-        state.studentStats = action.payload.data || action.payload
+        const raw = action.payload.data || action.payload
+        state.studentStats = {
+          ...raw,
+          totalStudents: raw.totalStudents ?? raw.total_students ?? raw.count ?? 0,
+          averageScore: raw.averageScore ?? raw.average_score ?? 0,
+        }
       })
       .addCase(fetchStudentStats.rejected, (state, action) => {
         state.loading.stats = false

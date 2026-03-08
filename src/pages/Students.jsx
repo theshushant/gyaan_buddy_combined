@@ -218,8 +218,8 @@ const Students = () => {
   })
 
   const summaryCards = [
-    { label: 'Total Students', value: studentStats?.totalStudents?.toString() || '0' },
-    { label: 'Average Score', value: `${studentStats?.averageScore || 0}%` },
+    { label: 'Total Students', value: (studentStats?.totalStudents ?? studentStats?.total_students ?? 0).toString() },
+    { label: 'Average Score', value: `${studentStats?.averageScore ?? studentStats?.average_score ?? 0}%` },
     { label: 'Top Performer', value: summary?.topPerformer || 'N/A' }
   ]
 

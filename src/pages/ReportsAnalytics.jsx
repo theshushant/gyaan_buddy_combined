@@ -584,7 +584,10 @@ const ReportsAnalytics = () => {
                           }
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex gap-1">{modWeakLevels.map((l) => <span key={l} className="w-6 h-6 flex items-center justify-center text-xs font-medium border border-red-300 text-red-600 rounded">{l}</span>)}</div>
+                          {modProficiency === 0
+                            ? <span className="text-gray-400 text-sm">—</span>
+                            : <div className="flex gap-1">{modWeakLevels.map((l) => <span key={l} className="w-6 h-6 flex items-center justify-center text-xs font-medium border border-red-300 text-red-600 rounded">{l}</span>)}</div>
+                          }
                         </td>
                         <td className="px-6 py-4">
                           <span className="text-xs text-gray-400 italic">expand</span>
@@ -615,10 +618,15 @@ const ReportsAnalytics = () => {
                             <span className="text-gray-400 text-sm">—</span>
                           </td>
                           <td className="px-6 py-3">
-                            <div className="flex gap-1">{chWeakLevels.map((l) => <span key={l} className="w-6 h-6 flex items-center justify-center text-xs font-medium border border-red-300 text-red-600 rounded">{l}</span>)}</div>
+                            {ch.proficiency === 0
+                              ? <span className="text-gray-400 text-sm">—</span>
+                              : <div className="flex gap-1">{chWeakLevels.map((l) => <span key={l} className="w-6 h-6 flex items-center justify-center text-xs font-medium border border-red-300 text-red-600 rounded">{l}</span>)}</div>
+                            }
                           </td>
                           <td className="px-6 py-3">
-                            {status === 'go'
+                            {ch.proficiency === 0
+                              ? <span className="text-gray-400 text-sm">—</span>
+                              : status === 'go'
                               ? <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-green-50 text-green-600 border border-green-200"><span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>GO</span>
                               : status === 'watch'
                               ? <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block"></span>WATCH</span>

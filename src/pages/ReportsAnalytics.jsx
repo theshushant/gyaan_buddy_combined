@@ -578,7 +578,9 @@ const ReportsAnalytics = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          {mod.weakSubtopics.length === 0
+                          {modProficiency === 0
+                            ? <span className="text-gray-400 text-sm">—</span>
+                            : mod.weakSubtopics.length === 0
                             ? <span className="text-gray-400 text-sm">None</span>
                             : <div className="flex flex-wrap gap-1">{mod.weakSubtopics.map((s, i) => <span key={i} className="px-2 py-0.5 text-xs bg-red-50 text-red-700 border border-red-200 rounded">{s}</span>)}</div>
                           }

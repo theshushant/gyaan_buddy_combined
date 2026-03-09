@@ -1,6 +1,5 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import dashboardService from '../services/dashboardService'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -14,7 +13,7 @@ import {
   Legend,
   Filler,
 } from 'chart.js'
-import { Line } from 'react-chartjs-2'
+import { Bar } from 'react-chartjs-2'
 import {
   fetchDashboardMetrics,
   fetchProgressTrends,
@@ -37,36 +36,16 @@ ChartJS.register(
   Filler
 )
 
+const CLASSES  = ['6']
+
 const Dashboard = () => {
   const dispatch = useDispatch()
   const { role } = useSelector(state => state.auth)
+  const [selectedClass, setSelectedClass] = useState('all')
   const {
-    metrics,
-    progressTrends,
-    alerts,
-    quickSummary,
-    classDistribution,
     loading,
     error
   } = useSelector(state => state.dashboard)
-
-  // --- Clone School Data state (principal only) ---
-  const [schools, setSchools] = useState([])
-  const [cloneForm, setCloneForm] = useState({ sourceSchoolId: '', targetSchoolId: '', dryRun: false })
-  const [cloneStatus, setCloneStatus] = useState({ loading: false, result: null, error: null })
-
-  const fetchSchools = useCallback(async () => {
-    if (role !== 'principal') return
-    try {
-      const res = await dashboardService.getAllSchools()
-      const data = res?.data ?? res
-      setSchools(Array.isArray(data) ? data : [])
-    } catch {
-      // non-critical — form still shows with empty list
-    }
-  }, [role])
-
-  useEffect(() => { fetchSchools() }, [fetchSchools])
 
   useEffect(() => {
     const hasError = Object.values(error).some(err => err !== null)
@@ -94,21 +73,6 @@ const Dashboard = () => {
   const hasError = Object.values(error).some(err => err !== null)
   const isLoading = Object.values(loading).some(load => load === true)
 
-  const handleRetry = async () => {
-    dispatch(clearError())
-    try {
-      await Promise.all([
-        dispatch(fetchDashboardMetrics(role || 'principal')),
-        dispatch(fetchQuickSummary(role || 'principal')),
-        dispatch(fetchProgressTrends()),
-        dispatch(fetchDashboardAlerts()),
-        dispatch(fetchClassDistribution())
-      ])
-    } catch (err) {
-      console.error('Error retrying dashboard data:', err)
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -118,6 +82,21 @@ const Dashboard = () => {
   }
 
   if (hasError) {
+    const handleRetry = async () => {
+      dispatch(clearError())
+      try {
+        await Promise.all([
+          dispatch(fetchDashboardMetrics(role || 'principal')),
+          dispatch(fetchQuickSummary(role || 'principal')),
+          dispatch(fetchProgressTrends()),
+          dispatch(fetchDashboardAlerts()),
+          dispatch(fetchClassDistribution())
+        ])
+      } catch (err) {
+        console.error('Error retrying dashboard data:', err)
+      }
+    }
+
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6">
         <h2 className="text-red-800 font-semibold">Error Loading Dashboard</h2>
@@ -142,152 +121,78 @@ const Dashboard = () => {
     )
   }
 
-  const handleCloneSubmit = async (e) => {
-    e.preventDefault()
-    setCloneStatus({ loading: true, result: null, error: null })
-    try {
-      const res = await dashboardService.cloneSchoolData({
-        sourceSchoolId: cloneForm.sourceSchoolId,
-        targetSchoolId: cloneForm.targetSchoolId,
-        dryRun: cloneForm.dryRun,
-      })
-      setCloneStatus({ loading: false, result: res?.data ?? res, error: null })
-    } catch (err) {
-      setCloneStatus({ loading: false, result: null, error: err.message })
-    }
-  }
-  // --- end Clone School Data ---
+  const displayMetrics = [
+    { title: 'Student Proficiency', value: '65%', change: '', changeType: 'neutral' },
+    { title: 'Attempt Rate',        value: '70%', change: '', changeType: 'neutral' },
+    { title: 'Weak Topic Count',    value: '5',   change: '', changeType: 'neutral' },
+  ]
 
-  const metricsData = Array.isArray(metrics) ? metrics : []
-  
-  const displayMetrics = metricsData.slice(0, 3).map(metric => ({
-    title: metric.title || 'Metric',
-    value: metric.value || '0',
-    change: metric.change || 'No change',
-    changeType: metric.changeType || (metric.change && metric.change.includes('+') ? 'positive' : 'neutral')
-  }))
-
-  const prepareProgressTrendsData = () => {
-    if (progressTrends && progressTrends.labels && progressTrends.datasets && Array.isArray(progressTrends.datasets)) {
-      return {
-        labels: progressTrends.labels,
-        datasets: progressTrends.datasets.map(dataset => ({
-          label: dataset.label || 'Dataset',
-          data: Array.isArray(dataset.data) ? dataset.data : [],
-          borderColor: dataset.borderColor || 'rgb(59, 130, 246)',
-          backgroundColor: dataset.backgroundColor || 'rgba(59, 130, 246, 0.1)',
-          fill: dataset.fill !== undefined ? dataset.fill : (dataset.label === 'Overall' || dataset.label === 'Student Progress'),
-          tension: dataset.tension || 0.4,
-          borderWidth: dataset.borderWidth || 2,
-        }))
-      }
-    }
-    
-    return null
-  }
-
-  const chartProgressTrends = prepareProgressTrendsData()
-
-  const chartOptions = {
+  const barOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        display: false, // We use custom legend in the UI
-      },
+      legend: { display: false },
       tooltip: {
-        mode: 'index',
-        intersect: false,
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
         titleColor: '#1f2937',
         bodyColor: '#4b5563',
         borderColor: '#e5e7eb',
         borderWidth: 1,
-        padding: 12,
+        padding: 10,
       },
     },
     scales: {
       y: {
         beginAtZero: true,
-        ticks: {
-          color: '#6b7280',
-          font: {
-            size: 11,
-          },
-        },
-        grid: {
-          display: true,
-          color: 'rgba(0, 0, 0, 0.05)',
-        },
+        ticks: { color: '#6b7280', font: { size: 11 } },
+        grid: { color: 'rgba(0,0,0,0.05)' },
       },
       x: {
-        ticks: {
-          color: '#6b7280',
-          font: {
-            size: 11,
-          },
-        },
-        grid: {
-          display: false,
-        },
+        ticks: { color: '#6b7280', font: { size: 11 } },
+        grid: { display: false },
       },
     },
-    interaction: {
-      mode: 'index',
-      intersect: false,
-    },
   }
 
-  const quickSummaryData = Array.isArray(quickSummary) ? quickSummary : []
-  
-  const displayQuickSummary = quickSummaryData.slice(0, 3).map(item => ({
-    label: item.label || 'Summary Item',
-    value: String(item.value || '0')
-  }))
-
-  const alertsData = Array.isArray(alerts) ? alerts : []
-  
-  const mapAlertToDisplay = (alert) => {
-    let bgColor = 'bg-gray-50'
-    let borderColor = 'border-gray-200'
-    let textColor = 'text-gray-800'
-    
-    if (alert.type === 'warning' || alert.type === 'alert') {
-      bgColor = 'bg-red-50'
-      borderColor = 'border-red-200'
-      textColor = 'text-red-800'
-    } else if (alert.type === 'info' || alert.type === 'announcement') {
-      bgColor = 'bg-yellow-50'
-      borderColor = 'border-yellow-200'
-      textColor = 'text-yellow-800'
-    } else if (alert.type === 'success' || alert.type === 'achievement') {
-      bgColor = 'bg-green-50'
-      borderColor = 'border-green-200'
-      textColor = 'text-green-800'
-    }
-    
-    let message = alert.message || alert.title || 'No message'
-    
-    if (!message.startsWith('Alert:') && !message.startsWith('Announcement:') && !message.startsWith('Achievement:')) {
-      if (alert.type === 'warning' || alert.type === 'alert') {
-        message = `Alert: ${message}`
-      } else if (alert.type === 'info' || alert.type === 'announcement') {
-        message = `Announcement: ${message}`
-      } else if (alert.type === 'success' || alert.type === 'achievement') {
-        message = `Achievement: ${message}`
-      }
-    }
-    
-    return {
-      ...alert,
-      bgColor,
-      borderColor,
-      textColor,
-      message
-    }
+  const subjectProficiencyData = {
+    labels: ['Math', 'Science', 'English', 'Hindi', 'Social Studies', 'Computer'],
+    datasets: [{
+      label: 'Proficiency %',
+      data: [80, 70, 85, 72, 68, 90],
+      backgroundColor: 'rgba(0, 22,122, 1)',
+      borderRadius: 4,
+    }],
   }
 
-  const displayAlerts = alertsData.slice(0, 3).map(mapAlertToDisplay)
+  const attemptRateData = {
+    labels: ['Math', 'Science', 'English', 'Hindi', 'Social Studies', 'Computer'],
+    datasets: [{
+      label: 'Attempt Rate %',
+      data: [70, 75, 80, 85, 90, 88, 92],
+      backgroundColor: 'rgba(0, 119, 182, 1)',
+      borderRadius: 4,
+    }],
+  }
+
+  const teacherProficiencyData = {
+    labels: ['Mr Aman', 'Mrs Shilpa', 'Verma', 'Singh', 'Mehta', 'Joshi'],
+    datasets: [{
+      label: 'Proficiency %',
+      data: [85, 78, 90, 70, 82, 88],
+      backgroundColor: 'rgba(31, 183, 235, 1)',
+      borderRadius: 4,
+    }],
+  }
+
+  const weakTopicCountData = {
+    labels: ['Math', 'Science', 'English', 'Computer', 'Hindi', 'Social Studies'],
+    datasets: [{
+      label: 'Weak Topics',
+      data: [5, 3, 4, 2, 6, 3],
+      backgroundColor: 'rgba(24, 0, 173, 0.8)',
+      borderRadius: 4,
+    }],
+  }
 
   return (
     <div className="space-y-6">
@@ -326,221 +231,54 @@ const Dashboard = () => {
         )}
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">School-Wide Progress Trends</h2>
-          <div className="flex items-center space-x-4 flex-wrap">
-            {chartProgressTrends && chartProgressTrends.datasets && chartProgressTrends.datasets.length > 0 ? (
-              chartProgressTrends.datasets.slice(0, 3).map((dataset, index) => {
-                const color = dataset.borderColor || 'rgb(128, 128, 128)'
-                return (
-                  <div key={index} className="flex items-center space-x-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: color }}
-                    ></div>
-                    <span className="text-sm text-gray-600">{dataset.label || `Dataset ${index + 1}`}</span>
-                  </div>
-                )
-              })
-            ) : (
-              <span className="text-sm text-gray-400">No data available</span>
-            )}
-            {chartProgressTrends && chartProgressTrends.datasets && chartProgressTrends.datasets.length > 3 && (
-              <a href="#" className="text-primary-500 hover:text-primary-600 text-sm font-medium">More →</a>
-            )}
+      <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+        <div className="flex flex-wrap gap-6 items-end">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Class</label>
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            >
+              <option value="all">All Classes</option>
+              {CLASSES.map(c => (
+                <option key={c} value={c}>Class {c}</option>
+              ))}
+            </select>
           </div>
-        </div>
-        
-        <div className="h-64 w-full">
-          {chartProgressTrends && chartProgressTrends.labels && chartProgressTrends.datasets && chartProgressTrends.datasets.length > 0 ? (
-            <Line data={chartProgressTrends} options={chartOptions} />
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-400">
-              {progressTrends ? 'No chart data available' : 'Loading chart data...'}
-            </div>
-          )}
+
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Summary</h2>
-          <div className="space-y-4">
-            {displayQuickSummary.length > 0 ? (
-              displayQuickSummary.map((item, index) => (
-                <div 
-                  key={index} 
-                  className="flex justify-between items-center py-2"
-                >
-                  <span className="text-gray-600 text-sm">{item.label}</span>
-                  <span className="font-semibold text-gray-900 text-lg">{item.value}</span>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500 text-center py-4">No summary data available</p>
-            )}
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Subject Proficiency</h2>
+          <div className="h-56">
+            <Bar data={subjectProficiencyData} options={barOptions} />
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Critical Alerts & Announcements</h2>
-            <a href="#" className="text-primary-500 hover:text-primary-600 text-sm font-medium">More →</a>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Attempt Rate</h2>
+          <div className="h-56">
+            <Bar data={attemptRateData} options={barOptions} />
           </div>
-          <div className="space-y-3">
-            {displayAlerts.length > 0 ? (
-              displayAlerts.map((alert, index) => (
-                <div 
-                  key={alert.id || index} 
-                  className={`p-4 rounded-lg border-2 ${alert.bgColor} ${alert.borderColor}`}
-                >
-                  <p className={`text-sm ${alert.textColor}`}>{alert.message}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500 text-center py-4">No alerts available</p>
-            )}
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Teacher Proficiency</h2>
+          <div className="h-56">
+            <Bar data={teacherProficiencyData} options={barOptions} />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Weak Topic Count</h2>
+          <div className="h-56">
+            <Bar data={weakTopicCountData} options={barOptions} />
           </div>
         </div>
       </div>
-
-      {role === 'principal' && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900 mb-1">Clone School Data</h2>
-          <p className="text-sm text-gray-500 mb-4">
-            Copy all subjects, modules, chapters, questions and theories from one school to another.
-            Student and teacher data are not cloned.
-          </p>
-
-          <form onSubmit={handleCloneSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Source School <span className="text-red-500">*</span>
-                </label>
-                {schools.length > 0 ? (
-                  <select
-                    required
-                    value={cloneForm.sourceSchoolId}
-                    onChange={e => setCloneForm(f => ({ ...f, sourceSchoolId: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select source school…</option>
-                    {schools.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    required
-                    placeholder="Source school ID"
-                    value={cloneForm.sourceSchoolId}
-                    onChange={e => setCloneForm(f => ({ ...f, sourceSchoolId: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Target School <span className="text-red-500">*</span>
-                </label>
-                {schools.length > 0 ? (
-                  <select
-                    required
-                    value={cloneForm.targetSchoolId}
-                    onChange={e => setCloneForm(f => ({ ...f, targetSchoolId: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select target school…</option>
-                    {schools
-                      .filter(s => s.id !== cloneForm.sourceSchoolId)
-                      .map(s => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    required
-                    placeholder="Target school ID"
-                    value={cloneForm.targetSchoolId}
-                    onChange={e => setCloneForm(f => ({ ...f, targetSchoolId: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                )}
-              </div>
-            </div>
-
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={cloneForm.dryRun}
-                onChange={e => setCloneForm(f => ({ ...f, dryRun: e.target.checked }))}
-                className="w-4 h-4 text-blue-600 rounded"
-              />
-              <span className="text-sm text-gray-700">Dry run (preview counts without saving)</span>
-            </label>
-
-            <button
-              type="submit"
-              disabled={cloneStatus.loading}
-              className="px-5 py-2 rounded-md text-white text-sm font-medium disabled:opacity-50 transition-colors"
-              style={{ backgroundColor: '#00167a' }}
-            >
-              {cloneStatus.loading ? 'Running…' : cloneForm.dryRun ? 'Preview Clone' : 'Clone Data'}
-            </button>
-          </form>
-
-          {cloneStatus.error && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-700">{cloneStatus.error}</p>
-            </div>
-          )}
-
-          {cloneStatus.result && (
-            <div className={`mt-4 p-4 rounded-lg border ${cloneStatus.result.dry_run ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
-              <p className="text-sm font-semibold mb-2 ${cloneStatus.result.dry_run ? 'text-amber-800' : 'text-green-800'}">
-                {cloneStatus.result.dry_run
-                  ? `Preview: ${cloneStatus.result.source_school} → ${cloneStatus.result.target_school}`
-                  : `Cloned: ${cloneStatus.result.source_school} → ${cloneStatus.result.target_school}`}
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
-                {cloneStatus.result.dry_run ? (
-                  <>
-                    <Stat label="Subjects" value={cloneStatus.result.subjects} />
-                    <Stat label="Classes" value={cloneStatus.result.classes} />
-                    <Stat label="Modules" value={cloneStatus.result.modules} />
-                    <Stat label="Chapters" value={cloneStatus.result.chapters} />
-                    <Stat label="Questions" value={cloneStatus.result.questions} />
-                    <Stat label="Theories" value={cloneStatus.result.theories} />
-                  </>
-                ) : (
-                  <>
-                    <Stat label="Subjects created" value={cloneStatus.result.stats?.subjects_created} />
-                    <Stat label="Subjects reused" value={cloneStatus.result.stats?.subjects_reused} />
-                    <Stat label="Modules created" value={cloneStatus.result.stats?.modules_created} />
-                    <Stat label="Chapters created" value={cloneStatus.result.stats?.chapters_created} />
-                    <Stat label="Questions cloned" value={cloneStatus.result.stats?.questions} />
-                    <Stat label="Theories cloned" value={cloneStatus.result.stats?.theories} />
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function Stat({ label, value }) {
-  return (
-    <div className="bg-white rounded px-3 py-2 border border-gray-200">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="font-semibold text-gray-800">{value ?? 0}</p>
     </div>
   )
 }

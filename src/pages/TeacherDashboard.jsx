@@ -2,6 +2,18 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+import { Bar } from 'react-chartjs-2'
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+import {
   fetchDashboardMetrics,
   fetchProgressTrends,
   fetchSubjectPerformance,
@@ -22,6 +34,7 @@ const TeacherDashboard = () => {
     progressTrends,
     subjectPerformance,
     classDistribution,
+    classWiseChart,
     alerts,
     weakTopicCount,
     quickSummary,
@@ -333,6 +346,57 @@ const TeacherDashboard = () => {
           </button>
         </div>
       </div>
+
+      {Array.isArray(classWiseChart) && classWiseChart.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4 animate-slide-right">Class-wise Attempt Rate &amp; Performance</h2>
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <Bar
+              data={{
+                labels: classWiseChart.map(c => c.className),
+                datasets: [
+                  {
+                    label: 'Attempt Rate %',
+                    data: classWiseChart.map(c => c.attemptRate),
+                    backgroundColor: 'rgba(31, 183, 235, 0.7)',
+                    borderColor: 'rgba(31, 183, 235, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    maxBarThickness: 60,
+                  },
+                  {
+                    label: 'Performance %',
+                    data: classWiseChart.map(c => c.performance),
+                    backgroundColor: 'rgba(0, 22, 122, 0.7)',
+                    borderColor: 'rgba(0, 22, 122, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    maxBarThickness: 60,
+                  },
+                ],
+              }}
+              options={{
+                responsive: true,
+                plugins: {
+                  legend: { position: 'top' },
+                  tooltip: {
+                    callbacks: {
+                      label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y}%`,
+                    },
+                  },
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: { callback: (v) => `${v}%` },
+                  },
+                },
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-gray-700 mb-4 animate-slide-right">Quick Summary</h2>

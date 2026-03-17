@@ -99,6 +99,7 @@ const initialState = {
   quickSummary: [],
   weakTopicCount: 0,
   subjectWise: [],
+  classWiseChart: [],
   loading: {
     metrics: false,
     progressTrends: false,
@@ -177,6 +178,7 @@ const dashboardSlice = createSlice({
       state.quickSummary = []
       state.weakTopicCount = 0
       state.subjectWise = []
+      state.classWiseChart = []
       state.lastUpdated = null
     }
   },
@@ -199,6 +201,7 @@ const dashboardSlice = createSlice({
           state.weakTopicCount = response.weakTopicCount
         }
         state.subjectWise = Array.isArray(response.subjectWise) ? response.subjectWise : []
+        state.classWiseChart = Array.isArray(response.classWiseChart) ? response.classWiseChart : []
         state.lastUpdated = new Date().toISOString()
       })
       .addCase(fetchDashboardMetrics.rejected, (state, action) => {

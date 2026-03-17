@@ -524,15 +524,15 @@ const ReportsAnalytics = () => {
             </div>
           </div>
 
-          {/* Module-wise Student Proficiency */}
+          {/* Module-wise Student Performance */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-slide-up mb-8" style={{animationDelay: '0.35s'}}>
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-800">Chapter-wise Student Proficiency</h3>
+                <h3 className="text-lg font-semibold text-gray-800">Chapter-wise Student Performance</h3>
                 <p className="text-sm text-gray-500 mt-1">First-attempt accuracy by chapter and topic — click a chapter to expand topics</p>
               </div>
               <div className="flex items-center gap-5 text-sm">
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500 inline-block"></span>≥75% Proficient</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500 inline-block"></span>≥75% Performing</span>
                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-yellow-400 inline-block"></span>50–74% OK</span>
                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-500 inline-block"></span>&lt;50% Weak</span>
               </div>
@@ -542,7 +542,8 @@ const ReportsAnalytics = () => {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/3">Module / Chapter</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/5">Proficiency</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/5">Performance</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Attempt Rate</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Weak Subtopics</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Weak Levels</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
@@ -576,6 +577,9 @@ const ReportsAnalytics = () => {
                             </div>
                             <span className="text-sm font-semibold" style={{ color: getProficiencyColor(modProficiency) }}>{modProficiency}%</span>
                           </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm font-semibold text-blue-600">{mod.attemptRate ?? 0}%</span>
                         </td>
                         <td className="px-6 py-4">
                           {modProficiency === 0
@@ -617,6 +621,9 @@ const ReportsAnalytics = () => {
                             </div>
                           </td>
                           <td className="px-6 py-3">
+                            <span className="text-sm font-semibold text-blue-600">{ch.attemptRate ?? 0}%</span>
+                          </td>
+                          <td className="px-6 py-3">
                             <span className="text-gray-400 text-sm">—</span>
                           </td>
                           <td className="px-6 py-3">
@@ -646,7 +653,7 @@ const ReportsAnalytics = () => {
             </div>
           </div>
 
-          {/* Topic-wise Student Proficiency */}
+          {/* Topic-wise Student Performance */}
 
 
           <div className="mt-8 bg-gradient-to-r from-slate-50 to-primary-50 rounded-2xl p-6 border border-slate-200 shadow-sm animate-slide-up" style={{animationDelay: '0.5s'}}>
@@ -754,7 +761,7 @@ const ReportsAnalytics = () => {
           {showStudentTable && (
             <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-slide-up">
               <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-secondary-500/10 to-primary-500/10">
-                <h3 className="text-lg font-semibold text-gray-800">Student Proficiency Results</h3>
+                <h3 className="text-lg font-semibold text-gray-800">Student Performance Results</h3>
                 <p className="text-sm text-gray-500 mt-1">
                   Showing results for: {studentClass || 'All Classes'} • {studentSubjectsList.find(s => s.id === studentSubject)?.name || studentSubject || 'All Subjects'} • {studentModulesList.find(m => m.id === studentModule)?.name || studentModule || 'All Modules'} • {studentChaptersList.find(c => c.id === studentChapter)?.name || studentChapter || 'All Topics'}
                 </p>

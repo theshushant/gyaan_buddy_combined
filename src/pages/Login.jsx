@@ -18,6 +18,7 @@ const Login = () => {
 
   const [showPassword, setShowPassword] = useState(false)
   const [formErrors, setFormErrors] = useState({})
+  const [portalMode, setPortalMode] = useState('principal')
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -58,7 +59,7 @@ const Login = () => {
     try {
       const loginData = {
         ...formData,
-        type: 'dashboard'
+        type: portalMode === 'parent' ? 'parent_dashboard' : 'dashboard'
       }
       const result = await dispatch(loginUser(loginData)).unwrap()
       if (result.user) {
@@ -67,20 +68,6 @@ const Login = () => {
     } catch (error) {
       console.error('Login failed:', error)
     }
-  }
-
-  const handleDemoLogin = (role) => {
-    const demoCredentials = {
-      principal: {
-        username: 'admin', // Replace with actual principal username from backend
-        password: 'admin123' // Replace with actual password
-      },
-      teacher: {
-        username: 'teacher1', // Replace with actual teacher username from backend
-        password: 'teacher123' // Replace with actual password
-      }
-    }
-    setFormData(demoCredentials[role])
   }
 
   return (
@@ -100,6 +87,30 @@ const Login = () => {
           <div className="mb-6">
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">Welcome Back</h2>
             <p className="text-gray-600">Sign in to your account to continue</p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 mb-6">
+            <button
+              type="button"
+              onClick={() => setPortalMode('principal')}
+              className={`text-sm py-2 rounded-lg border ${portalMode === 'principal' ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-white border-gray-300 text-gray-600'}`}
+            >
+              Principal
+            </button>
+            <button
+              type="button"
+              onClick={() => setPortalMode('teacher')}
+              className={`text-sm py-2 rounded-lg border ${portalMode === 'teacher' ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-white border-gray-300 text-gray-600'}`}
+            >
+              Teacher
+            </button>
+            <button
+              type="button"
+              onClick={() => setPortalMode('parent')}
+              className={`text-sm py-2 rounded-lg border ${portalMode === 'parent' ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-white border-gray-300 text-gray-600'}`}
+            >
+              Parent
+            </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -175,7 +186,8 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => {
-                  setFormData({ username: 'principal', password: 'principal123' })
+                  setFormData({ username: 'admin', password: 'admin123' })
+                  setPortalMode('principal')
                   setFormErrors({})
                 }}
                 className="flex-1 py-2 px-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-700 text-sm hover:bg-gray-100"
@@ -186,13 +198,30 @@ const Login = () => {
                 type="button"
                 onClick={() => {
                   setFormData({ username: 'teacher1', password: 'teacher123' })
+                  setPortalMode('teacher')
                   setFormErrors({})
                 }}
                 className="flex-1 py-2 px-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-700 text-sm hover:bg-gray-100"
               >
                 Demo: Teacher
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({ username: 'student1', password: 'student123' })
+                  setPortalMode('parent')
+                  setFormErrors({})
+                }}
+                className="flex-1 py-2 px-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-700 text-sm hover:bg-gray-100"
+              >
+                Demo: Parent
+              </button>
             </div>
+            {portalMode === 'parent' && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Parent login uses a student account from your backend data. If demo credentials fail, use a valid student username/password.
+              </p>
+            )}
 
             <button
               type="submit"

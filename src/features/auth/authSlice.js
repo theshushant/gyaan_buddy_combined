@@ -1,6 +1,15 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import authService from '../../services/authService'
 
+const deriveRole = (user, portalType = null) => {
+  const userType = user?.role || user?.user_type || null
+  const mode = portalType || localStorage.getItem('gbPortalMode')
+  if (mode === 'parent_dashboard' && userType === 'student') {
+    return 'parent'
+  }
+  return userType
+}
+
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (credentials, { rejectWithValue }) => {
@@ -154,7 +163,7 @@ const authSlice = createSlice({
         state.loading.login = false
         state.isAuthenticated = true
         state.user = action.payload.user
-        state.role = action.payload.user.role || action.payload.user.user_type
+        state.role = deriveRole(action.payload.user, action.payload.portal_type)
         state.permissions = action.payload.user.permissions || []
         state.lastLogin = new Date().toISOString()
         state.error.login = null
@@ -198,7 +207,7 @@ const authSlice = createSlice({
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
         state.loading.fetchUser = false
         state.user = action.payload
-        state.role = action.payload.role || action.payload.user_type
+        state.role = deriveRole(action.payload)
         state.permissions = action.payload.permissions || []
         state.isAuthenticated = true
         state.error.fetchUser = null

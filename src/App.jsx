@@ -34,6 +34,11 @@ import DailyMissions from './pages/DailyMissions'
 import Notifications from './pages/Notifications'
 import AISuggestions from './pages/AISuggestions'
 import AIDataGenerator from './pages/AIDataGenerator'
+import ParentDashboard from './pages/ParentDashboard'
+import ParentDetailedReports from './pages/ParentDetailedReports'
+import ParentTestScores from './pages/ParentTestScores'
+import ParentTestReport from './pages/ParentTestReport'
+import ParentHelp from './pages/ParentHelp'
 
 const AppRoutes = () => {
   const { role } = useSelector(state => state.auth)
@@ -59,6 +64,19 @@ const AppRoutes = () => {
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/ai-suggestions" element={<AISuggestions />} />
         <Route path="/ai-data" element={<AIDataGenerator />} />
+        <Route path="/settings" element={<Settings />} />
+      </Routes>
+    )
+  }
+
+  if (role === 'parent') {
+    return (
+      <Routes>
+        <Route path="/" element={<ParentDashboard />} />
+        <Route path="/reports" element={<ParentDetailedReports />} />
+        <Route path="/test-scores" element={<ParentTestScores />} />
+        <Route path="/test-scores/:testId" element={<ParentTestReport />} />
+        <Route path="/help" element={<ParentHelp />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     )

@@ -24,7 +24,8 @@ import {
   LogOut,
   Wand2,
   Settings,
-  Layers
+  Layers,
+  CircleHelp
 } from 'lucide-react'
 
 const Layout = ({ children }) => {
@@ -68,6 +69,11 @@ const Layout = ({ children }) => {
     setAvatarMenuOpen(!avatarMenuOpen)
   }
 
+  const isActiveLink = (href) => {
+    if (href === '/') return location.pathname === '/'
+    return location.pathname === href || location.pathname.startsWith(`${href}/`)
+  }
+
   const principalNavigation = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Students', href: '/students', icon: GraduationCap },
@@ -91,10 +97,23 @@ const Layout = ({ children }) => {
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
-  const navigation = role === 'teacher' ? teacherNavigation : principalNavigation
+  const parentNavigation = [
+    { name: 'Dashboard', href: '/', icon: Home },
+    { name: 'Detailed Reports', href: '/reports', icon: BarChart3 },
+    { name: 'Test Scores', href: '/test-scores', icon: FileText },
+    { name: 'Help', href: '/help', icon: CircleHelp },
+  ]
+
+  const navigation = role === 'teacher'
+    ? teacherNavigation
+    : role === 'parent'
+      ? parentNavigation
+      : principalNavigation
   const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
     [user?.first_name, user?.last_name].filter(Boolean).join(' ') ||
-    user?.name || user?.username || (role === 'teacher' ? 'Teacher' : 'Principal')
+    user?.parent_name ||
+    user?.name || user?.username ||
+    (role === 'teacher' ? 'Teacher' : role === 'parent' ? 'Parent' : 'Principal')
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -119,7 +138,7 @@ const Layout = ({ children }) => {
           </div>
           <nav className="flex-1 px-4 py-4 space-y-2">
             {navigation.map((item, index) => {
-              const isActive = location.pathname === item.href
+              const isActive = isActiveLink(item.href)
               return (
                 <Link
                   key={item.name}
@@ -143,7 +162,17 @@ const Layout = ({ children }) => {
               )
             })}
           </nav>
-          <div className="px-4 pb-4">
+          <div className="px-4 pb-4 space-y-2">
+            {role === 'parent' && (
+              <Link
+                to="/settings"
+                onClick={() => setSidebarOpen(false)}
+                className="w-full flex items-center justify-center px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Link>
+            )}
             <button
               onClick={handleLogout}
               className="w-full flex items-center justify-center px-4 py-2 rounded-lg transition-all duration-200 font-medium hover:shadow-lg"
@@ -173,7 +202,7 @@ const Layout = ({ children }) => {
           </div>
           <nav className="flex-1 px-4 py-4 space-y-2">
             {navigation.map((item, index) => {
-              const isActive = location.pathname === item.href
+              const isActive = isActiveLink(item.href)
               return (
                 <Link
                   key={item.name}
@@ -197,7 +226,20 @@ const Layout = ({ children }) => {
               )
             })}
           </nav>
-          <div className="px-4 pb-4">
+          <div className="px-4 pb-4 space-y-2">
+            {role === 'parent' && (
+              <Link
+                to="/settings"
+                className={`w-full flex items-center justify-center px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  location.pathname === '/settings'
+                    ? 'border-primary-500 text-primary-700 bg-primary-50'
+                    : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Link>
+            )}
             <button
               onClick={handleLogout}
               className="w-full flex items-center justify-center px-4 py-2 rounded-lg transition-all duration-200 font-medium hover:shadow-lg"
@@ -216,7 +258,8 @@ const Layout = ({ children }) => {
             You are viewing demo data because the backend is unavailable. Start the backend to use live data.
           </div>
         )}
-        <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
+        {role !== 'parent' && (
+          <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center">
               <button
@@ -276,9 +319,10 @@ const Layout = ({ children }) => {
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        )}
 
-        <main className="p-6">
+        <main className={role === 'parent' ? 'p-6 bg-[#f6f8fc] min-h-screen' : 'p-6'}>
           {children}
         </main>
       </div>

@@ -7,13 +7,30 @@ class AuthService {
       console.log('AuthService: About to call apiService.post...');
       
       apiService.removeAuthToken();
-      
-      const response = await apiService.post('/auth/login/', credentials);
+
+      let response
+      try {
+        response = await apiService.post('/auth/login/', credentials)
+      } catch (firstError) {
+        // Backward compatibility: some backend versions only allow mobile/dashboard types.
+        // Parent portal still uses student account auth, so retry with "mobile" type.
+        if (credentials?.type === 'parent_dashboard') {
+          console.warn('AuthService: parent_dashboard login failed, retrying with mobile type', firstError)
+          const retryPayload = { ...credentials, type: 'mobile' }
+          response = await apiService.post('/auth/login/', retryPayload)
+        } else {
+          throw firstError
+        }
+      }
       console.log('AuthService: Login API response:', response);
 
       if (response.success || response.data || response.user) {
         const userData = response.data?.user || response.user || response;
         const tokenData = response.data?.tokens || response.tokens || response.data?.token || response.token;
+        const portalType = response.data?.portal_type || credentials?.type || null;
+        if (portalType) {
+          localStorage.setItem('gbPortalMode', portalType);
+        }
         
         if (tokenData) {
           const accessToken = typeof tokenData === 'object' ? (tokenData.access || tokenData.token) : tokenData;
@@ -25,7 +42,8 @@ class AuthService {
         return {
           success: true,
           user: userData,
-          tokens: tokenData
+          tokens: tokenData,
+          portal_type: portalType
         };
       } else {
         throw new Error(response.message || 'Login failed');
@@ -44,6 +62,7 @@ class AuthService {
     } finally {
       apiService.removeAuthToken();
       apiService.setUsedMockData(false);
+      localStorage.removeItem('gbPortalMode');
     }
   }
 

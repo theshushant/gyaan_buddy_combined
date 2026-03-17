@@ -154,13 +154,28 @@ class ApiService {
           this.handleApiFailure(new Error(`HTTP error! status: ${response.status}`), endpoint, response.status);
         }
         
-        const errorMessage = errorData.message || 
+        let extractedValidationMessage = null;
+        if (errorData.errors) {
+          if (typeof errorData.errors === 'string') {
+            extractedValidationMessage = errorData.errors;
+          } else if (Array.isArray(errorData.errors.non_field_errors)) {
+            extractedValidationMessage = errorData.errors.non_field_errors.join(', ');
+          } else if (typeof errorData.errors === 'object') {
+            const firstKey = Object.keys(errorData.errors)[0];
+            const firstVal = firstKey ? errorData.errors[firstKey] : null;
+            if (Array.isArray(firstVal)) {
+              extractedValidationMessage = firstVal.join(', ');
+            } else if (typeof firstVal === 'string') {
+              extractedValidationMessage = firstVal;
+            }
+          }
+        }
+
+        const errorMessage = extractedValidationMessage ||
+                            errorData.message || 
                             errorData.detail || 
                             (errorData.non_field_errors && Array.isArray(errorData.non_field_errors) 
                               ? errorData.non_field_errors.join(', ') 
-                              : null) ||
-                            (errorData.errors && typeof errorData.errors === 'string' 
-                              ? errorData.errors 
                               : null) ||
                             `HTTP error! status: ${response.status}`;
         

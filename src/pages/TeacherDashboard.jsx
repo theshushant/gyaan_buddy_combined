@@ -362,6 +362,7 @@ const TeacherDashboard = () => {
                     borderColor: 'rgba(31, 183, 235, 1)',
                     borderWidth: 1,
                     borderRadius: 4,
+                    maxBarThickness: 60,
                   },
                   {
                     label: 'Performance %',
@@ -370,6 +371,7 @@ const TeacherDashboard = () => {
                     borderColor: 'rgba(0, 22, 122, 1)',
                     borderWidth: 1,
                     borderRadius: 4,
+                    maxBarThickness: 60,
                   },
                 ],
               }}

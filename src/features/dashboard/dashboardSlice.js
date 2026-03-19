@@ -99,6 +99,7 @@ const initialState = {
   quickSummary: [],
   weakTopicCount: 0,
   subjectWise: [],
+  classWiseChart: [],
   principalCharts: {
     summary: { studentProficiency: 0, attemptRate: 0, weakTopicCount: 0 },
     subjectProficiency: [],
@@ -185,6 +186,7 @@ const dashboardSlice = createSlice({
       state.quickSummary = []
       state.weakTopicCount = 0
       state.subjectWise = []
+      state.classWiseChart = []
       state.principalCharts = {
         summary: { studentProficiency: 0, attemptRate: 0, weakTopicCount: 0 },
         subjectProficiency: [],
@@ -215,6 +217,7 @@ const dashboardSlice = createSlice({
           state.weakTopicCount = response.weakTopicCount
         }
         state.subjectWise = Array.isArray(response.subjectWise) ? response.subjectWise : []
+        state.classWiseChart = Array.isArray(response.classWiseChart) ? response.classWiseChart : []
         if (response.principalCharts) {
           state.principalCharts = {
             summary: response.principalCharts.summary || { studentProficiency: 0, attemptRate: 0, weakTopicCount: 0 },

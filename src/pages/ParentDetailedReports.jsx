@@ -39,6 +39,8 @@ const ParentDetailedReports = () => {
   const [progress, setProgress] = useState(null)
   const [tests, setTests] = useState([])
   const [leaderboard, setLeaderboard] = useState([])
+  const [subjectDetails, setSubjectDetails] = useState(null)
+  const [subjectDetailsLoading, setSubjectDetailsLoading] = useState(false)
 
   const [subjectFilter, setSubjectFilter] = useState('all')
   const [studentFilter, setStudentFilter] = useState('me')
@@ -83,6 +85,25 @@ const ParentDetailedReports = () => {
     if (subjectFilter === 'all') return subjectOptions[0]
     return subjectOptions.find((s) => s.id === subjectFilter) || subjectOptions[0]
   }, [subjectFilter, subjectOptions])
+
+  useEffect(() => {
+    const loadSubjectDetails = async () => {
+      if (!selectedSubject?.id) {
+        setSubjectDetails(null)
+        return
+      }
+      try {
+        setSubjectDetailsLoading(true)
+        const details = await parentService.getSubjectPerformance(selectedSubject.id)
+        setSubjectDetails(details || null)
+      } catch (err) {
+        setSubjectDetails(null)
+      } finally {
+        setSubjectDetailsLoading(false)
+      }
+    }
+    loadSubjectDetails()
+  }, [selectedSubject?.id])
 
   const filteredTests = useMemo(() => {
     const now = new Date()
@@ -185,6 +206,12 @@ const ParentDetailedReports = () => {
 
   const studentName = progress?.student_name || 'Student'
   const subjectTitle = selectedSubject?.name || 'Subject'
+  const topicRows = Array.isArray(subjectDetails?.topics) ? subjectDetails.topics : []
+  const weakTopics = Array.isArray(subjectDetails?.weak_topics) ? subjectDetails.weak_topics : []
+  const strongTopics = Array.isArray(subjectDetails?.strong_topics) ? subjectDetails.strong_topics : []
+  const teacherName = subjectDetails?.teacher_name || '-'
+  const strongQuestionLevel = subjectDetails?.strong_question_level ?? '-'
+  const weakLevels = Array.isArray(subjectDetails?.weak_levels) ? subjectDetails.weak_levels : []
 
   return (
     <div className="space-y-6">
@@ -297,6 +324,52 @@ const ParentDetailedReports = () => {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-2xl p-6">
+        <h2 className="text-3xl max-sm:text-2xl font-extrabold text-gray-900 mb-4">Detailed Subject Report</h2>
+        {subjectDetailsLoading ? (
+          <div className="text-sm text-gray-500">Loading detailed report...</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3">Subject</th>
+                  <th className="px-4 py-3">Topic</th>
+                  <th className="px-4 py-3">Attempt Rate</th>
+                  <th className="px-4 py-3">Proficiency</th>
+                  <th className="px-4 py-3">Weak Topic</th>
+                  <th className="px-4 py-3">Strong Topic</th>
+                  <th className="px-4 py-3">Teacher</th>
+                  <th className="px-4 py-3">Strong Question Level</th>
+                  <th className="px-4 py-3">Weak Levels (1-5)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topicRows.length > 0 ? topicRows.map((row) => (
+                  <tr key={row.topic_id} className="border-t border-gray-200">
+                    <td className="px-4 py-3 text-sm font-semibold text-gray-900">{subjectTitle}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{row.topic_name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{Math.round(row.attempt_rate || 0)}%</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{Math.round(row.proficiency || 0)}%</td>
+                    <td className="px-4 py-3 text-sm text-red-700">{weakTopics.includes(row.topic_name) ? 'Yes' : '-'}</td>
+                    <td className="px-4 py-3 text-sm text-green-700">{strongTopics.includes(row.topic_name) ? 'Yes' : '-'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{teacherName}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{strongQuestionLevel}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{weakLevels.length ? weakLevels.join(', ') : '-'}</td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-6 text-center text-sm text-gray-500">
+                      No topic-level report data available for this subject.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )

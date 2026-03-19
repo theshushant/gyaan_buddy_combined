@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Bar } from 'react-chartjs-2'
+import { BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Tooltip } from 'chart.js'
 import {
   CalendarDays,
   CheckCircle2,
@@ -11,26 +13,7 @@ import {
 } from 'lucide-react'
 import parentService from '../services/parentService'
 
-const toGrade = (accuracy = 0) => {
-  if (accuracy >= 90) return 'A+'
-  if (accuracy >= 85) return 'A'
-  if (accuracy >= 80) return 'A-'
-  if (accuracy >= 75) return 'B+'
-  if (accuracy >= 70) return 'B'
-  if (accuracy >= 65) return 'B-'
-  if (accuracy >= 60) return 'C+'
-  if (accuracy >= 50) return 'C'
-  return 'D'
-}
-
-const subjectGrade = (accuracy = 0) => {
-  if (accuracy >= 90) return 'A+'
-  if (accuracy >= 80) return 'A'
-  if (accuracy >= 70) return 'B+'
-  if (accuracy >= 60) return 'B'
-  if (accuracy >= 50) return 'C'
-  return 'D'
-}
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
 
 const barColor = (accuracy = 0) => {
   if (accuracy >= 80) return 'bg-green-500'
@@ -188,6 +171,44 @@ const ParentDashboard = () => {
 
   const topWeak = weakAreas.slice(0, 2)
   const strongSubject = [...subjectProgress].sort((a, b) => (b.accuracy || 0) - (a.accuracy || 0))[0]
+  const weakTopicNames = weakAreas
+    .filter((area) => area.area_type !== 'difficulty')
+    .map((area) => area.area_name)
+    .slice(0, 5)
+  const strongTopicNames = [...subjectProgress]
+    .sort((a, b) => (b.accuracy || 0) - (a.accuracy || 0))
+    .map((s) => s.subject_name)
+    .slice(0, 5)
+  const performanceChartData = {
+    labels: subjectProgress.map((item) => item.subject_name),
+    datasets: [
+      {
+        label: 'Performance (%)',
+        data: subjectProgress.map((item) => Math.round(item.accuracy || 0)),
+        backgroundColor: '#1f77d0',
+        borderRadius: 4,
+      },
+    ],
+  }
+  const attemptRateChartData = {
+    labels: subjectProgress.map((item) => item.subject_name),
+    datasets: [
+      {
+        label: 'Attempt Rate (%)',
+        data: subjectProgress.map((item) => {
+          return Math.round(item.attempt_rate || 0)
+        }),
+        backgroundColor: '#12a1c0',
+        borderRadius: 4,
+      },
+    ],
+  }
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, max: 100 } },
+  }
 
   return (
     <div className="space-y-6">
@@ -211,8 +232,8 @@ const ParentDashboard = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white border border-gray-200 rounded-2xl p-6">
-          <p className="text-gray-500 text-sm">Overall Grade</p>
-          <p className="text-5xl font-extrabold text-gray-900 mt-2">{toGrade(stats.accuracy || 0)}</p>
+          <p className="text-gray-500 text-sm">Overall Accuracy</p>
+          <p className="text-5xl font-extrabold text-gray-900 mt-2">{Math.round(stats.accuracy || 0)}%</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-2xl p-6">
           <p className="text-gray-500 text-sm">Total XP Earned</p>
@@ -227,6 +248,20 @@ const ParentDashboard = () => {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         <div className="xl:col-span-2 space-y-5">
           <div className="bg-white border border-gray-200 rounded-2xl p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Performance Graph</h2>
+            <div className="h-64">
+              <Bar data={performanceChartData} options={chartOptions} />
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-2xl p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Attempt Rate Graph</h2>
+            <div className="h-64">
+              <Bar data={attemptRateChartData} options={chartOptions} />
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-2xl p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Subject Progress</h2>
             <div className="space-y-4">
               {subjectProgress.map((item) => {
@@ -235,7 +270,7 @@ const ParentDashboard = () => {
                   <div key={item.subject_id}>
                     <div className="flex items-center justify-between text-sm mb-2">
                       <span className="font-semibold text-gray-800">{item.subject_name}</span>
-                      <span className="font-bold text-gray-700">{subjectGrade(pct)}</span>
+                      <span className="font-bold text-gray-700">{pct}%</span>
                     </div>
                     <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full ${barColor(pct)}`} style={{ width: `${pct}%` }} />
@@ -294,6 +329,28 @@ const ParentDashboard = () => {
                   No upcoming test deadlines.
                 </div>
               )}
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-2xl p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Weak & Strong Topics</h2>
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-2">Strong Topics</p>
+                <div className="flex flex-wrap gap-2">
+                  {strongTopicNames.length > 0 ? strongTopicNames.map((topic) => (
+                    <span key={topic} className="px-2 py-1 text-xs rounded border bg-green-50 text-green-700 border-green-200">{topic}</span>
+                  )) : <span className="text-sm text-gray-500">No strong topics yet.</span>}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-2">Weak Topics</p>
+                <div className="flex flex-wrap gap-2">
+                  {weakTopicNames.length > 0 ? weakTopicNames.map((topic) => (
+                    <span key={topic} className="px-2 py-1 text-xs rounded border bg-red-50 text-red-700 border-red-200">{topic}</span>
+                  )) : <span className="text-sm text-gray-500">No weak topics found.</span>}
+                </div>
+              </div>
             </div>
           </div>
 

@@ -33,11 +33,16 @@ const renderTopicTags = (topics, colorClass) => {
 
 const Reports = () => {
   const [loading, setLoading] = useState(true)
+  const [topicDiffLoading, setTopicDiffLoading] = useState(false)
   const [error, setError] = useState('')
   const [data, setData] = useState(EMPTY_DATA)
   const [selectedClass, setSelectedClass] = useState('')
   const [selectedSubject, setSelectedSubject] = useState('')
   const [selectedTopic, setSelectedTopic] = useState('')
+  const [diffData, setDiffData] = useState(EMPTY_DATA)
+  const [diffClass, setDiffClass] = useState('')
+  const [diffSubject, setDiffSubject] = useState('')
+  const [diffTopic, setDiffTopic] = useState('')
 
   const fetchReportsData = async (filters = {}) => {
     setLoading(true)
@@ -69,6 +74,7 @@ const Reports = () => {
 
   useEffect(() => {
     fetchReportsData()
+    fetchTopicDiffData()
   }, [])
 
   const handleClassChange = (value) => {
@@ -87,10 +93,67 @@ const Reports = () => {
     fetchReportsData({ topic: value })
   }
 
+  const fetchTopicDiffData = async (filters = {}) => {
+    setTopicDiffLoading(true)
+    try {
+      const response = await reportsService.getReportsAnalytics({
+        period: '30',
+        class: filters.class ?? diffClass,
+        subject: filters.subject ?? diffSubject,
+        chapter: filters.topic ?? diffTopic,
+      })
+      setDiffData({
+        summary: response.summary || EMPTY_DATA.summary,
+        filterOptions: {
+          classes: response.filterOptions?.classes || [],
+          subjects: response.filterOptions?.subjects || [],
+          chapters: response.filterOptions?.chapters || [],
+        },
+        sectionWisePerformance: response.sectionWisePerformance || [],
+      })
+    } finally {
+      setTopicDiffLoading(false)
+    }
+  }
+
+  const handleDiffClassChange = (value) => {
+    setDiffClass(value)
+    fetchTopicDiffData({ class: value })
+  }
+
+  const handleDiffSubjectChange = (value) => {
+    setDiffSubject(value)
+    setDiffTopic('')
+    fetchTopicDiffData({ subject: value, topic: '' })
+  }
+
+  const handleDiffTopicChange = (value) => {
+    setDiffTopic(value)
+    fetchTopicDiffData({ topic: value })
+  }
+
   const sectionRows = useMemo(() => {
     if (!Array.isArray(data.sectionWisePerformance)) return []
     return data.sectionWisePerformance
   }, [data.sectionWisePerformance])
+
+  const topicDifferenceSummary = useMemo(() => {
+    const rows = Array.isArray(diffData.sectionWisePerformance) ? diffData.sectionWisePerformance : []
+    const goodSet = new Set()
+    const weakSet = new Set()
+    rows.forEach((row) => {
+      ;(row.goodTopics || []).forEach((topic) => {
+        goodSet.add(topic)
+      })
+      ;(row.strugglingTopics || []).forEach((topic) => {
+        weakSet.add(topic)
+      })
+    })
+    return {
+      goodTopics: [...goodSet],
+      weakTopics: [...weakSet],
+    }
+  }, [diffData.sectionWisePerformance, diffTopic])
 
   if (loading) {
     return (
@@ -170,7 +233,7 @@ const Reports = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Students</p>
           <p className="text-3xl font-bold mt-2" style={{ color: '#00167a' }}>{data.summary.totalStudents}</p>
@@ -185,19 +248,11 @@ const Reports = () => {
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Attempt Rate</p>
           <p className="text-3xl font-bold mt-2 text-green-600">{data.summary.completionRate}%</p>
         </div>
-
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Weak Topics</p>
-          <p className="text-3xl font-bold mt-2 text-red-600">{data.summary.weakTopicCount}</p>
-        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">Section-wise Performance</h2>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Difference table from live data: topics students are good at vs topics they are struggling in.
-          </p>
         </div>
 
         <div className="overflow-x-auto">
@@ -209,8 +264,7 @@ const Reports = () => {
                 <th className="px-6 py-3">Proficiency</th>
                 <th className="px-6 py-3">Attempt Rate</th>
                 <th className="px-6 py-3">Difficulty</th>
-                <th className="px-6 py-3">Good Topics</th>
-                <th className="px-6 py-3">Struggling Topics</th>
+                <th className="px-6 py-3">Weak Topics</th>
               </tr>
             </thead>
             <tbody>
@@ -229,19 +283,88 @@ const Reports = () => {
                     </td>
                     <td className="px-6 py-4 text-sm font-semibold text-gray-900">{row.attemptRate || row.completionRate || 0}%</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{row.difficulty || '-'}</td>
-                    <td className="px-6 py-4">{renderTopicTags(row.goodTopics, 'bg-green-50 text-green-700 border-green-200')}</td>
-                    <td className="px-6 py-4">{renderTopicTags(row.strugglingTopics, 'bg-red-50 text-red-700 border-red-200')}</td>
+                    <td className="px-6 py-4">{renderTopicTags(row.strugglingTopics, 'bg-white text-red-700 border-red-200')}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                     No section-wise data available for current filters.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900">Topic Difference Table</h2>
+        </div>
+
+        <div className="p-5 border-b border-gray-100">
+          <div className="flex flex-wrap gap-6 items-end">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Class</label>
+              <select
+                value={diffClass}
+                onChange={(e) => handleDiffClassChange(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+              >
+                <option value="">All Classes</option>
+                {diffData.filterOptions.classes.map((className) => (
+                  <option key={className} value={className}>{className}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Subject</label>
+              <select
+                value={diffSubject}
+                onChange={(e) => handleDiffSubjectChange(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+              >
+                <option value="">All Subjects</option>
+                {diffData.filterOptions.subjects.map((subject) => (
+                  <option key={subject.id} value={subject.id}>{subject.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Topic</label>
+              <select
+                value={diffTopic}
+                onChange={(e) => handleDiffTopicChange(e.target.value)}
+                disabled={!diffSubject}
+                className={`px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 ${!diffSubject ? 'text-gray-400 cursor-not-allowed' : 'text-gray-900'}`}
+              >
+                <option value="">All Topics</option>
+                {diffData.filterOptions.chapters.map((chapter) => (
+                  <option key={chapter.id} value={chapter.id}>{chapter.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {topicDiffLoading ? (
+            <div className="text-sm text-gray-500">Loading topic differences...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+                <h3 className="text-sm font-semibold text-green-800 mb-3">Good Topics</h3>
+                {renderTopicTags(topicDifferenceSummary.goodTopics, 'bg-white text-green-700 border-green-200')}
+              </div>
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                <h3 className="text-sm font-semibold text-red-800 mb-3">Weak Topics</h3>
+                {renderTopicTags(topicDifferenceSummary.weakTopics, 'bg-white text-red-700 border-red-200')}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

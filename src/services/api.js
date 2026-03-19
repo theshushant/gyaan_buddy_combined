@@ -208,6 +208,9 @@ class ApiService {
       const isPublicEndpoint = publicEndpoints.some(publicPath => endpoint.includes(publicPath));
       
       if (error.name === 'AbortError') {
+        if (options.disableMockFallback) {
+          throw new Error('Request timeout');
+        }
         try {
           const mockResult = await this.getMockData(endpoint);
           this.setUsedMockData(true);
@@ -223,6 +226,9 @@ class ApiService {
       }
       
       if (this.isNetworkError(error)) {
+        if (options.disableMockFallback) {
+          throw new Error('Cannot connect to server. Please ensure the backend is running.');
+        }
         console.warn(`Backend not available at ${url}. Attempting to use demo data if available.`);
         try {
           const mockResult = await this.getMockData(endpoint);

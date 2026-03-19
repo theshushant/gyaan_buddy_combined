@@ -350,12 +350,13 @@ const TeacherDashboard = () => {
       {Array.isArray(classWiseChart) && classWiseChart.length > 0 && (
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-gray-700 mb-4 animate-slide-right">Class-wise Attempt Rate &amp; Performance</h2>
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <Bar
-              data={{
-                labels: classWiseChart.map(c => c.className),
-                datasets: [
-                  {
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-600 mb-4">Attempt Rate %</h3>
+              <Bar
+                data={{
+                  labels: classWiseChart.map(c => c.className),
+                  datasets: [{
                     label: 'Attempt Rate %',
                     data: classWiseChart.map(c => c.attemptRate),
                     backgroundColor: 'rgba(31, 183, 235, 0.7)',
@@ -363,8 +364,26 @@ const TeacherDashboard = () => {
                     borderWidth: 1,
                     borderRadius: 4,
                     maxBarThickness: 60,
+                  }],
+                }}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.y}%` } },
                   },
-                  {
+                  scales: {
+                    y: { beginAtZero: true, max: 100, ticks: { callback: (v) => `${v}%` } },
+                  },
+                }}
+              />
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-600 mb-4">Performance %</h3>
+              <Bar
+                data={{
+                  labels: classWiseChart.map(c => c.className),
+                  datasets: [{
                     label: 'Performance %',
                     data: classWiseChart.map(c => c.performance),
                     backgroundColor: 'rgba(0, 22, 122, 0.7)',
@@ -372,28 +391,20 @@ const TeacherDashboard = () => {
                     borderWidth: 1,
                     borderRadius: 4,
                     maxBarThickness: 60,
+                  }],
+                }}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.y}%` } },
                   },
-                ],
-              }}
-              options={{
-                responsive: true,
-                plugins: {
-                  legend: { position: 'top' },
-                  tooltip: {
-                    callbacks: {
-                      label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y}%`,
-                    },
+                  scales: {
+                    y: { beginAtZero: true, max: 100, ticks: { callback: (v) => `${v}%` } },
                   },
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    max: 100,
-                    ticks: { callback: (v) => `${v}%` },
-                  },
-                },
-              }}
-            />
+                }}
+              />
+            </div>
           </div>
         </div>
       )}

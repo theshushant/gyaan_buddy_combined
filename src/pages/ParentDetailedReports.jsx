@@ -1,20 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, Filter, Sparkles } from 'lucide-react'
-import { Line } from 'react-chartjs-2'
+import { Bar } from 'react-chartjs-2'
 import {
+  BarElement,
   CategoryScale,
   Chart as ChartJS,
-  Filler,
   Legend,
   LinearScale,
-  LineElement,
-  PointElement,
   Tooltip,
 } from 'chart.js'
 import parentService from '../services/parentService'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler)
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
 
 const scoreToGrade = (score = 0) => {
   if (score >= 90) return 'A+'
@@ -33,6 +31,8 @@ const percentileSuffix = (n) => {
   return `${n}th`
 }
 
+const buildMonthKey = (value) => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}`
+
 const ParentDetailedReports = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -44,7 +44,7 @@ const ParentDetailedReports = () => {
 
   const [subjectFilter, setSubjectFilter] = useState('all')
   const [studentFilter, setStudentFilter] = useState('me')
-  const [rangeFilter, setRangeFilter] = useState('30')
+  const [monthFilter, setMonthFilter] = useState('6')
 
   useEffect(() => {
     const load = async () => {
@@ -107,73 +107,76 @@ const ParentDetailedReports = () => {
 
   const filteredTests = useMemo(() => {
     const now = new Date()
-    const days = Number(rangeFilter)
-    const start = Number.isFinite(days) ? new Date(now.getTime() - days * 24 * 60 * 60 * 1000) : null
+    const months = Number(monthFilter)
+    const start = Number.isFinite(months)
+      ? new Date(now.getFullYear(), now.getMonth() - (months - 1), 1)
+      : null
 
     return tests
       .filter((t) => t?.user_progress?.percentage != null && t?.test_datetime)
       .filter((t) => (selectedSubject ? String(t.subject) === selectedSubject.id : true))
       .filter((t) => (start ? new Date(t.test_datetime) >= start : true))
       .sort((a, b) => new Date(a.test_datetime) - new Date(b.test_datetime))
-  }, [tests, selectedSubject, rangeFilter])
+  }, [tests, selectedSubject, monthFilter])
 
-  const trendData = useMemo(() => ({
-    labels: filteredTests.map((t) => new Date(t.test_datetime).toLocaleDateString()),
-    datasets: [
-      {
-        label: 'Score %',
-        data: filteredTests.map((t) => Math.round(t.user_progress?.percentage || 0)),
-        borderColor: '#2563eb',
-        backgroundColor: 'rgba(37,99,235,0.16)',
-        fill: true,
-        tension: 0.35,
-        pointRadius: 3,
-        pointHoverRadius: 5,
-      },
-    ],
-  }), [filteredTests])
-
-  const moduleProgress = useMemo(() => {
-    if (!selectedSubject) return []
-    const map = new Map()
+  const monthlyTrendPoints = useMemo(() => {
+    const monthMap = new Map()
 
     filteredTests.forEach((test) => {
-      const score = Number(test.user_progress?.percentage || 0)
-      const groups = Array.isArray(test.module_chapters) ? test.module_chapters : []
+      const date = new Date(test.test_datetime)
+      const key = buildMonthKey(date)
+      const current = monthMap.get(key) || {
+        key,
+        label: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        total: 0,
+        count: 0,
+      }
 
-      groups.forEach((group) => {
-        const moduleName = group?.module_name || 'Module'
-        const prev = map.get(moduleName) || { moduleName, scores: [] }
-        prev.scores.push(score)
-        map.set(moduleName, prev)
-      })
+      current.total += Number(test.user_progress?.percentage || 0)
+      current.count += 1
+      monthMap.set(key, current)
     })
 
-    return [...map.values()]
-      .map((entry) => {
-        const avg = entry.scores.length
-          ? Math.round(entry.scores.reduce((sum, v) => sum + v, 0) / entry.scores.length)
-          : 0
+    return [...monthMap.values()]
+      .sort((a, b) => a.key.localeCompare(b.key))
+      .map((item) => ({
+        ...item,
+        average: Math.round(item.total / item.count),
+      }))
+  }, [filteredTests])
 
-        let tag = 'Needs Practice'
-        let tagClass = 'bg-amber-100 text-amber-800'
-        if (avg >= 90) {
-          tag = 'Mastered'
-          tagClass = 'bg-green-100 text-green-800'
-        } else if (avg >= 75) {
-          tag = 'Proficient'
-          tagClass = 'bg-blue-100 text-blue-800'
-        }
+  const trendData = useMemo(() => ({
+    labels: monthlyTrendPoints.map((point) => point.label),
+    datasets: [
+      {
+        label: 'Average Score %',
+        data: monthlyTrendPoints.map((point) => point.average),
+        backgroundColor: monthlyTrendPoints.map((point) => {
+          if (point.average >= 85) return '#1d4ed8'
+          if (point.average >= 70) return '#2563eb'
+          return '#60a5fa'
+        }),
+        borderRadius: 12,
+        borderSkipped: false,
+        maxBarThickness: 92,
+        categoryPercentage: 0.8,
+        barPercentage: 0.72,
+      },
+    ],
+  }), [monthlyTrendPoints])
 
-        return {
-          moduleName: entry.moduleName,
-          percentage: avg,
-          tag,
-          tagClass,
-        }
-      })
-      .sort((a, b) => b.percentage - a.percentage)
-  }, [filteredTests, selectedSubject])
+  const topicProgress = useMemo(() => {
+    const topics = Array.isArray(subjectDetails?.topics) ? subjectDetails.topics : []
+
+    return topics
+      .map((topic) => ({
+        id: topic.chapter_id || topic.topic_id,
+        name: topic.chapter_name || topic.topic_name,
+        proficiency: Math.round(topic.proficiency || 0),
+        attemptRate: Math.round(topic.attempt_rate || 0),
+      }))
+      .sort((a, b) => b.proficiency - a.proficiency)
+  }, [subjectDetails])
 
   const subjectXP = useMemo(() => {
     if (!selectedSubject) return 0
@@ -191,15 +194,15 @@ const ParentDetailedReports = () => {
     if (!selectedSubject) return 'Not enough subject data to generate a summary yet.'
 
     const avg = selectedSubject.accuracy
-    const bestModule = moduleProgress[0]
-    const focusModule = moduleProgress[moduleProgress.length - 1]
+    const bestTopic = topicProgress[0]
+    const focusTopic = topicProgress[topicProgress.length - 1]
 
-    if (!moduleProgress.length) {
-      return `${selectedSubject.name} has ${avg}% accuracy currently. Complete more tests to unlock module-wise insights.`
+    if (!topicProgress.length) {
+      return `${selectedSubject.name} has ${avg}% accuracy currently. Complete more questions to unlock chapter-wise insights.`
     }
 
-    return `${progress?.student_name || 'Student'} is at ${avg}% in ${selectedSubject.name}. Strongest area is ${bestModule.moduleName} (${bestModule.percentage}%). Focus next on ${focusModule.moduleName} to improve overall consistency.`
-  }, [selectedSubject, moduleProgress, progress])
+    return `${progress?.student_name || 'Student'} is at ${avg}% in ${selectedSubject.name}. Strongest chapter is ${bestTopic.name} (${bestTopic.proficiency}%). Focus next on ${focusTopic.name} to improve overall consistency.`
+  }, [selectedSubject, topicProgress, progress])
 
   if (loading) return <div className="min-h-[50vh] flex items-center justify-center text-gray-500">Loading detailed reports...</div>
   if (error) return <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4">{error}</div>
@@ -223,7 +226,7 @@ const ParentDetailedReports = () => {
         <h1 className="text-5xl max-sm:text-3xl font-extrabold tracking-tight text-gray-900">Detailed Reports for {studentName}</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <label className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-2">
           <Filter className="w-4 h-4 text-gray-500" />
           <select
@@ -246,81 +249,100 @@ const ParentDetailedReports = () => {
             <option value="me">Child: {studentName}</option>
           </select>
         </label>
-
-        <label className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-2">
-          <select
-            value={rangeFilter}
-            onChange={(e) => setRangeFilter(e.target.value)}
-            className="w-full bg-transparent outline-none font-medium text-gray-900"
-          >
-            <option value="30">Date Range: Last 30 Days</option>
-            <option value="90">Date Range: Last 90 Days</option>
-            <option value="365">Date Range: Last 12 Months</option>
-            <option value="all">Date Range: All Time</option>
-          </select>
-        </label>
-      </div>
-
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4">
-        <h2 className="text-4xl max-sm:text-2xl font-extrabold text-gray-900">Current Reports for {subjectTitle}</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="rounded-xl border border-gray-100 bg-gray-50 p-5">
-            <p className="text-sm text-gray-500">Subject Grade</p>
-            <p className="text-5xl font-extrabold text-blue-700 mt-2">{scoreToGrade(selectedSubject?.accuracy || 0)}</p>
-          </div>
-          <div className="rounded-xl border border-gray-100 bg-gray-50 p-5">
-            <p className="text-sm text-gray-500">XP Gained ({subjectTitle})</p>
-            <p className="text-5xl font-extrabold text-gray-900 mt-2">{subjectXP.toLocaleString()}</p>
-          </div>
-          <div className="rounded-xl border border-gray-100 bg-gray-50 p-5">
-            <p className="text-sm text-gray-500">Performance Percentile</p>
-            <p className="text-5xl font-extrabold text-gray-900 mt-2">{performancePercentile ? percentileSuffix(performancePercentile) : 'NA'}</p>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-blue-900 text-base leading-relaxed">
-          <span className="font-semibold inline-flex items-center gap-2"><Sparkles className="w-4 h-4" /> AI Summary:</span> {summaryText}
-        </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-2xl p-6">
-        <h2 className="text-4xl max-sm:text-2xl font-extrabold text-gray-900 mb-4">Performance Trends in {subjectTitle}</h2>
-        {filteredTests.length >= 2 ? (
-          <Line
-            data={trendData}
-            options={{
-              responsive: true,
-              plugins: { legend: { display: false } },
-              scales: { y: { beginAtZero: true, max: 100 } },
-            }}
-          />
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h2 className="text-4xl max-sm:text-2xl font-extrabold text-gray-900">Performance Trends in {subjectTitle}</h2>
+          <div className="flex items-center gap-3">
+            <div className="text-sm font-medium text-gray-500">Month-wise average test score</div>
+            <label className="bg-white border border-gray-200 rounded-xl px-4 py-2 flex items-center gap-2">
+              <select
+                value={monthFilter}
+                onChange={(e) => setMonthFilter(e.target.value)}
+                className="bg-transparent outline-none font-medium text-gray-900"
+              >
+                <option value="3">Last 3 Months</option>
+                <option value="6">Last 6 Months</option>
+                <option value="12">Last 12 Months</option>
+                <option value="all">All Months</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        {monthlyTrendPoints.length > 0 ? (
+          <div className="h-[340px]">
+            <Bar
+              data={trendData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    backgroundColor: '#0f172a',
+                    displayColors: false,
+                    callbacks: {
+                      label: (context) => `Average Score: ${context.parsed.y}%`,
+                    },
+                  },
+                },
+                scales: {
+                  x: {
+                    grid: { display: false },
+                    ticks: {
+                      color: '#475569',
+                      font: {
+                        size: 13,
+                        weight: '600',
+                      },
+                    },
+                    border: { display: false },
+                  },
+                  y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                      stepSize: 20,
+                      color: '#64748b',
+                      font: {
+                        size: 12,
+                        weight: '600',
+                      },
+                    },
+                    grid: {
+                      color: '#e2e8f0',
+                    },
+                    border: { display: false },
+                  },
+                },
+              }}
+            />
+          </div>
         ) : (
-          <div className="h-48 flex items-center justify-center text-gray-500 text-sm">Not enough test history to render the trend graph yet.</div>
+          <div className="h-48 flex items-center justify-center text-gray-500 text-sm">No month-wise test data is available for this filter yet.</div>
         )}
       </div>
 
       <div className="bg-white border border-gray-200 rounded-2xl p-6">
-        <h2 className="text-4xl max-sm:text-2xl font-extrabold text-gray-900 mb-4">Module-wise Progress in {subjectTitle}</h2>
+        <h2 className="text-4xl max-sm:text-2xl font-extrabold text-gray-900 mb-4">Topic-wise Progress in {subjectTitle}</h2>
         <div className="space-y-4">
-          {moduleProgress.map((module) => (
-            <div key={module.moduleName} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+          {topicProgress.map((topic) => (
+            <div key={topic.id} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
               <div className="flex items-center justify-between gap-3 mb-2">
-                <p className="font-semibold text-gray-900">{module.moduleName}</p>
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${module.tagClass}`}>{module.tag}</span>
-                  <span className="text-sm font-semibold text-gray-600">{module.percentage}% Complete</span>
-                </div>
+                <p className="font-semibold text-gray-900">{topic.name}</p>
+                <span className="text-sm font-semibold text-gray-600">{topic.proficiency}%</span>
               </div>
               <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-blue-500" style={{ width: `${module.percentage}%` }} />
+                <div className="h-full rounded-full bg-blue-500" style={{ width: `${topic.proficiency}%` }} />
               </div>
+              <p className="text-xs text-gray-500 mt-2">Attempt Rate: {topic.attemptRate}%</p>
             </div>
           ))}
 
-          {!moduleProgress.length && (
+          {!topicProgress.length && (
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-              Module-wise progress is unavailable because there are no completed tests with module mappings for this filter.
+              Topic-wise progress is unavailable because no chapter analytics are available for this subject yet.
             </div>
           )}
         </div>
@@ -336,7 +358,7 @@ const ParentDetailedReports = () => {
               <thead>
                 <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   <th className="px-4 py-3">Subject</th>
-                  <th className="px-4 py-3">Topic</th>
+                  <th className="px-4 py-3">Chapter</th>
                   <th className="px-4 py-3">Attempt Rate</th>
                   <th className="px-4 py-3">Proficiency</th>
                   <th className="px-4 py-3">Weak Topic</th>
@@ -348,13 +370,13 @@ const ParentDetailedReports = () => {
               </thead>
               <tbody>
                 {topicRows.length > 0 ? topicRows.map((row) => (
-                  <tr key={row.topic_id} className="border-t border-gray-200">
+                  <tr key={row.chapter_id || row.topic_id} className="border-t border-gray-200">
                     <td className="px-4 py-3 text-sm font-semibold text-gray-900">{subjectTitle}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{row.topic_name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{row.chapter_name || row.topic_name}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{Math.round(row.attempt_rate || 0)}%</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{Math.round(row.proficiency || 0)}%</td>
-                    <td className="px-4 py-3 text-sm text-red-700">{weakTopics.includes(row.topic_name) ? 'Yes' : '-'}</td>
-                    <td className="px-4 py-3 text-sm text-green-700">{strongTopics.includes(row.topic_name) ? 'Yes' : '-'}</td>
+                    <td className="px-4 py-3 text-sm text-red-700">{weakTopics.includes(row.chapter_name || row.topic_name) ? 'Yes' : '-'}</td>
+                    <td className="px-4 py-3 text-sm text-green-700">{strongTopics.includes(row.chapter_name || row.topic_name) ? 'Yes' : '-'}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{teacherName}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{strongQuestionLevel}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{weakLevels.length ? weakLevels.join(', ') : '-'}</td>

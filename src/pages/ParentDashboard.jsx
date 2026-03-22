@@ -168,17 +168,15 @@ const ParentDashboard = () => {
   const mastered = subjectProgress.filter((s) => (s.accuracy || 0) >= 70).length
   const studentName = progress?.student_name || 'Student'
   const className = progress?.class_name || 'Class not assigned'
-
-  const topWeak = weakAreas.slice(0, 2)
-  const strongSubject = [...subjectProgress].sort((a, b) => (b.accuracy || 0) - (a.accuracy || 0))[0]
-  const weakTopicNames = weakAreas
-    .filter((area) => area.area_type !== 'difficulty')
-    .map((area) => area.area_name)
+  const strongTopicNames = (Array.isArray(progress?.strong_topics) ? progress.strong_topics : [])
+    .map((topic) => topic.topic_name)
     .slice(0, 5)
-  const strongTopicNames = [...subjectProgress]
-    .sort((a, b) => (b.accuracy || 0) - (a.accuracy || 0))
-    .map((s) => s.subject_name)
+  const weakTopicNames = (Array.isArray(progress?.weak_topics) ? progress.weak_topics : [])
+    .map((topic) => topic.topic_name)
     .slice(0, 5)
+  const actionableInsights = Array.isArray(progress?.actionable_insights) ? progress.actionable_insights : []
+  const showRecentActivity = false
+  const showUpcomingDeadlines = false
   const performanceChartData = {
     labels: subjectProgress.map((item) => item.subject_name),
     datasets: [
@@ -282,55 +280,59 @@ const ParentDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-2xl p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Recent Activity</h2>
-            <div className="space-y-4">
-              {recentActivity.map((item) => {
-                const Icon = item.icon
-                return (
-                  <div key={item.id} className="flex items-start gap-3">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center ${item.iconClass}`}>
-                      <Icon className="w-5 h-5" />
+          {showRecentActivity && (
+            <div className="bg-white border border-gray-200 rounded-2xl p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Recent Activity</h2>
+              <div className="space-y-4">
+                {recentActivity.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <div key={item.id} className="flex items-start gap-3">
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center ${item.iconClass}`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">{item.title}</p>
+                        <p className="text-sm text-gray-500">{item.subtitle}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">{item.title}</p>
-                      <p className="text-sm text-gray-500">{item.subtitle}</p>
-                    </div>
-                  </div>
-                )
-              })}
-              {recentActivity.length === 0 && <p className="text-sm text-gray-500">No recent activity found.</p>}
+                  )
+                })}
+                {recentActivity.length === 0 && <p className="text-sm text-gray-500">No recent activity found.</p>}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="space-y-5">
-          <div className="bg-white border border-gray-200 rounded-2xl p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Upcoming Deadlines</h2>
-            <div className="space-y-3">
-              {upcomingTests.slice(0, 2).map((test) => {
-                const dt = new Date(test.test_datetime)
-                return (
-                  <div key={test.id} className="flex items-start gap-3">
-                    <div className="w-14 h-14 rounded-xl bg-gray-100 flex flex-col items-center justify-center text-gray-700">
-                      <span className="text-[10px] font-semibold">{dt.toLocaleString('en-US', { month: 'short' }).toUpperCase()}</span>
-                      <span className="text-xl font-bold">{dt.getDate().toString().padStart(2, '0')}</span>
+          {showUpcomingDeadlines && (
+            <div className="bg-white border border-gray-200 rounded-2xl p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Upcoming Deadlines</h2>
+              <div className="space-y-3">
+                {upcomingTests.slice(0, 2).map((test) => {
+                  const dt = new Date(test.test_datetime)
+                  return (
+                    <div key={test.id} className="flex items-start gap-3">
+                      <div className="w-14 h-14 rounded-xl bg-gray-100 flex flex-col items-center justify-center text-gray-700">
+                        <span className="text-[10px] font-semibold">{dt.toLocaleString('en-US', { month: 'short' }).toUpperCase()}</span>
+                        <span className="text-xl font-bold">{dt.getDate().toString().padStart(2, '0')}</span>
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900">{test.subject_name || test.name || 'Test'}</p>
+                        <p className="text-sm text-gray-500">{className}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-gray-900">{test.subject_name || test.name || 'Test'}</p>
-                      <p className="text-sm text-gray-500">{className}</p>
-                    </div>
+                  )
+                })}
+                {upcomingTests.length === 0 && (
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <CalendarDays className="w-4 h-4" />
+                    No upcoming test deadlines.
                   </div>
-                )
-              })}
-              {upcomingTests.length === 0 && (
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <CalendarDays className="w-4 h-4" />
-                  No upcoming test deadlines.
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="bg-white border border-gray-200 rounded-2xl p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Weak & Strong Topics</h2>
@@ -357,23 +359,9 @@ const ParentDashboard = () => {
           <div className="bg-white border border-gray-200 rounded-2xl p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Actionable Insights</h2>
             <div className="space-y-3">
-              {strongSubject && (
-                <div className="rounded-xl bg-green-50 border border-green-100 p-3 text-sm text-green-800 flex gap-2">
-                  <CheckCircle2 className="w-4 h-4 mt-0.5" />
-                  <span>
-                    <strong>Excelling in {strongSubject.subject_name}!</strong> Current accuracy is {Math.round(strongSubject.accuracy || 0)}%.
-                  </span>
-                </div>
-              )}
-              {topWeak.map((w) => (
-                <div key={`${w.area_type}-${w.area_name}`} className="rounded-xl bg-amber-50 border border-amber-100 p-3 text-sm text-amber-800 flex gap-2">
-                  <Lightbulb className="w-4 h-4 mt-0.5" />
-                  <span><strong>Focus Area:</strong> {w.area_name}. {w.recommendation}</span>
-                </div>
-              ))}
-              {generatedInsights.map((ins, idx) => (
+              {actionableInsights.map((ins, idx) => (
                 <div
-                  key={`gen-${idx}`}
+                  key={`${ins.title || ins.type}-${idx}`}
                   className={`rounded-xl p-3 text-sm flex gap-2 border ${
                     ins.type === 'positive'
                       ? 'bg-green-50 border-green-100 text-green-800'
@@ -381,10 +369,13 @@ const ParentDashboard = () => {
                   }`}
                 >
                   {ins.type === 'positive' ? <CheckCircle2 className="w-4 h-4 mt-0.5" /> : <Lightbulb className="w-4 h-4 mt-0.5" />}
-                  <span>{ins.text}</span>
+                  <span>
+                    {ins.title ? <strong>{ins.title}. </strong> : null}
+                    {ins.text}
+                  </span>
                 </div>
               ))}
-              {!strongSubject && topWeak.length === 0 && generatedInsights.length === 0 && (
+              {actionableInsights.length === 0 && (
                 <div className="rounded-xl bg-blue-50 border border-blue-100 p-3 text-sm text-blue-800 flex gap-2">
                   <CircleAlert className="w-4 h-4 mt-0.5" />
                   <span>Not enough analytics data yet to generate insights.</span>

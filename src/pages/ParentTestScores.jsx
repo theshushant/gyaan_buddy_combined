@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ChevronDown, ChevronRight, TrendingUp } from 'lucide-react'
+import { ChevronDown, TrendingUp } from 'lucide-react'
 import { Line } from 'react-chartjs-2'
 import {
   CategoryScale,
@@ -24,7 +23,6 @@ const getBadge = (pct = 0) => {
 }
 
 const ParentTestScores = () => {
-  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [progress, setProgress] = useState(null)
@@ -136,73 +134,76 @@ const ParentTestScores = () => {
   if (loading) return <div className="min-h-[50vh] flex items-center justify-center text-gray-500">Loading test scores...</div>
   if (error) return <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4">{error}</div>
 
+  const showSummarySections = false
+
   return (
     <div className="space-y-7">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-5xl max-sm:text-3xl font-extrabold tracking-tight text-gray-900">Test Results Summary</h1>
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <div className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm text-gray-700">
           Showing results for: <span className="font-semibold text-gray-900">{progress?.student_name || 'Student'}</span>
           <ChevronDown className="w-4 h-4 text-gray-500" />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        <div className="xl:col-span-2 bg-white border border-gray-200 rounded-2xl p-6">
-          <p className="text-3xl font-bold text-gray-900">Overall Performance Over Time</p>
-          <div className="mt-2 flex items-end gap-3">
-            <p className="text-6xl max-sm:text-5xl font-extrabold text-gray-900">{avgScore}%</p>
-            <p className="text-sm text-gray-500 pb-2 inline-flex items-center gap-1">
-              Last 6 tests
-              <span className={`inline-flex items-center gap-1 font-semibold ${scoreDelta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                <TrendingUp className="w-4 h-4" />
-                {scoreDelta >= 0 ? '+' : ''}{scoreDelta}%
-              </span>
-            </p>
+      {showSummarySections && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+          <div className="xl:col-span-2 bg-white border border-gray-200 rounded-2xl p-6">
+            <p className="text-3xl font-bold text-gray-900">Overall Performance Over Time</p>
+            <div className="mt-2 flex items-end gap-3">
+              <p className="text-6xl max-sm:text-5xl font-extrabold text-gray-900">{avgScore}%</p>
+              <p className="text-sm text-gray-500 pb-2 inline-flex items-center gap-1">
+                Last 6 tests
+                <span className={`inline-flex items-center gap-1 font-semibold ${scoreDelta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <TrendingUp className="w-4 h-4" />
+                  {scoreDelta >= 0 ? '+' : ''}{scoreDelta}%
+                </span>
+              </p>
+            </div>
+
+            <div className="mt-5 h-[220px]">
+              {chartPoints.length >= 2 ? (
+                <Line
+                  data={trendData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                      x: { grid: { display: false } },
+                      y: { beginAtZero: true, max: 100, ticks: { stepSize: 20 } },
+                    },
+                  }}
+                />
+              ) : (
+                <div className="h-full rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center text-sm text-gray-500">
+                  Not enough timeline points for graph yet.
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="mt-5 h-[220px]">
-            {chartPoints.length >= 2 ? (
-              <Line
-                data={trendData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: { legend: { display: false } },
-                  scales: {
-                    x: { grid: { display: false } },
-                    y: { beginAtZero: true, max: 100, ticks: { stepSize: 20 } },
-                  },
-                }}
-              />
-            ) : (
-              <div className="h-full rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center text-sm text-gray-500">
-                Not enough timeline points for graph yet.
-              </div>
-            )}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6">
+            <p className="text-3xl font-bold text-gray-900 mb-4">Average Score by Subject</p>
+            <div className="space-y-4">
+              {subjectAverages.map((item) => (
+                <div key={item.name}>
+                  <div className="flex items-center justify-between text-sm mb-1.5">
+                    <span className="font-semibold text-gray-800">{item.name}</span>
+                    <span className="font-bold text-gray-900">{item.avg}%</span>
+                  </div>
+                  <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-blue-600" style={{ width: `${item.avg}%` }} />
+                  </div>
+                </div>
+              ))}
+              {subjectAverages.length === 0 && <p className="text-sm text-gray-500">No subject-level scores yet.</p>}
+            </div>
           </div>
         </div>
-
-        <div className="bg-white border border-gray-200 rounded-2xl p-6">
-          <p className="text-3xl font-bold text-gray-900 mb-4">Average Score by Subject</p>
-          <div className="space-y-4">
-            {subjectAverages.map((item) => (
-              <div key={item.name}>
-                <div className="flex items-center justify-between text-sm mb-1.5">
-                  <span className="font-semibold text-gray-800">{item.name}</span>
-                  <span className="font-bold text-gray-900">{item.avg}%</span>
-                </div>
-                <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full bg-blue-600" style={{ width: `${item.avg}%` }} />
-                </div>
-              </div>
-            ))}
-            {subjectAverages.length === 0 && <p className="text-sm text-gray-500">No subject-level scores yet.</p>}
-          </div>
-        </div>
-      </div>
+      )}
 
       <div>
-        <h2 className="text-4xl max-sm:text-2xl font-extrabold text-gray-900 mb-4">Recent Test Results</h2>
+        <h2 className="text-4xl max-sm:text-2xl font-extrabold text-gray-900 mb-4">Recent Test Scores</h2>
         <div className="space-y-3">
           {scoredTests.map((test) => {
             const pct = Math.round(Number(test.user_progress?.percentage || 0))
@@ -216,11 +217,7 @@ const ParentTestScores = () => {
             const xp = Number(test.user_progress?.exp_earned || 0)
 
             return (
-              <button
-                key={test.id}
-                onClick={() => navigate(`/test-scores/${test.id}`)}
-                className="w-full text-left bg-white border border-gray-200 rounded-xl p-4 hover:shadow-sm hover:border-gray-300 transition-all"
-              >
+              <div key={test.id} className="w-full text-left bg-white border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
                     <p className="text-2xl max-sm:text-lg font-bold text-gray-900 truncate">{test.name || test.subject_name || 'Test'}</p>
@@ -237,10 +234,9 @@ const ParentTestScores = () => {
                   <div className="flex items-center gap-3 shrink-0">
                     <p className="text-4xl max-sm:text-2xl font-extrabold text-gray-900">{pct}/100</p>
                     <span className={`text-xs font-semibold px-3 py-1 rounded-full ${badge.cls}`}>{badge.text}</span>
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
                   </div>
                 </div>
-              </button>
+              </div>
             )
           })}
 

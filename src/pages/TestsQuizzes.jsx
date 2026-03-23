@@ -289,10 +289,11 @@ const TestsQuizzes = () => {
 
   const handleAIGenerationChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setAiFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : (type === 'number' ? parseInt(value) : value)
-    }));
+    let parsed = type === 'checkbox' ? checked : (type === 'number' ? parseInt(value) : value);
+    if (name === 'number_of_questions' && type === 'number') {
+      parsed = Math.min(25, Math.max(1, parsed || 1));
+    }
+    setAiFormData(prev => ({ ...prev, [name]: parsed }));
   };
 
   const handleSubmit = async (e) => {
@@ -488,6 +489,12 @@ const TestsQuizzes = () => {
         }
       }
       
+      const numQ = parseInt(aiFormData.number_of_questions, 10);
+      if (isNaN(numQ) || numQ < 1 || numQ > 25) {
+        setGenerationError('Number of questions must be between 1 and 25.');
+        return;
+      }
+
       if (!subjectId || !subjectName) {
         setGenerationError('Missing subject information.');
         return;
@@ -1528,7 +1535,7 @@ const TestsQuizzes = () => {
                 <span>AI Generation Settings</span>
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Questions will be generated with a <strong>mix of question types</strong> (MCQ single/multiple, short answer, rearrange) and a <strong>mix of difficulty levels</strong> (1–5) across all selected modules and topics.
+                Questions will be generated with a <strong>mix of question types</strong> (MCQ single/multiple, rearrange) and a <strong>mix of difficulty levels</strong> (1–5) across all selected modules and topics.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
@@ -1541,7 +1548,7 @@ const TestsQuizzes = () => {
                     value={aiFormData.number_of_questions}
                     onChange={handleAIGenerationChange}
                     min="1"
-                    max="50"
+                    max="25"
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
                   />
                 </div>
@@ -1808,7 +1815,6 @@ const TestsQuizzes = () => {
                   >
                     <option value="mcq_single">MCQ (Single)</option>
                     <option value="mcq_multiple">MCQ (Multiple)</option>
-                    <option value="short_answer">Short Answer</option>
                     <option value="rearrange">Rearrange</option>
                   </select>
                 </div>

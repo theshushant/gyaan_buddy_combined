@@ -141,7 +141,9 @@ const ModulesAssignments = () => {
         id: module.id,
         subjectId: module.subject || module.subject_id || module.subject?.id,
         title: module.name || `Chapter ${module.order}`,
-        completionRate: module.user_percentage || 0,
+        completionRate: module.chapter_count > 0
+          ? Math.round((module.active_chapter_count / module.chapter_count) * 100)
+          : 0,
         isDue: module.is_due === true || module.status === 'due',
         dueDate: module.due_date || null,
         name: module.name,
@@ -503,6 +505,9 @@ const ModulesAssignments = () => {
 
   const handleEditQuestion = (question) => {
     setEditingQuestion(question);
+    if (!selectedChapterForQuestion && question.chapter_id) {
+      setSelectedChapterForQuestion({ id: question.chapter_id, title: question.chapter_title || '' });
+    }
     setShowCreateQuestionModal(true);
     setCreateQuestionError(null);
   };
@@ -517,7 +522,7 @@ const ModulesAssignments = () => {
   };
 
   const handleSaveQuestion = async (questionData) => {
-    if (!selectedChapterForQuestion) {
+    if (!selectedChapterForQuestion && !editingQuestion?.chapter_id) {
       setCreateQuestionError('No topic selected');
       return;
     }
@@ -594,14 +599,18 @@ const ModulesAssignments = () => {
 
       if (editingQuestion) {
         const questionId = editingQuestion.id;
-        await questionsService.updateQuestion(questionId, dataToSend);
+        const updateResponse = await questionsService.updateQuestion(questionId, dataToSend);
+        const updateData = updateResponse.data || updateResponse;
+        const optionErrors = updateData?.option_errors;
 
         setShowCreateQuestionModal(false);
         setEditingQuestion(null);
         setSelectedChapterForQuestion(null);
         setSuccessData({
           title: 'Question Updated Successfully',
-          message: 'Question has been updated successfully.'
+          message: optionErrors?.length
+            ? `Question updated, but some options failed to save: ${optionErrors.join('; ')}`
+            : 'Question has been updated successfully.'
         });
         setShowSuccessModal(true);
         if (showViewQuestionsModal) {
@@ -610,6 +619,7 @@ const ModulesAssignments = () => {
       } else {
         const questionResponse = await questionsService.createQuestion(dataToSend);
         const questionId = questionResponse.data?.id || questionResponse.id;
+        const optionErrors = questionResponse.data?.option_errors;
 
         if (!questionId) {
           throw new Error('Failed to get question ID from response');
@@ -619,7 +629,9 @@ const ModulesAssignments = () => {
         setSelectedChapterForQuestion(null);
         setSuccessData({
           title: 'Question Created Successfully',
-          message: 'Question has been created and added to the assignment successfully.'
+          message: optionErrors?.length
+            ? `Question created, but some options failed to save: ${optionErrors.join('; ')}`
+            : 'Question has been created and added to the assignment successfully.'
         });
         setShowSuccessModal(true);
         await fetchAllModulesData();
@@ -1888,6 +1900,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         difficulty_level: initialData.difficulty_level || 'medium',
         exp_points: initialData.exp_points || 10,
         explanation: initialData.explanation || '',
+        hint: initialData.hint || '',
         is_active: initialData.is_active !== undefined ? initialData.is_active : true,
         is_hots: initialData.is_hots || false,
         options: initialData.options && initialData.options.length > 0
@@ -1910,6 +1923,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
       difficulty_level: 'medium',
       exp_points: 10,
       explanation: '',
+      hint: '',
       is_active: true,
       is_hots: false,
       options: [
@@ -1940,6 +1954,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         difficulty_level: initialData.difficulty_level || 'medium',
         exp_points: initialData.exp_points || 10,
         explanation: initialData.explanation || '',
+        hint: initialData.hint || '',
         is_active: initialData.is_active !== undefined ? initialData.is_active : true,
         is_hots: initialData.is_hots || false,
         options: initialData.options && initialData.options.length > 0
@@ -1962,6 +1977,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         difficulty_level: 'medium',
         exp_points: 10,
         explanation: '',
+        hint: '',
         is_active: true,
         is_hots: false,
         options: [
@@ -2085,13 +2101,20 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
       const validOptions = options.filter(opt => opt.option_text && opt.option_text.trim() !== '');
       const hasCorrectOption = validOptions.some(opt => opt.is_correct === true);
       
-      if (!hasCorrectOption) {
-        setValidationError('Please select at least one correct option.');
-        return;
-      }
-      
       if (validOptions.length === 0) {
         setValidationError('Please add at least one option with text.');
+        return;
+      }
+
+      const optionTexts = validOptions.map(opt => opt.option_text.trim().toLowerCase());
+      const hasDuplicates = optionTexts.length !== new Set(optionTexts).size;
+      if (hasDuplicates) {
+        setValidationError('All options must have unique text. Please remove duplicate options.');
+        return;
+      }
+
+      if (!hasCorrectOption) {
+        setValidationError('Please select at least one correct option.');
         return;
       }
       
@@ -2232,7 +2255,6 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
           >
             <option value="mcq_single">MCQ - Single Correct Answer</option>
             <option value="mcq_multiple">MCQ - Multiple Correct Answers</option>
-            <option value="short_answer">Short Answer Question</option>
           </select>
         </div>
 
@@ -2289,18 +2311,33 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-6 border border-gray-200">
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
-          Explanation
-        </label>
-        <textarea
-          value={formData.explanation}
-          onChange={(e) => handleFieldChange('explanation', e.target.value)}
-          rows={3}
-          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 resize-none"
-          placeholder="Enter explanation for the correct answer..."
-          disabled={loading}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl p-6 border border-gray-200">
+          <label className="block text-sm font-semibold text-gray-700 mb-3">
+            Hint
+          </label>
+          <textarea
+            value={formData.hint}
+            onChange={(e) => handleFieldChange('hint', e.target.value)}
+            rows={3}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 resize-none"
+            placeholder="Enter a hint to help students..."
+            disabled={loading}
+          />
+        </div>
+        <div className="bg-white rounded-xl p-6 border border-gray-200">
+          <label className="block text-sm font-semibold text-gray-700 mb-3">
+            Explanation
+          </label>
+          <textarea
+            value={formData.explanation}
+            onChange={(e) => handleFieldChange('explanation', e.target.value)}
+            rows={3}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 resize-none"
+            placeholder="Enter explanation for the correct answer..."
+            disabled={loading}
+          />
+        </div>
       </div>
 
       {(formData.question_type === 'mcq_single' || formData.question_type === 'mcq_multiple') && (

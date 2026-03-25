@@ -14,6 +14,9 @@ const CreateTopicModal = ({
     title: '',
     description: '',
     order: 1,
+    due_date: '',
+    max_questions: 10,
+    theory: '',
     is_enabled: true,
     is_important: false
   })
@@ -30,6 +33,9 @@ const CreateTopicModal = ({
           title: chapterData.title || '',
           description: chapterData.description || '',
           order: chapterData.order || 1,
+          due_date: chapterData.due_date || '',
+          max_questions: chapterData.max_questions ?? 10,
+          theory: chapterData.theory || '',
           is_enabled: chapterData.is_enabled !== undefined ? chapterData.is_enabled : true,
           is_important: chapterData.is_important !== undefined ? chapterData.is_important : false
         })
@@ -58,6 +64,9 @@ const CreateTopicModal = ({
           title: '',
           description: '',
           order: 1,
+          due_date: '',
+          max_questions: 10,
+          theory: '',
           is_enabled: true,
           is_important: false
         })
@@ -76,6 +85,9 @@ const CreateTopicModal = ({
       title: '',
       description: '',
       order: 1,
+      due_date: '',
+      max_questions: 10,
+      theory: '',
       is_enabled: true,
       is_important: false
     })
@@ -328,6 +340,54 @@ const CreateTopicModal = ({
                   <p className="mt-1 text-xs text-gray-500">
                     Order determines the sequence of topics within the chapter
                   </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.due_date}
+                    onChange={(e) => handleFieldChange('due_date', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    disabled={loading}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Setting a due date marks this topic as active for students
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Max Questions
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={formData.max_questions}
+                    onChange={(e) => handleFieldChange('max_questions', parseInt(e.target.value) || 10)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    disabled={loading}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Maximum number of questions shown to students per attempt
+                  </p>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Theory Content (Optional)
+                  </label>
+                  <textarea
+                    value={formData.theory}
+                    onChange={(e) => handleFieldChange('theory', e.target.value)}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="Enter theory or reading material for this topic..."
+                    disabled={loading}
+                  />
                 </div>
               </div>
             </div>

@@ -141,8 +141,8 @@ const ModulesAssignments = () => {
         id: module.id,
         subjectId: module.subject || module.subject_id || module.subject?.id,
         title: module.name || `Chapter ${module.order}`,
-        completionRate: module.chapter_count > 0
-          ? Math.round((module.active_chapter_count / module.chapter_count) * 100)
+        completionRate: module.total_chapter_count > 0
+          ? Math.round((module.due_chapter_count / module.total_chapter_count) * 100)
           : 0,
         isDue: module.is_due === true || module.status === 'due',
         dueDate: module.due_date || null,
@@ -154,6 +154,8 @@ const ModulesAssignments = () => {
         subject: module.subject || module.subject_id || module.subject?.id,
         class_instance: module.class_instance || '',
         logo: module.logo || null,
+        total_chapter_count: module.total_chapter_count ?? module.chapter_count ?? 0,
+        due_chapter_count: module.due_chapter_count ?? 0,
         modules: undefined
       }));
 
@@ -874,10 +876,7 @@ const ModulesAssignments = () => {
                             </div>
                           </div>
                           <p className="text-sm text-gray-500 mt-1">
-                            {chapter.modules === undefined
-                              ? '— assignments'
-                              : `${chapter.modules.length} ${chapter.modules.length === 1 ? 'assignment' : 'assignments'}`
-                            }
+                            {`${chapter.total_chapter_count ?? 0} ${(chapter.total_chapter_count ?? 0) === 1 ? 'assignment' : 'assignments'}`}
                           </p>
                         </div>
                       </div>

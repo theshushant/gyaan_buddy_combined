@@ -524,7 +524,7 @@ const ModulesAssignments = () => {
   };
 
   const handleSaveQuestion = async (questionData) => {
-    if (!selectedChapterForQuestion && !editingQuestion?.chapter_id) {
+    if (!editingQuestion && !selectedChapterForQuestion) {
       setCreateQuestionError('No topic selected');
       return;
     }

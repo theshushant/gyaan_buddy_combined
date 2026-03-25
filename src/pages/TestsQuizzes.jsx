@@ -42,7 +42,8 @@ const TestsQuizzes = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const setSuccess = (val, msg = '') => setSuccessMessage(val ? msg : '');
   const [selectedTest, setSelectedTest] = useState(null);
   const [showQuestionGenerator, setShowQuestionGenerator] = useState(false);
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
@@ -355,7 +356,7 @@ const TestsQuizzes = () => {
         const updatedTest = await testsService.updateTest(testId, testPayload);
         const testData = updatedTest.data || updatedTest;
         
-        setSuccess(true);
+        setSuccess(true, 'Test updated successfully!');
         setIsEditMode(false);
         setEditingTest(null);
         setFormData({
@@ -405,7 +406,7 @@ const TestsQuizzes = () => {
         
         setSelectedTest(testData);
         setShowQuestionGenerator(true);
-        setSuccess(true);
+        setSuccess(true, 'Test created successfully! You can now add questions.');
         setError(null);
         
         setFormData({
@@ -547,7 +548,7 @@ const TestsQuizzes = () => {
       if (questions && questions.length > 0) {
         setGeneratedQuestions(questions);
         setSelectedGeneratedQuestionIds(new Set(questions.map(q => String(q.id || q.uuid)).filter(Boolean)));
-        setSuccess(true);
+        setSuccess(true, `Successfully generated ${questions.length} questions!`);
         
         await fetchTests();
       } else {
@@ -629,7 +630,7 @@ const TestsQuizzes = () => {
     setSuccess(false);
     try {
       await testsService.deleteTest(testId);
-      setSuccess(true);
+      setSuccess(true, 'Test deleted successfully.');
       await fetchTests();
     } catch (err) {
       setError(err.message || 'Failed to delete test. Please try again.');
@@ -912,6 +913,7 @@ const TestsQuizzes = () => {
                 if (isEditMode) {
                   handleCancelEdit();
                 }
+                setSuccess(false);
                 setActiveTab('tests');
               }}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
@@ -963,13 +965,13 @@ const TestsQuizzes = () => {
               </button>
             </div>
           )}
-          {success && (
+          {successMessage && (
             <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 flex items-start justify-between space-x-3">
               <div className="flex items-start space-x-3">
                 <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-semibold text-green-800">Success</p>
-                  <p className="text-sm text-green-700 mt-1">Test deleted successfully.</p>
+                  <p className="text-sm text-green-700 mt-1">{successMessage}</p>
                 </div>
               </div>
               <button type="button" onClick={() => setSuccess(false)} className="text-green-600 hover:text-green-800 p-1">
@@ -1122,14 +1124,12 @@ const TestsQuizzes = () => {
                   </div>
                 </div>
               )}
-              {success && (
+              {successMessage && (
                 <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 flex items-start space-x-3 animate-slide-down">
                   <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-semibold text-green-800">Success!</p>
-                    <p className="text-sm text-green-700 mt-1">
-                      {isEditMode ? 'Test updated successfully!' : 'Test created successfully! You can now generate questions.'}
-                    </p>
+                    <p className="text-sm text-green-700 mt-1">{successMessage}</p>
                   </div>
                 </div>
               )}
@@ -1516,14 +1516,12 @@ const TestsQuizzes = () => {
           </div>
             )}
 
-            {questionAddMode === 'ai' && success && generatedQuestions.length > 0 && (
+            {questionAddMode === 'ai' && successMessage && generatedQuestions.length > 0 && (
               <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 flex items-start space-x-3 mb-6">
                 <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
               <div>
                   <p className="text-sm font-semibold text-green-800">Success!</p>
-                  <p className="text-sm text-green-700 mt-1">
-                    Successfully generated {generatedQuestions.length} questions!
-                  </p>
+                  <p className="text-sm text-green-700 mt-1">{successMessage}</p>
               </div>
             </div>
           )}

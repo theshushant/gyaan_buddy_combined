@@ -229,6 +229,15 @@ class StudentsService {
     }
   }
 
+  async getStudentRecentTests(studentId) {
+    try {
+      const response = await apiService.get(`/students/${studentId}/recent-tests/`);
+      return response.data || response;
+    } catch (error) {
+      throw new Error(`Failed to fetch student recent tests: ${error.message}`);
+    }
+  }
+
   async getStudentProgressTrends(studentId, filters = {}) {
     try {
       const queryParams = new URLSearchParams();

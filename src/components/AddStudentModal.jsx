@@ -177,12 +177,8 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
         break
         
       case 'rollNumber':
-        if (!value.trim()) {
-          error = 'Roll number is required'
-        } else if (!/^\d+$/.test(value.trim())) {
+        if (value.trim() && !/^\d+$/.test(value.trim())) {
           error = 'Roll number must contain only numbers'
-        } else if (value.trim().length < 3) {
-          error = 'Roll number must be at least 3 digits'
         }
         break
         

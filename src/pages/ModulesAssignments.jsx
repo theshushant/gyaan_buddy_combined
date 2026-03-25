@@ -537,7 +537,7 @@ const ModulesAssignments = () => {
 
       let dataToSend;
       const needsFormData = image instanceof File || questionPayload.remove_image;
-      const isMCQ = questionPayload.question_type === 'mcq_single' || questionPayload.question_type === 'mcq_multiple';
+      const isMCQ = ['mcq_single', 'mcq_multiple', 'rearrange'].includes(questionPayload.question_type);
       
       if (needsFormData) {
         dataToSend = new FormData();
@@ -686,7 +686,7 @@ const ModulesAssignments = () => {
                 <div>
                   <p className="text-sm text-gray-600">Total Assignments</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {chapters.reduce((sum, ch) => sum + (ch.modules?.length || 0), 0)}
+                    {chapters.reduce((sum, ch) => sum + (ch.total_chapter_count || 0), 0)}
                   </p>
                 </div>
                 <div className="p-3 bg-indigo-100 rounded-lg">
@@ -2095,11 +2095,10 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
     e.preventDefault();
     setValidationError(null);
     
-    if (formData.question_type === 'mcq_single' || formData.question_type === 'mcq_multiple') {
+    if (['mcq_single', 'mcq_multiple', 'rearrange'].includes(formData.question_type)) {
       const options = formData.options && Array.isArray(formData.options) ? formData.options : [];
       const validOptions = options.filter(opt => opt.option_text && opt.option_text.trim() !== '');
-      const hasCorrectOption = validOptions.some(opt => opt.is_correct === true);
-      
+
       if (validOptions.length === 0) {
         setValidationError('Please add at least one option with text.');
         return;
@@ -2112,13 +2111,16 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         return;
       }
 
-      if (!hasCorrectOption) {
-        setValidationError('Please select at least one correct option.');
-        return;
+      if (formData.question_type !== 'rearrange') {
+        const hasCorrectOption = validOptions.some(opt => opt.is_correct === true);
+        if (!hasCorrectOption) {
+          setValidationError('Please select at least one correct option.');
+          return;
+        }
       }
-      
-      const dataToSave = { 
-        ...formData, 
+
+      const dataToSave = {
+        ...formData,
         options: validOptions.map((opt, idx) => ({
           option_text: opt.option_text.trim(),
           is_correct: opt.is_correct || false,
@@ -2339,11 +2341,11 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         </div>
       </div>
 
-      {(formData.question_type === 'mcq_single' || formData.question_type === 'mcq_multiple') && (
+      {['mcq_single', 'mcq_multiple', 'rearrange'].includes(formData.question_type) && (
         <div className="bg-white rounded-xl p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <label className="block text-sm font-semibold text-gray-700">
-              Options <span className="text-red-500">*</span>
+              {formData.question_type === 'rearrange' ? 'Items (in correct order)' : 'Options'} <span className="text-red-500">*</span>
             </label>
             <button
               type="button"
@@ -2369,30 +2371,32 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
                   />
                 </div>
                 <div className="flex items-center space-x-3">
-                  <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer">
-                    <input
-                      type={formData.question_type === 'mcq_single' ? 'radio' : 'checkbox'}
-                      name="correct_answer"
-                      checked={option.is_correct}
-                      onChange={(e) => {
-                        setValidationError(null); // Clear validation error when correct option is selected
-                        if (formData.question_type === 'mcq_single') {
-                          setFormData(prev => ({
-                            ...prev,
-                            options: prev.options.map((opt, idx) => ({
-                              ...opt,
-                              is_correct: idx === index
-                            }))
-                          }));
-                        } else {
-                          handleOptionChange(index, 'is_correct', e.target.checked);
-                        }
-                      }}
-                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
-                      disabled={loading}
-                    />
-                    <span>Correct</span>
-                  </label>
+                  {formData.question_type !== 'rearrange' && (
+                    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer">
+                      <input
+                        type={formData.question_type === 'mcq_single' ? 'radio' : 'checkbox'}
+                        name="correct_answer"
+                        checked={option.is_correct}
+                        onChange={(e) => {
+                          setValidationError(null);
+                          if (formData.question_type === 'mcq_single') {
+                            setFormData(prev => ({
+                              ...prev,
+                              options: prev.options.map((opt, idx) => ({
+                                ...opt,
+                                is_correct: idx === index
+                              }))
+                            }));
+                          } else {
+                            handleOptionChange(index, 'is_correct', e.target.checked);
+                          }
+                        }}
+                        className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+                        disabled={loading}
+                      />
+                      <span>Correct</span>
+                    </label>
+                  )}
                   {formData.options.length > 2 && (
                     <button
                       type="button"
@@ -2408,8 +2412,10 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
             ))}
           </div>
           <p className="text-xs text-gray-500 mt-3">
-            {formData.question_type === 'mcq_single' 
+            {formData.question_type === 'mcq_single'
               ? 'Select exactly one correct answer'
+              : formData.question_type === 'rearrange'
+              ? 'Enter items in the correct order'
               : 'Select one or more correct answers'}
           </p>
         </div>

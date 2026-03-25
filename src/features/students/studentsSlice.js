@@ -109,6 +109,18 @@ export const fetchStudentStats = createAsyncThunk(
   }
 )
 
+export const fetchStudentRecentTests = createAsyncThunk(
+  'students/fetchStudentRecentTests',
+  async (studentId, { rejectWithValue }) => {
+    try {
+      const response = await studentsService.getStudentRecentTests(studentId)
+      return { studentId, recentTests: response }
+    } catch (error) {
+      return rejectWithValue(error.message)
+    }
+  }
+)
+
 export const fetchStudentProgressTrends = createAsyncThunk(
   'students/fetchStudentProgressTrends',
   async ({ studentId, filters = {} }, { rejectWithValue }) => {
@@ -127,6 +139,7 @@ const initialState = {
   studentStats: null,
   performance: {},
   testHistory: {},
+  recentTests: {},
   progressTrends: {},
   studentsByClass: {},
   loading: {
@@ -135,6 +148,7 @@ const initialState = {
     stats: false,
     performance: false,
     testHistory: false,
+    recentTests: false,
     progressTrends: false,
     create: false,
     update: false,
@@ -146,6 +160,7 @@ const initialState = {
     stats: null,
     performance: null,
     testHistory: null,
+    recentTests: null,
     progressTrends: null,
     create: null,
     update: null,
@@ -403,6 +418,19 @@ const studentsSlice = createSlice({
         state.error.stats = action.payload
       })
 
+      .addCase(fetchStudentRecentTests.pending, (state) => {
+        state.loading.recentTests = true
+        state.error.recentTests = null
+      })
+      .addCase(fetchStudentRecentTests.fulfilled, (state, action) => {
+        state.loading.recentTests = false
+        state.recentTests[action.payload.studentId] = action.payload.recentTests
+      })
+      .addCase(fetchStudentRecentTests.rejected, (state, action) => {
+        state.loading.recentTests = false
+        state.error.recentTests = action.payload
+      })
+
       .addCase(fetchStudentProgressTrends.pending, (state) => {
         state.loading.progressTrends = true
         state.error.progressTrends = null
@@ -424,7 +452,7 @@ export const {
   clearFilters,
   clearCurrentStudent,
   clearPerformance,
-  clearTestHistory
+  clearTestHistory,
 } = studentsSlice.actions
 
 export default studentsSlice.reducer

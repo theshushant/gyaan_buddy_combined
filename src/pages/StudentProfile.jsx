@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { Edit, User, Calendar, Phone, Mail, BookOpen, TrendingUp, TrendingDown, Clock, MapPin, GraduationCap } from 'lucide-react'
-import { fetchStudentById, fetchStudentProgressTrends, updateStudent, clearError } from '../features/students/studentsSlice'
+import { fetchStudentById, fetchStudentProgressTrends, fetchStudentRecentTests, updateStudent, clearError } from '../features/students/studentsSlice'
 import AddStudentModal from '../components/AddStudentModal'
 import SuccessModal from '../components/SuccessModal'
 
@@ -11,7 +11,7 @@ const StudentProfile = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   
-  const { currentStudent, loading, error, progressTrends } = useSelector(state => state.students)
+  const { currentStudent, loading, error, progressTrends, recentTests } = useSelector(state => state.students)
   
   const [showEditModal, setShowEditModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
@@ -26,6 +26,7 @@ const StudentProfile = () => {
     if (id) {
       dispatch(fetchStudentById(id))
       dispatch(fetchStudentProgressTrends({ studentId: id }))
+      dispatch(fetchStudentRecentTests(id))
     }
   }, [id, dispatch, error.currentStudent, error.progressTrends])
   
@@ -76,6 +77,7 @@ const StudentProfile = () => {
   }
   
   const studentProgressTrends = progressTrends[id] || {}
+  const studentRecentTests = Array.isArray(recentTests[id]) ? recentTests[id] : []
   
   const getProgressTrendsData = () => {
     if (!studentProgressTrends || Object.keys(studentProgressTrends).length === 0) {
@@ -226,18 +228,10 @@ const StudentProfile = () => {
                 <p className="text-gray-600 mb-1">Roll No: {studentData.rollNumber}</p>
                 <p className="text-gray-600 mb-4">{studentData.class}</p>
                 
-                <div className="grid grid-cols-3 gap-4 w-full mt-6">
+                <div className="grid grid-cols-1 gap-4 w-full mt-6">
                   <div className="text-center p-3 rounded-lg hover:scale-105 transition-all duration-200" style={{ backgroundColor: 'rgba(0,22,122,0.1)' }}>
                     <p className="text-2xl font-bold animate-pulse" style={{ color: '#00167a' }}>{studentData.overallScore}%</p>
                     <p className="text-xs text-gray-600">Overall Score</p>
-                  </div>
-                  <div className="text-center p-3 bg-green-50 rounded-lg hover:bg-green-100 hover:scale-105 transition-all duration-200">
-                    <p className="text-2xl font-bold text-green-600 animate-pulse">{studentData.averageGrade}</p>
-                    <p className="text-xs text-gray-600">Average Grade</p>
-                  </div>
-                  <div className="text-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 hover:scale-105 transition-all duration-200">
-                    <p className="text-2xl font-bold text-purple-600 animate-pulse">{studentData.attendance}%</p>
-                    <p className="text-xs text-gray-600">Attendance</p>
                   </div>
                 </div>
               </div>
@@ -368,43 +362,74 @@ const StudentProfile = () => {
               <div className="px-6 py-4 border-b border-gray-200">
                 <h3 className="text-xl font-semibold text-gray-900">Recent Test Reports</h3>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {studentData.recentTests.map((test, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{test.name}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{test.date}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-sm font-medium ${
-                            test.score >= 80 ? 'text-green-600' : 
-                            test.score >= 60 ? 'text-yellow-600' : 'text-red-600'
-                          }`}>
-                            {test.score}%
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-3 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                            {test.status}
-                          </span>
-                        </td>
+              {loading.recentTests ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                </div>
+              ) : studentRecentTests.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No recent test activity found.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chapter</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Module</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Accessed</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {studentRecentTests.map((test, index) => {
+                        const statusColors = {
+                          completed: 'bg-green-100 text-green-800',
+                          in_progress: 'bg-blue-100 text-blue-800',
+                          due: 'bg-yellow-100 text-yellow-800',
+                          not_started: 'bg-gray-100 text-gray-700',
+                        }
+                        const statusLabel = {
+                          completed: 'Completed',
+                          in_progress: 'In Progress',
+                          due: 'Due',
+                          not_started: 'Not Started',
+                        }
+                        const dateStr = test.last_accessed
+                          ? new Date(test.last_accessed).toLocaleDateString()
+                          : '-'
+                        return (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">{test.chapter_title || '-'}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-600">{test.module_name || '-'}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{dateStr}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`text-sm font-medium ${
+                                test.score >= 80 ? 'text-green-600' :
+                                test.score >= 60 ? 'text-yellow-600' : 'text-red-600'
+                              }`}>
+                                {test.score}%
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusColors[test.status] || 'bg-gray-100 text-gray-700'}`}>
+                                {statusLabel[test.status] || test.status}
+                              </span>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>

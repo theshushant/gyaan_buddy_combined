@@ -1897,6 +1897,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         question_text: initialData.question_text || '',
         question_type: initialData.question_type || 'mcq_single',
         difficulty_level: initialData.difficulty_level || 'medium',
+        level: initialData.level || 1,
         exp_points: initialData.exp_points || 10,
         explanation: initialData.explanation || '',
         hint: initialData.hint || '',
@@ -1951,6 +1952,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         question_text: initialData.question_text || '',
         question_type: initialData.question_type || 'mcq_single',
         difficulty_level: initialData.difficulty_level || 'medium',
+        level: initialData.level || 1,
         exp_points: initialData.exp_points || 10,
         explanation: initialData.explanation || '',
         hint: initialData.hint || '',
@@ -1974,6 +1976,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         question_text: '',
         question_type: 'mcq_single',
         difficulty_level: 'medium',
+        level: 1,
         exp_points: 10,
         explanation: '',
         hint: '',
@@ -2256,9 +2259,51 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
           >
             <option value="mcq_single">MCQ - Single Correct Answer</option>
             <option value="mcq_multiple">MCQ - Multiple Correct Answers</option>
+            <option value="rearrange">Re-arrange</option>
           </select>
         </div>
 
+        <div className="bg-white rounded-xl p-6 border border-gray-200">
+          <label className="block text-sm font-semibold text-gray-700 mb-3">
+            Level
+          </label>
+          <select
+            value={formData.level}
+            onChange={(e) => handleFieldChange('level', parseInt(e.target.value))}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+            disabled={loading}
+          >
+            <option value={1}>Level 1</option>
+            <option value={2}>Level 2</option>
+            <option value={3}>Level 3</option>
+            <option value={4}>Level 4</option>
+            <option value={5}>Level 5</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div className="bg-white rounded-xl p-6 border border-gray-200">
+        <label className="block text-sm font-semibold text-gray-700 mb-3">
+          Difficulty Level
+        </label>
+        <div className="flex space-x-3">
+          {[
+            { value: 'easy', label: 'Easy', active: 'bg-green-500 text-white border-green-500', inactive: 'bg-white text-green-700 border-green-300 hover:bg-green-50' },
+            { value: 'medium', label: 'Medium', active: 'bg-yellow-500 text-white border-yellow-500', inactive: 'bg-white text-yellow-700 border-yellow-300 hover:bg-yellow-50' },
+            { value: 'hard', label: 'Hard', active: 'bg-red-500 text-white border-red-500', inactive: 'bg-white text-red-700 border-red-300 hover:bg-red-50' },
+          ].map(({ value, label, active, inactive }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => handleFieldChange('difficulty_level', value)}
+              className={`flex-1 py-2 px-4 rounded-xl border-2 text-sm font-semibold transition-all duration-200 ${formData.difficulty_level === value ? active : inactive}`}
+              disabled={loading}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

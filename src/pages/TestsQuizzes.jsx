@@ -660,6 +660,7 @@ const TestsQuizzes = () => {
       question_text: '',
       question_type: 'mcq_single',
       difficulty_level: 'medium',
+      level: 1,
       explanation: '',
       options: [{ option_text: '', is_correct: false }, { option_text: '', is_correct: false }],
     });
@@ -674,17 +675,20 @@ const TestsQuizzes = () => {
       setManualQuestionError('Question text is required.');
       return;
     }
-    const needsOptions = ['mcq_single', 'mcq_multiple'].includes(manualQuestionForm.question_type);
+    const needsOptions = ['mcq_single', 'mcq_multiple', 'rearrange'].includes(manualQuestionForm.question_type);
+    const isRearrange = manualQuestionForm.question_type === 'rearrange';
     if (needsOptions) {
       const validOptions = (manualQuestionForm.options || []).filter(o => (o.option_text || '').trim());
       if (validOptions.length < 2) {
-        setManualQuestionError('At least 2 options are required for MCQ.');
+        setManualQuestionError(isRearrange ? 'At least 2 items are required for rearrange.' : 'At least 2 options are required for MCQ.');
         return;
       }
-      const hasCorrect = validOptions.some(o => o.is_correct);
-      if (!hasCorrect) {
-        setManualQuestionError('Please mark at least one option as correct.');
-        return;
+      if (!isRearrange) {
+        const hasCorrect = validOptions.some(o => o.is_correct);
+        if (!hasCorrect) {
+          setManualQuestionError('Please mark at least one option as correct.');
+          return;
+        }
       }
     }
     const testId = selectedTest?.id || selectedTest?.uuid;
@@ -695,12 +699,13 @@ const TestsQuizzes = () => {
         question_text: manualQuestionForm.question_text.trim(),
         question_type: manualQuestionForm.question_type,
         difficulty_level: manualQuestionForm.difficulty_level,
+        level: manualQuestionForm.level || 1,
         explanation: (manualQuestionForm.explanation || '').trim(),
       };
       if (needsOptions && manualQuestionForm.options?.length) {
         payload.options = manualQuestionForm.options
           .filter(o => (o.option_text || '').trim())
-          .map((o, i) => ({ option_text: o.option_text.trim(), is_correct: !!o.is_correct, order: i + 1 }));
+          .map((o, i) => ({ option_text: o.option_text.trim(), is_correct: isRearrange ? true : !!o.is_correct, order: i + 1 }));
       }
       await testsService.createTestQuestion(testId, payload);
       setShowCreateQuestionModal(false);
@@ -1817,16 +1822,37 @@ const TestsQuizzes = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Difficulty</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Level</label>
                   <select
-                    value={manualQuestionForm.difficulty_level}
-                    onChange={e => setManualQuestionForm(prev => ({ ...prev, difficulty_level: e.target.value }))}
+                    value={manualQuestionForm.level}
+                    onChange={e => setManualQuestionForm(prev => ({ ...prev, level: parseInt(e.target.value) }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                   >
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
+                    <option value={1}>Level 1</option>
+                    <option value={2}>Level 2</option>
+                    <option value={3}>Level 3</option>
+                    <option value={4}>Level 4</option>
+                    <option value={5}>Level 5</option>
                   </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Difficulty</label>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'easy', label: 'Easy', active: 'bg-green-500 text-white border-green-500', inactive: 'bg-white text-green-700 border-green-300 hover:bg-green-50' },
+                    { value: 'medium', label: 'Medium', active: 'bg-yellow-500 text-white border-yellow-500', inactive: 'bg-white text-yellow-700 border-yellow-300 hover:bg-yellow-50' },
+                    { value: 'hard', label: 'Hard', active: 'bg-red-500 text-white border-red-500', inactive: 'bg-white text-red-700 border-red-300 hover:bg-red-50' },
+                  ].map(({ value, label, active, inactive }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setManualQuestionForm(prev => ({ ...prev, difficulty_level: value }))}
+                      className={`flex-1 py-2 px-3 rounded-lg border-2 text-sm font-semibold transition-all duration-200 ${manualQuestionForm.difficulty_level === value ? active : inactive}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div>
@@ -1839,11 +1865,15 @@ const TestsQuizzes = () => {
                   placeholder="Explanation for the correct answer"
                 />
               </div>
-              {['mcq_single', 'mcq_multiple'].includes(manualQuestionForm.question_type) && (
+              {['mcq_single', 'mcq_multiple', 'rearrange'].includes(manualQuestionForm.question_type) && (
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <label className="block text-sm font-semibold text-gray-700">Options <span className="text-red-500">*</span></label>
-                    <button type="button" onClick={addManualOption} className="text-sm text-primary-600 hover:text-primary-700 font-medium">+ Add option</button>
+                    <label className="block text-sm font-semibold text-gray-700">
+                      {manualQuestionForm.question_type === 'rearrange' ? 'Items (in correct order)' : 'Options'} <span className="text-red-500">*</span>
+                    </label>
+                    <button type="button" onClick={addManualOption} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                      {manualQuestionForm.question_type === 'rearrange' ? '+ Add item' : '+ Add option'}
+                    </button>
                   </div>
                   <div className="space-y-2">
                     {(manualQuestionForm.options || []).map((opt, index) => (
@@ -1853,23 +1883,28 @@ const TestsQuizzes = () => {
                           value={opt.option_text}
                           onChange={e => updateManualOption(index, 'option_text', e.target.value)}
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                          placeholder={`Option ${index + 1}`}
+                          placeholder={manualQuestionForm.question_type === 'rearrange' ? `Item ${index + 1}` : `Option ${index + 1}`}
                         />
-                        <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            checked={!!opt.is_correct}
-                            onChange={e => updateManualOption(index, 'is_correct', e.target.checked)}
-                            className="rounded border-gray-300 text-primary-500"
-                          />
-                          Correct
-                        </label>
+                        {manualQuestionForm.question_type !== 'rearrange' && (
+                          <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={!!opt.is_correct}
+                              onChange={e => updateManualOption(index, 'is_correct', e.target.checked)}
+                              className="rounded border-gray-300 text-primary-500"
+                            />
+                            Correct
+                          </label>
+                        )}
                         <button type="button" onClick={() => removeManualOption(index)} disabled={(manualQuestionForm.options || []).length <= 2} className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     ))}
                   </div>
+                  {manualQuestionForm.question_type === 'rearrange' && (
+                    <p className="mt-1 text-xs text-gray-500">Enter items in the correct order. They will be shuffled for students.</p>
+                  )}
                 </div>
               )}
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">

@@ -260,6 +260,7 @@ const Reports = () => {
             <thead>
               <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 <th className="px-6 py-3">Section</th>
+                <th className="px-6 py-3">Teacher</th>
                 <th className="px-6 py-3">Students</th>
                 <th className="px-6 py-3">Proficiency</th>
                 <th className="px-6 py-3">Attempt Rate</th>
@@ -272,6 +273,7 @@ const Reports = () => {
                 sectionRows.map((row, index) => (
                   <tr key={`${row.className}-${index}`} className="border-t border-gray-200">
                     <td className="px-6 py-4 text-sm font-semibold text-gray-900">{row.className || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-700">{row.teacherName || '-'}</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{row.students ?? 0}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -288,7 +290,7 @@ const Reports = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                     No section-wise data available for current filters.
                   </td>
                 </tr>

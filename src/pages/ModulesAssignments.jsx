@@ -1688,10 +1688,10 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
         };
         const response = await aiService.generateAssessmentQuestions(requestData);
         const responseData = response.data || response;
-        // Map assessment API shape → display shape (assign temp IDs since not yet saved)
+        // Map assessment API shape → display shape (use DB id if available)
         questions = (responseData.questions || []).map((q, idx) => ({
           ...q,
-          id: `assessment-${idx}`,
+          id: q.id || `assessment-${idx}`,
           level: q.difficulty_level,
         }));
         setGeneratedQuestions(questions);

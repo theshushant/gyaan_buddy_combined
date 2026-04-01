@@ -76,12 +76,79 @@ const ModulesAssignments = () => {
   const [dueDatePickerFor, setDueDatePickerFor] = useState(null); // { type: 'module'|'chapter', id, parentId?, anchor: { left, top, bottom } }
   const [updatingDueDateKey, setUpdatingDueDateKey] = useState(null);
 
+  // PDF upload state
+  const [pdfModalChapter, setPdfModalChapter] = useState(null);
+  const [chapterPdfs, setChapterPdfs] = useState({});
+  const [pdfLoadingFor, setPdfLoadingFor] = useState(null);
+  const [pdfUploading, setPdfUploading] = useState(false);
+  const [pdfDeletingId, setPdfDeletingId] = useState(null);
+  const [pdfError, setPdfError] = useState(null);
+  const pdfInputRef = useRef(null);
+
   const toggleChapter = (chapterId) => {
     setExpandedChapters(prev => 
       prev.includes(chapterId) 
         ? prev.filter(id => id !== chapterId)
         : [...prev, chapterId]
     );
+  };
+
+  const handleOpenPdfModal = async (chapter) => {
+    setPdfModalChapter(chapter);
+    setPdfError(null);
+    if (!chapterPdfs[chapter.id]) {
+      setPdfLoadingFor(chapter.id);
+      try {
+        const res = await modulesService.listChapterPdfs(chapter.id);
+        const pdfs = (res?.data || []).flatMap(g => g.pdfs || []);
+        setChapterPdfs(prev => ({ ...prev, [chapter.id]: pdfs }));
+      } catch (err) {
+        setPdfError(err.message);
+      } finally {
+        setPdfLoadingFor(null);
+      }
+    }
+  };
+
+  const handleClosePdfModal = () => {
+    setPdfModalChapter(null);
+    setPdfError(null);
+  };
+
+  const handlePdfFileSelected = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !pdfModalChapter) return;
+    e.target.value = '';
+    const currentPdfs = chapterPdfs[pdfModalChapter.id] || [];
+    if (currentPdfs.length >= 2) return;
+    setPdfUploading(true);
+    setPdfError(null);
+    try {
+      await modulesService.uploadChapterPdf(pdfModalChapter.id, file);
+      const res = await modulesService.listChapterPdfs(pdfModalChapter.id);
+      const pdfs = (res?.data || []).flatMap(g => g.pdfs || []);
+      setChapterPdfs(prev => ({ ...prev, [pdfModalChapter.id]: pdfs }));
+    } catch (err) {
+      setPdfError(err.message);
+    } finally {
+      setPdfUploading(false);
+    }
+  };
+
+  const handleDeletePdf = async (pdfId) => {
+    setPdfDeletingId(pdfId);
+    setPdfError(null);
+    try {
+      await modulesService.deleteChapterPdf(pdfId);
+      setChapterPdfs(prev => ({
+        ...prev,
+        [pdfModalChapter.id]: (prev[pdfModalChapter.id] || []).filter(p => p.id !== pdfId),
+      }));
+    } catch (err) {
+      setPdfError(err.message);
+    } finally {
+      setPdfDeletingId(null);
+    }
   };
 
   const loadChaptersForModule = useCallback(async (moduleId) => {
@@ -884,6 +951,18 @@ const ModulesAssignments = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
+                            handleOpenPdfModal(chapter);
+                          }}
+                          className="flex items-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                        >
+                          <Upload className="h-4 w-4" />
+                          <span className="text-sm font-medium">
+                            PDF{chapterPdfs[chapter.id] ? ` (${chapterPdfs[chapter.id].length}/2)` : ''}
+                          </span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
                             handleEditModule(chapter);
                           }}
                           className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md" style={{ backgroundColor: '#00167a' }}
@@ -1081,6 +1160,127 @@ const ModulesAssignments = () => {
             selectedModule={selectedModuleForChapter}
             chapterData={editingChapter}
           />
+        )}
+
+        {/* PDF Upload Modal */}
+        <input
+          ref={pdfInputRef}
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          onChange={handlePdfFileSelected}
+        />
+        {pdfModalChapter && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClosePdfModal} />
+            <div className="flex min-h-screen items-center justify-center p-4">
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+                <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-5 rounded-t-2xl">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-white/20 rounded-lg">
+                        <Upload className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-white">Chapter PDFs</h2>
+                        <p className="text-sm text-orange-100 mt-0.5 truncate max-w-xs">{pdfModalChapter.title}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleClosePdfModal}
+                      className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all duration-200"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  {pdfLoadingFor === pdfModalChapter.id ? (
+                    <div className="flex items-center justify-center py-10">
+                      <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-3 mb-6">
+                        {(chapterPdfs[pdfModalChapter.id] || []).length === 0 ? (
+                          <p className="text-center text-gray-500 py-6 text-sm">No PDFs uploaded yet.</p>
+                        ) : (
+                          (chapterPdfs[pdfModalChapter.id] || []).map(pdf => {
+                            const statusColors = {
+                              COMPLETED: 'bg-green-100 text-green-700',
+                              PENDING: 'bg-yellow-100 text-yellow-700',
+                              PROCESSING: 'bg-blue-100 text-blue-700',
+                              FAILED: 'bg-red-100 text-red-700',
+                            };
+                            return (
+                              <div key={pdf.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                                <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                  <div className="p-2 bg-orange-100 rounded-lg shrink-0">
+                                    <FileText className="h-4 w-4 text-orange-600" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-gray-900 text-sm truncate">{pdf.file_name}</p>
+                                    <div className="flex items-center space-x-2 mt-0.5">
+                                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[pdf.embedding_status] || 'bg-gray-100 text-gray-600'}`}>
+                                        {pdf.embedding_status}
+                                      </span>
+                                      {pdf.total_pages && (
+                                        <span className="text-xs text-gray-400">{pdf.total_pages} pages</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleDeletePdf(pdf.id)}
+                                  disabled={pdfDeletingId === pdf.id}
+                                  className="ml-3 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+                                >
+                                  {pdfDeletingId === pdf.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </button>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+
+                      {(chapterPdfs[pdfModalChapter.id] || []).length >= 2 && (
+                        <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4 text-center">
+                          Maximum 2 PDFs reached. Delete one to upload a new file.
+                        </p>
+                      )}
+
+                      {pdfError && (
+                        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">{pdfError}</p>
+                      )}
+
+                      <button
+                        onClick={() => pdfInputRef.current?.click()}
+                        disabled={(chapterPdfs[pdfModalChapter.id] || []).length >= 2 || pdfUploading}
+                        className="flex items-center justify-center space-x-2 w-full px-4 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
+                      >
+                        {pdfUploading ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-5 w-5" />
+                            <span>Upload PDF</span>
+                          </>
+                        )}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {showViewQuestionsModal && (
@@ -1421,7 +1621,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
   const [selectedQuestionTypes, setSelectedQuestionTypes] = useState(['mcq_single']);
   const [addImage, setAddImage] = useState(false);
   const [useMatplot, setUseMatplot] = useState(false);
-  const [aiProvider, setAiProvider] = useState('gemini');
+  const [aiProvider, setAiProvider] = useState('assessment');
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -1429,6 +1629,12 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
   const [selectedQuestionIds, setSelectedQuestionIds] = useState(new Set());
   const [saving, setSaving] = useState(false);
   const [chapterId, setChapterId] = useState(null);
+  const [assessmentSessionId, setAssessmentSessionId] = useState(null);
+  const [modifyingQuestionId, setModifyingQuestionId] = useState(null);
+  const [modifyType, setModifyType] = useState('CUSTOM');
+  const [modifyInstruction, setModifyInstruction] = useState('');
+  const [modifying, setModifying] = useState(false);
+  const [modifyError, setModifyError] = useState(null);
 
   const questionTypeOptions = [
     { value: 'mcq_single', label: 'MCQ - Single Correct' },
@@ -1465,31 +1671,59 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
     }
 
     try {
-      const requestData = {
-        subject_id: parentModule.subjectId,
-        module_id: parentModule.id,
-        chapter_id: chapter.id,
-        subject_name: parentModule.title || '',
-        module_name: parentModule.name || parentModule.title || '',
-        chapter_name: chapter.title || '',
-        number_of_questions: num,
-        add_image: addImage,
-        use_matplot: useMatplot,
-      };
-      if (selectedQuestionTypes.length > 0) {
-        requestData.question_types = selectedQuestionTypes;
+      let questions = [];
+
+      if (aiProvider === 'assessment') {
+        if (!parentModule.class_instance) {
+          setError('Class information is missing for this module.');
+          setGenerating(false);
+          return;
+        }
+        const requestData = {
+          class_ref: parentModule.class_instance,
+          subject: parentModule.subjectId || parentModule.subject,
+          chapter: parentModule.id,
+          topic: chapter.id,
+          num_questions: num,
+        };
+        const response = await aiService.generateAssessmentQuestions(requestData);
+        const responseData = response.data || response;
+        // Map assessment API shape → display shape (assign temp IDs since not yet saved)
+        questions = (responseData.questions || []).map((q, idx) => ({
+          ...q,
+          id: `assessment-${idx}`,
+          level: q.difficulty_level,
+        }));
+        setGeneratedQuestions(questions);
+        setChapterId(chapter.id);
+        setAssessmentSessionId(responseData.session_id || null);
+        setSelectedQuestionIds(new Set(questions.map(q => q.id)));
+        setSuccess(`Generated ${questions.length} question${questions.length !== 1 ? 's' : ''} using Assessment AI (Claude).`);
+      } else {
+        const requestData = {
+          subject_id: parentModule.subjectId,
+          module_id: parentModule.id,
+          chapter_id: chapter.id,
+          subject_name: parentModule.title || '',
+          module_name: parentModule.name || parentModule.title || '',
+          chapter_name: chapter.title || '',
+          number_of_questions: num,
+          add_image: addImage,
+          use_matplot: useMatplot,
+        };
+        if (selectedQuestionTypes.length > 0) {
+          requestData.question_types = selectedQuestionTypes;
+        }
+        const response = aiProvider === 'gemini'
+          ? await aiService.generateAIQuestionsGemini(requestData)
+          : await aiService.generateAIQuestions(requestData);
+        const responseData = response.data || response;
+        questions = responseData.questions || [];
+        setGeneratedQuestions(questions);
+        setChapterId(responseData.chapter_id || chapter.id);
+        setSelectedQuestionIds(new Set(questions.map(q => q.id)));
+        setSuccess(`Successfully generated ${responseData.questions_created || num} questions using ${aiProvider === 'gemini' ? 'Gemini' : 'ChatGPT'}!`);
       }
-
-      const response = aiProvider === 'gemini' 
-        ? await aiService.generateAIQuestionsGemini(requestData)
-        : await aiService.generateAIQuestions(requestData);
-      const responseData = response.data || response;
-
-      const questions = responseData.questions || [];
-      setGeneratedQuestions(questions);
-      setChapterId(responseData.chapter_id || chapter.id);
-      setSelectedQuestionIds(new Set(questions.map(q => q.id)));
-      setSuccess(`Successfully generated ${responseData.questions_created || num} questions using ${aiProvider === 'gemini' ? 'Gemini' : 'ChatGPT'}!`);
     } catch (err) {
       console.error('Error generating AI questions:', err);
       setError(err.message || 'Failed to generate questions. Please try again.');
@@ -1550,12 +1784,52 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
     setSelectedQuestionTypes(['mcq_single']);
     setAddImage(false);
     setUseMatplot(false);
-    setAiProvider('gemini');
+    setAiProvider('assessment');
     setError(null);
     setSuccess(null);
     setGeneratedQuestions([]);
     setSelectedQuestionIds(new Set());
     setChapterId(null);
+    setAssessmentSessionId(null);
+    setModifyingQuestionId(null);
+    setModifyType('CUSTOM');
+    setModifyInstruction('');
+    setModifyError(null);
+  };
+
+  const handleModifyQuestion = async (question) => {
+    if (!assessmentSessionId) {
+      setModifyError('No session ID — regenerate questions first.');
+      return;
+    }
+    setModifying(true);
+    setModifyError(null);
+    try {
+      // Strip the temp id before sending
+      const { id: _tempId, level: _level, ...questionPayload } = question;
+      const response = await aiService.modifyAssessmentQuestion({
+        session_id: assessmentSessionId,
+        question: questionPayload,
+        modification_type: modifyType,
+        instruction: modifyInstruction,
+      });
+      const modified = response?.data?.question;
+      if (!modified) throw new Error('No question returned from modify API.');
+      setGeneratedQuestions(prev =>
+        prev.map(q =>
+          q.id === question.id
+            ? { ...modified, id: question.id, level: modified.difficulty_level }
+            : q
+        )
+      );
+      setModifyingQuestionId(null);
+      setModifyInstruction('');
+      setModifyType('CUSTOM');
+    } catch (err) {
+      setModifyError(err.message);
+    } finally {
+      setModifying(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -1651,33 +1925,35 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                     <p className="text-xs text-gray-500 mt-1">Select one or more types. Difficulty is set by the backend.</p>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        id="add_image_mod"
-                        checked={addImage}
-                        onChange={(e) => setAddImage(e.target.checked)}
-                        className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
-                      />
-                      <label htmlFor="add_image_mod" className="text-sm font-medium text-gray-700">
-                        Generate images for questions
-                      </label>
+                  {aiProvider !== 'assessment' && (
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          id="add_image_mod"
+                          checked={addImage}
+                          onChange={(e) => setAddImage(e.target.checked)}
+                          className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="add_image_mod" className="text-sm font-medium text-gray-700">
+                          Generate images for questions
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-3 pl-1">
+                        <input
+                          type="checkbox"
+                          id="use_matplot_mod"
+                          checked={useMatplot}
+                          onChange={(e) => setUseMatplot(e.target.checked)}
+                          disabled={!addImage}
+                          className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded disabled:opacity-50"
+                        />
+                        <label htmlFor="use_matplot_mod" className="text-sm font-medium text-gray-700">
+                          Use matplotlib (Vertex Gemini code)
+                        </label>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-3 pl-1">
-                      <input
-                        type="checkbox"
-                        id="use_matplot_mod"
-                        checked={useMatplot}
-                        onChange={(e) => setUseMatplot(e.target.checked)}
-                        disabled={!addImage}
-                        className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded disabled:opacity-50"
-                      />
-                      <label htmlFor="use_matplot_mod" className="text-sm font-medium text-gray-700">
-                        Use matplotlib (Vertex Gemini code)
-                      </label>
-                    </div>
-                  </div>
+                  )}
 
                   <div className="flex items-center justify-end space-x-4 pt-4 border-t border-gray-200">
                     <button
@@ -1839,6 +2115,103 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                                   <p className="text-xs text-blue-800">{question.explanation}</p>
                                 </div>
                               )}
+
+                              {/* Modify button — assessment mode only */}
+                              {aiProvider === 'assessment' && (
+                                <div className="mt-3">
+                                  {modifyingQuestionId !== question.id ? (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setModifyingQuestionId(question.id);
+                                        setModifyType('CUSTOM');
+                                        setModifyInstruction('');
+                                        setModifyError(null);
+                                      }}
+                                      className="flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors"
+                                    >
+                                      <Zap className="h-3 w-3" />
+                                      <span>Modify</span>
+                                    </button>
+                                  ) : (
+                                    <div
+                                      className="mt-2 p-3 bg-indigo-50 border border-indigo-200 rounded-xl space-y-3"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <p className="text-xs font-semibold text-indigo-700">Modify this question</p>
+
+                                      {/* Modification type selector */}
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {[
+                                          { value: 'CUSTOM', label: 'Custom' },
+                                          { value: 'INCREASE_DIFFICULTY', label: 'Harder' },
+                                          { value: 'DECREASE_DIFFICULTY', label: 'Easier' },
+                                          { value: 'REPHRASE', label: 'Rephrase' },
+                                          { value: 'CHANGE_CORRECT_ANSWER', label: 'Change Answer' },
+                                        ].map(opt => (
+                                          <button
+                                            key={opt.value}
+                                            type="button"
+                                            onClick={() => setModifyType(opt.value)}
+                                            className={`px-2.5 py-1 text-xs rounded-lg border font-medium transition-colors ${
+                                              modifyType === opt.value
+                                                ? 'bg-indigo-600 text-white border-indigo-600'
+                                                : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
+                                            }`}
+                                          >
+                                            {opt.label}
+                                          </button>
+                                        ))}
+                                      </div>
+
+                                      {/* Custom instruction textarea */}
+                                      <textarea
+                                        value={modifyInstruction}
+                                        onChange={(e) => setModifyInstruction(e.target.value)}
+                                        placeholder={modifyType === 'CUSTOM' ? 'Describe what to change...' : 'Optional: add extra instruction'}
+                                        rows={2}
+                                        className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                                      />
+
+                                      {modifyError && (
+                                        <p className="text-xs text-red-600">{modifyError}</p>
+                                      )}
+
+                                      <div className="flex items-center justify-end space-x-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setModifyingQuestionId(null);
+                                            setModifyError(null);
+                                          }}
+                                          className="px-3 py-1.5 text-xs text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                          disabled={modifying}
+                                        >
+                                          Cancel
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleModifyQuestion(question)}
+                                          disabled={modifying}
+                                          className="flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50"
+                                        >
+                                          {modifying ? (
+                                            <>
+                                              <Loader2 className="h-3 w-3 animate-spin" />
+                                              <span>Modifying...</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Zap className="h-3 w-3" />
+                                              <span>Apply</span>
+                                            </>
+                                          )}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1873,7 +2246,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                           ) : (
                             <>
                               <Save className="h-4 w-4" />
-                              <span>Save Selection</span>
+                              <span>Done</span>
                             </>
                           )}
                         </button>

@@ -290,6 +290,33 @@ class ModulesService {
       throw new Error(`Failed to fetch mission questions: ${error.message}`);
     }
   }
+
+  async listChapterPdfs(chapterId) {
+    try {
+      return await apiService.get(`/chapter-pdf/?chapter_id=${chapterId}`);
+    } catch (error) {
+      throw new Error(`Failed to fetch chapter PDFs: ${error.message}`);
+    }
+  }
+
+  async uploadChapterPdf(chapterId, file) {
+    try {
+      const formData = new FormData();
+      formData.append('chapter_id', chapterId);
+      formData.append('file', file);
+      return await apiService.post('/chapter-pdf/upload/', formData, { isFormData: true });
+    } catch (error) {
+      throw new Error(error.message || 'Failed to upload PDF.');
+    }
+  }
+
+  async deleteChapterPdf(pdfId) {
+    try {
+      return await apiService.delete(`/chapter-pdf/${pdfId}/`);
+    } catch (error) {
+      throw new Error(`Failed to delete PDF: ${error.message}`);
+    }
+  }
 }
 
 export default new ModulesService();

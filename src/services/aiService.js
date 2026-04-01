@@ -121,6 +121,24 @@ class AIService {
     }
   }
 
+  async generateAssessmentQuestions(requestData) {
+    try {
+      const response = await apiService.post('/assessment/generate/', requestData, { timeout: 120000 });
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to generate assessment questions.');
+    }
+  }
+
+  async modifyAssessmentQuestion(requestData) {
+    try {
+      const response = await apiService.post('/assessment/modify/', requestData, { timeout: 120000 });
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to modify question.');
+    }
+  }
+
   async generateAIQuestionsGemini(requestData) {
     try {
       const response = await apiService.post('/ai/generate-questions-vertex/', requestData, { timeout: 120000 });

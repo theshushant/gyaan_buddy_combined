@@ -1602,6 +1602,7 @@ const TestsQuizzes = () => {
                     type="button"
                     onClick={openBankModal}
                     className="px-4 py-2 rounded-lg font-medium border-2 border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    style={{ display: 'none' }}
                   >
                     <BookOpen className="h-4 w-4" />
                     Add from question bank

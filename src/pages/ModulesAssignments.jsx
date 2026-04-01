@@ -1231,17 +1231,19 @@ const ModulesAssignments = () => {
                                     </div>
                                   </div>
                                 </div>
-                                <button
-                                  onClick={() => handleDeletePdf(pdf.id)}
-                                  disabled={pdfDeletingId === pdf.id}
-                                  className="ml-3 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 shrink-0"
-                                >
-                                  {pdfDeletingId === pdf.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="h-4 w-4" />
-                                  )}
-                                </button>
+                                {!pdf.is_default && (
+                                  <button
+                                    onClick={() => handleDeletePdf(pdf.id)}
+                                    disabled={pdfDeletingId === pdf.id}
+                                    className="ml-3 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+                                  >
+                                    {pdfDeletingId === pdf.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="h-4 w-4" />
+                                    )}
+                                  </button>
+                                )}
                               </div>
                             );
                           })

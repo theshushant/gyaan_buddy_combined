@@ -64,10 +64,10 @@ const GenerateWithAI = () => {
                 onChange={(e) => setQuestionCount(parseInt(e.target.value) || 1)}
                 className="w-20 text-center border border-gray-300 rounded px-3 py-2 transform transition-all duration-200 hover:scale-105 focus:ring-2 focus:ring-primary-500"
                 min="1"
-                max="50"
+                max="20"
               />
               <button
-                onClick={() => setQuestionCount(Math.min(50, questionCount + 1))}
+                onClick={() => setQuestionCount(Math.min(20, questionCount + 1))}
                 className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 transform transition-all duration-200 hover:scale-110 hover:shadow-md"
               >
                 +

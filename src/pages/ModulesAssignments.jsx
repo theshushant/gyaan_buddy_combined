@@ -121,6 +121,10 @@ const ModulesAssignments = () => {
     e.target.value = '';
     const currentPdfs = chapterPdfs[pdfModalChapter.id] || [];
     if (currentPdfs.length >= 2) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setPdfError('PDF size must be less than 10MB');
+      return;
+    }
     setPdfUploading(true);
     setPdfError(null);
     try {
@@ -953,7 +957,7 @@ const ModulesAssignments = () => {
                             e.stopPropagation();
                             handleOpenPdfModal(chapter);
                           }}
-                          className="flex items-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                          className="flex items-center justify-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all duration-200 shadow-sm hover:shadow-md w-36"
                         >
                           <Upload className="h-4 w-4" />
                           <span className="text-sm font-medium">
@@ -1667,8 +1671,8 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
     setSuccess(null);
 
     const num = parseInt(numberOfQuestions, 10);
-    if (isNaN(num) || num < 1 || num > 100) {
-      setError('Please enter a valid number of questions (1–100).');
+    if (isNaN(num) || num < 1 || num > 20) {
+      setError('Please enter a valid number of questions (1–20).');
       return;
     }
 
@@ -1898,7 +1902,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                     <input
                       type="number"
                       min={1}
-                      max={100}
+                      max={20}
                       value={numberOfQuestions}
                       onChange={(e) => setNumberOfQuestions(e.target.value)}
                       className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"

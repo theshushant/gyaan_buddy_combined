@@ -292,7 +292,7 @@ const TestsQuizzes = () => {
     const { name, value, type, checked } = e.target;
     let parsed = type === 'checkbox' ? checked : (type === 'number' ? parseInt(value) : value);
     if (name === 'number_of_questions' && type === 'number') {
-      parsed = Math.min(25, Math.max(1, parsed || 1));
+      parsed = Math.min(20, Math.max(1, parsed || 1));
     }
     setAiFormData(prev => ({ ...prev, [name]: parsed }));
   };
@@ -491,8 +491,8 @@ const TestsQuizzes = () => {
       }
       
       const numQ = parseInt(aiFormData.number_of_questions, 10);
-      if (isNaN(numQ) || numQ < 1 || numQ > 25) {
-        setGenerationError('Number of questions must be between 1 and 25.');
+      if (isNaN(numQ) || numQ < 1 || numQ > 20) {
+        setGenerationError('Number of questions must be between 1 and 20.');
         return;
       }
 
@@ -1551,7 +1551,7 @@ const TestsQuizzes = () => {
                     value={aiFormData.number_of_questions}
                     onChange={handleAIGenerationChange}
                     min="1"
-                    max="25"
+                    max="20"
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
                   />
                 </div>

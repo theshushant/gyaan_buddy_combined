@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Search, Plus, ChevronDown, AlertTriangle, Trash2 } from 'lucide-react'
+import { Search, Plus, Upload, ChevronDown, AlertTriangle, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import AddTeacherModal from '../components/AddTeacherModal'
+import BulkImportTeachersModal from '../components/BulkImportTeachersModal'
 import SuccessModal from '../components/SuccessModal'
 import Modal from '../components/Modal'
 import {
@@ -32,6 +33,7 @@ const Teachers = () => {
   const { subjects } = useSelector(state => state.subjects)
 
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successData, setSuccessData] = useState({})
   const [editingTeacher, setEditingTeacher] = useState(null)
@@ -39,13 +41,11 @@ const Teachers = () => {
   const [teacherToDelete, setTeacherToDelete] = useState(null)
 
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = error.teachers !== null || error.stats !== null
     if (hasError) {
       return // Don't retry if there's already an error
     }
 
-    // Fetch teachers, stats, and subjects when component mounts
     const fetchData = async () => {
       try {
         await Promise.all([
@@ -61,9 +61,7 @@ const Teachers = () => {
     fetchData()
   }, [dispatch, error.teachers, error.stats])
 
-  // Update filters when search terms change
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = error.teachers !== null
     if (hasError) {
       return // Don't retry if there's already an error
@@ -86,31 +84,25 @@ const Teachers = () => {
   }
 
   const handleAddTeacher = async (teacherData) => {
-    try {
-      await dispatch(createTeacher(teacherData)).unwrap()
-      setShowAddModal(false)
-      setSuccessData({
-        title: 'Teacher Added Successfully',
-        message: `${teacherData.firstName} ${teacherData.lastName} has been added to the system.`
-      })
-      setShowSuccessModal(true)
-    } catch (error) {
-      console.error('Error adding teacher:', error)
-    }
+    await dispatch(createTeacher(teacherData)).unwrap()
+    setShowAddModal(false)
+    setEditingTeacher(null)
+    setSuccessData({
+      title: 'Teacher Added Successfully',
+      message: `${teacherData.firstName} ${teacherData.lastName} has been added to the system.`
+    })
+    setShowSuccessModal(true)
   }
 
   const handleUpdateTeacher = async (teacherData) => {
-    try {
-      await dispatch(updateTeacher({ teacherId: editingTeacher.id, teacherData })).unwrap()
-      setEditingTeacher(null)
-      setSuccessData({
-        title: 'Teacher Updated Successfully',
-        message: `${teacherData.firstName} ${teacherData.lastName} has been updated.`
-      })
-      setShowSuccessModal(true)
-    } catch (error) {
-      console.error('Error updating teacher:', error)
-    }
+    await dispatch(updateTeacher({ teacherId: editingTeacher.id, teacherData })).unwrap()
+    setEditingTeacher(null)
+    setShowAddModal(false)
+    setSuccessData({
+      title: 'Teacher Updated Successfully',
+      message: `${teacherData.firstName} ${teacherData.lastName} has been updated.`
+    })
+    setShowSuccessModal(true)
   }
 
   const handleDeleteClick = (teacher) => {
@@ -132,7 +124,6 @@ const Teachers = () => {
       setShowSuccessModal(true)
     } catch (error) {
       console.error('Error deleting teacher:', error)
-      // Keep modal open on error so user can try again or cancel
     }
   }
 
@@ -159,48 +150,38 @@ const Teachers = () => {
 
   const getProgressBarColor = (percentage, type = 'usage') => {
     if (type === 'usage') {
-      // Dashboard Usage colors: green >= 80, orange >= 60, red < 60
       if (percentage >= 80) return 'bg-green-500'
       if (percentage >= 60) return 'bg-orange-500'
       return 'bg-red-500'
     } else {
-      // Overall Mastery colors: blue >= 80, orange >= 60, red < 60
-      if (percentage >= 80) return 'bg-blue-500'
+      if (percentage >= 80) return 'bg-primary-500'
       if (percentage >= 60) return 'bg-orange-500'
       return 'bg-red-500'
     }
   }
   
-  // Format classes display (e.g., "9A, 10B")
   const formatClasses = (classes) => {
     if (!Array.isArray(classes) || classes.length === 0) {
       return 'No classes assigned'
     }
     return classes.map(cls => {
-      // Handle both string and object formats
       if (typeof cls === 'string') return cls
       return cls.name || cls.class_name || cls.toString()
     }).join(', ')
   }
   
-  // Get teacher's primary subject
   const getTeacherSubject = (teacher) => {
-    // Check if teacher has subjects array and it's not empty
     if (Array.isArray(teacher.subjects) && teacher.subjects.length > 0) {
       const firstSubject = teacher.subjects[0]
-      // Handle both object and string formats
       if (typeof firstSubject === 'object' && firstSubject !== null) {
         return firstSubject.name || firstSubject.subject_name || 'N/A'
       } else if (typeof firstSubject === 'string') {
-        // If it's a string (subject name), return it
         return firstSubject
       } else if (typeof firstSubject === 'number') {
-        // If it's a number (subject ID), try to find it in subjects array
         const subject = subjects.find(s => s.id === firstSubject)
         return subject?.name || subject?.subject_name || 'N/A'
       }
     }
-    // Fallback: check if teacher has a direct subject field
     if (teacher.subject) {
       if (typeof teacher.subject === 'string') {
         return teacher.subject
@@ -217,7 +198,7 @@ const Teachers = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     )
   }
@@ -239,22 +220,29 @@ const Teachers = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Title and Add Button */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Teacher Management</h1>
           <p className="text-gray-600 mt-2">Oversee teacher activity and class performance.</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
-        >
-          <Plus className="h-5 w-5" />
-          Add New Teacher
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowBulkImportModal(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <Upload className="h-4 w-4" />
+            Bulk Import
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors shadow-sm hover:shadow-md" style={{ backgroundColor: '#00167a' }}
+          >
+            <Plus className="h-5 w-5" />
+            Add New Teacher
+          </button>
+        </div>
       </div>
 
-      {/* Search and Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1">
@@ -265,7 +253,7 @@ const Teachers = () => {
                 placeholder="Search teachers by name, subject..."
                 value={filters.search}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
               />
             </div>
           </div>
@@ -275,7 +263,7 @@ const Teachers = () => {
               <select
                 value={filters.subject || ''}
                 onChange={(e) => handleSubjectFilter(e.target.value)}
-                className="appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer"
+                className="appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 cursor-pointer"
               >
                 <option value="">All Subjects</option>
                 {Array.isArray(subjects) && subjects.map((subject) => {
@@ -294,7 +282,6 @@ const Teachers = () => {
         </div>
       </div>
 
-      {/* Teachers Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -326,8 +313,8 @@ const Teachers = () => {
                   <tr key={teacher.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm font-semibold text-blue-600">
+                        <div className="h-10 w-10 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-semibold text-primary-500">
                             {(teacher.firstName || '').charAt(0).toUpperCase()}{(teacher.lastName || '').charAt(0).toUpperCase()}
                           </span>
                         </div>
@@ -382,7 +369,7 @@ const Teachers = () => {
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => handleViewTeacher(teacher.id)}
-                          className="text-blue-600 hover:text-blue-800 transition-colors"
+                          className="text-primary-500 hover:text-primary-600 transition-colors"
                         >
                           View Profile
                         </button>
@@ -412,7 +399,16 @@ const Teachers = () => {
         </div>
       </div>
 
-      {/* Modals */}
+      <BulkImportTeachersModal
+        isOpen={showBulkImportModal}
+        onClose={() => setShowBulkImportModal(false)}
+        onSuccess={() => {
+          dispatch(fetchTeachers(filters))
+          setSuccessData({ title: 'Import Successful', message: 'Teachers have been imported successfully.' })
+          setShowSuccessModal(true)
+        }}
+      />
+
       {showAddModal && (
         <AddTeacherModal
           isOpen={showAddModal}
@@ -467,7 +463,7 @@ const Teachers = () => {
             <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
               <button
                 onClick={handleDeleteCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
               >
                 Cancel
               </button>

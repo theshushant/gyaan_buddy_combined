@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import teachersService from '../../services/teachersService'
 
-// Async thunks for teachers API calls
 export const fetchTeachers = createAsyncThunk(
   'teachers/fetchTeachers',
   async (filters = {}, { rejectWithValue }) => {
@@ -16,9 +15,9 @@ export const fetchTeachers = createAsyncThunk(
 
 export const fetchTeacherById = createAsyncThunk(
   'teachers/fetchTeacherById',
-  async (teacherId, options = {}, { rejectWithValue }) => {
+  async (teacherId, { rejectWithValue }) => {
     try {
-      const response = await teachersService.getTeacherById(teacherId, options)
+      const response = await teachersService.getTeacherById(teacherId)
       return response
     } catch (error) {
       return rejectWithValue(error.message)
@@ -67,7 +66,6 @@ export const fetchTeacherClasses = createAsyncThunk(
   async (teacherId, { rejectWithValue }) => {
     try {
       const response = await teachersService.getTeacherClasses(teacherId)
-      // Handle different response formats
       let classesData = []
       if (Array.isArray(response)) {
         classesData = response
@@ -192,21 +190,17 @@ const teachersSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch teachers
       .addCase(fetchTeachers.pending, (state) => {
         state.loading.teachers = true
         state.error.teachers = null
       })
       .addCase(fetchTeachers.fulfilled, (state, action) => {
         state.loading.teachers = false
-        // Handle both array and object responses
-        // Backend returns: { success: true, message: "...", data: [...] }
         let teachersData = []
         
         if (Array.isArray(action.payload)) {
           teachersData = action.payload
         } else if (action.payload.data && Array.isArray(action.payload.data)) {
-          // Handle backend response format: { success: true, data: [...] }
           teachersData = action.payload.data
           if (action.payload.pagination) {
             state.pagination = action.payload.pagination
@@ -215,7 +209,6 @@ const teachersSlice = createSlice({
             state.summary = action.payload.summary
           }
         } else if (action.payload.teachers && Array.isArray(action.payload.teachers)) {
-          // Handle alternative response format: { teachers: [...] }
           teachersData = action.payload.teachers
           if (action.payload.pagination) {
             state.pagination = action.payload.pagination
@@ -225,7 +218,6 @@ const teachersSlice = createSlice({
           }
         }
         
-        // Transform backend fields to frontend format
         state.teachers = teachersData.map(teacher => ({
           id: teacher.id,
           firstName: teacher.firstName || teacher.first_name || '',
@@ -241,7 +233,6 @@ const teachersSlice = createSlice({
           userType: teacher.userType || teacher.user_type || 'teacher',
           schoolName: teacher.schoolName || teacher.school_name || '',
           isActive: teacher.isActive !== undefined ? teacher.isActive : teacher.is_active !== undefined ? teacher.is_active : true,
-          // Include all original fields as well for backward compatibility
           ...teacher
         }))
       })
@@ -250,15 +241,12 @@ const teachersSlice = createSlice({
         state.error.teachers = action.payload
       })
 
-      // Fetch teacher by ID
       .addCase(fetchTeacherById.pending, (state) => {
         state.loading.currentTeacher = true
         state.error.currentTeacher = null
       })
       .addCase(fetchTeacherById.fulfilled, (state, action) => {
         state.loading.currentTeacher = false
-        // Handle backend response format: { success: true, data: {...}, message: "..." }
-        // Extract data if it exists, otherwise use payload directly
         const teacherData = action.payload.data || action.payload
         state.currentTeacher = teacherData
       })
@@ -267,14 +255,12 @@ const teachersSlice = createSlice({
         state.error.currentTeacher = action.payload
       })
 
-      // Create teacher
       .addCase(createTeacher.pending, (state) => {
         state.loading.create = true
         state.error.create = null
       })
       .addCase(createTeacher.fulfilled, (state, action) => {
         state.loading.create = false
-        // Handle backend response format: { success: true, data: {...}, message: "..." }
         const teacherData = action.payload.data || action.payload
         state.teachers.push(teacherData)
       })
@@ -283,14 +269,12 @@ const teachersSlice = createSlice({
         state.error.create = action.payload
       })
 
-      // Update teacher
       .addCase(updateTeacher.pending, (state) => {
         state.loading.update = true
         state.error.update = null
       })
       .addCase(updateTeacher.fulfilled, (state, action) => {
         state.loading.update = false
-        // Handle backend response format: { success: true, data: {...}, message: "..." }
         const teacherData = action.payload.data || action.payload
         const index = state.teachers.findIndex(teacher => teacher.id === teacherData.id)
         if (index !== -1) {
@@ -305,7 +289,6 @@ const teachersSlice = createSlice({
         state.error.update = action.payload
       })
 
-      // Delete teacher
       .addCase(deleteTeacher.pending, (state) => {
         state.loading.delete = true
         state.error.delete = null
@@ -322,14 +305,12 @@ const teachersSlice = createSlice({
         state.error.delete = action.payload
       })
 
-      // Fetch teacher classes
       .addCase(fetchTeacherClasses.pending, (state) => {
         state.loading.classes = true
         state.error.classes = null
       })
       .addCase(fetchTeacherClasses.fulfilled, (state, action) => {
         state.loading.classes = false
-        // Handle different response formats
         let classesData = action.payload.classes
         if (Array.isArray(classesData)) {
           state.classes[action.payload.teacherId] = classesData
@@ -346,7 +327,6 @@ const teachersSlice = createSlice({
         state.error.classes = action.payload
       })
 
-      // Fetch teacher performance
       .addCase(fetchTeacherPerformance.pending, (state) => {
         state.loading.performance = true
         state.error.performance = null
@@ -360,7 +340,6 @@ const teachersSlice = createSlice({
         state.error.performance = action.payload
       })
 
-      // Fetch teacher stats
       .addCase(fetchTeacherStats.pending, (state) => {
         state.loading.stats = true
         state.error.stats = null

@@ -1,8 +1,5 @@
 import TimeStampUUID from '../base/TimeStampUUID.js';
 
-/**
- * Model for managing question options.
- */
 export default class Option extends TimeStampUUID {
   constructor(data = {}) {
     super(data);
@@ -12,10 +9,6 @@ export default class Option extends TimeStampUUID {
     this.order = data.order || 1;
   }
 
-  /**
-   * Validate option data
-   * @returns {Object} Validation result with isValid and errors
-   */
   validate() {
     const errors = {};
 
@@ -39,51 +32,30 @@ export default class Option extends TimeStampUUID {
     };
   }
 
-  /**
-   * Mark option as correct
-   */
   markCorrect() {
     this.is_correct = true;
     this.touch();
   }
 
-  /**
-   * Mark option as incorrect
-   */
   markIncorrect() {
     this.is_correct = false;
     this.touch();
   }
 
-  /**
-   * Toggle correct status
-   */
   toggleCorrect() {
     this.is_correct = !this.is_correct;
     this.touch();
   }
 
-  /**
-   * Get question ID
-   * @returns {string|null} Question ID
-   */
   getQuestionId() {
     return typeof this.question === 'object' ? this.question.id : this.question;
   }
 
-  /**
-   * Set question
-   * @param {string|Object} question - Question ID or Question object
-   */
   setQuestion(question) {
     this.question = question;
     this.touch();
   }
 
-  /**
-   * Convert to plain object
-   * @returns {Object} Plain object representation
-   */
   toJSON() {
     return {
       ...super.toJSON(),
@@ -94,10 +66,6 @@ export default class Option extends TimeStampUUID {
     };
   }
 
-  /**
-   * String representation
-   * @returns {string} String representation
-   */
   toString() {
     const questionText = typeof this.question === 'object' ? 
       this.question.question_text.substring(0, 30) : 'Unknown Question';

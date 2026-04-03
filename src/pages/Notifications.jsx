@@ -46,7 +46,6 @@ const Notifications = () => {
           setNotifications([]);
         }
       } else {
-        // Fetch student notifications
         const response = await notificationsService.getStudentNotifications();
         console.log('Student notifications response:', response);
 
@@ -105,7 +104,6 @@ const Notifications = () => {
   const handleMarkAsRead = async (notificationId) => {
     try {
       await notificationsService.markAsRead(notificationId);
-      // Update local state
       if (activeTab === 'my') {
         setNotifications(prev => 
           prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
@@ -132,7 +130,6 @@ const Notifications = () => {
   const handleMarkAllAsRead = async () => {
     try {
       await notificationsService.markAllAsRead();
-      // Update local state
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setStats(prev => ({
         ...prev,
@@ -182,7 +179,7 @@ const Notifications = () => {
       <div className="p-6 animate-fade-in">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="flex flex-col items-center space-y-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
             <p className="text-gray-600">Loading notifications...</p>
           </div>
         </div>
@@ -210,7 +207,6 @@ const Notifications = () => {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 animate-slide-down">Notifications</h1>
         <p className="text-gray-600 mt-2 animate-slide-right" style={{animationDelay: '0.1s'}}>
@@ -218,14 +214,13 @@ const Notifications = () => {
         </p>
       </div>
 
-      {/* Tabs */}
       <div className="mb-6 border-b border-gray-200">
         <nav className="flex space-x-8">
           <button
             onClick={() => setActiveTab('my')}
             className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'my'
-                ? 'border-blue-500 text-blue-600'
+                ? 'border-primary-500 text-primary-500'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -235,7 +230,7 @@ const Notifications = () => {
             onClick={() => setActiveTab('students')}
             className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'students'
-                ? 'border-blue-500 text-blue-600'
+                ? 'border-primary-500 text-primary-500'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -249,11 +244,10 @@ const Notifications = () => {
         </nav>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.2s'}}>
           <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600 mb-2 animate-count-up">
+            <div className="text-3xl font-bold text-primary-500 mb-2 animate-count-up">
               {currentStats.total}
             </div>
             <div className="text-sm text-gray-600">Total Notifications</div>
@@ -312,79 +306,71 @@ const Notifications = () => {
         )}
       </div>
 
-      {/* Filters */}
       <div className="mb-6">
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setFilter('all')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === 'all' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              filter === 'all' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            style={filter === 'all' ? { backgroundColor: '#00167a' } : {}}
           >
             All
           </button>
           <button
             onClick={() => setFilter('unread')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === 'unread' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              filter === 'unread' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            style={filter === 'unread' ? { backgroundColor: '#00167a' } : {}}
           >
             Unread
           </button>
           <button
             onClick={() => setFilter('mission')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === 'mission' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              filter === 'mission' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            style={filter === 'mission' ? { backgroundColor: '#00167a' } : {}}
           >
             Missions
           </button>
           <button
             onClick={() => setFilter('competition')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === 'competition' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              filter === 'competition' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            style={filter === 'competition' ? { backgroundColor: '#00167a' } : {}}
           >
             Competitions
           </button>
           <button
             onClick={() => setFilter('module')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === 'module' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              filter === 'module' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            style={filter === 'module' ? { backgroundColor: '#00167a' } : {}}
           >
             Modules
           </button>
           <button
             onClick={() => setFilter('user')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === 'user' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              filter === 'user' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            style={filter === 'user' ? { backgroundColor: '#00167a' } : {}}
           >
             User
           </button>
         </div>
       </div>
 
-      {/* Notifications List */}
       <div className="space-y-4">
         {filteredNotifications.map((notification) => (
           <div
             key={notification.id}
             className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${getPriorityColor(notification.priority)} ${
-              !notification.isRead ? 'ring-2 ring-blue-200' : ''
+              !notification.isRead ? 'ring-2 ring-primary-500/20' : ''
             }`}
           >
             <div className="flex items-start space-x-3">
@@ -403,7 +389,7 @@ const Notifications = () => {
                       {notification.title}
                     </h3>
                     {activeTab === 'students' && notification.userName && (
-                      <span className="text-xs text-blue-600 font-medium">
+                      <span className="text-xs text-primary-500 font-medium">
                         {notification.userName} ({notification.username})
                       </span>
                     )}
@@ -412,7 +398,7 @@ const Notifications = () => {
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                       notification.type === 'mission' ? 'bg-purple-100 text-purple-800' :
                       notification.type === 'competition' ? 'bg-yellow-100 text-yellow-800' :
-                      notification.type === 'module' ? 'bg-blue-100 text-blue-800' :
+                      notification.type === 'module' ? 'bg-primary-500/20 text-primary-500' :
                       notification.type === 'user' ? 'bg-green-100 text-green-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
@@ -428,7 +414,7 @@ const Notifications = () => {
                       </span>
                     )}
                     {!notification.isRead && (
-                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                      <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
                     )}
                   </div>
                 </div>
@@ -464,7 +450,6 @@ const Notifications = () => {
         </div>
       )}
 
-      {/* Actions */}
       {currentNotifications.length > 0 && activeTab === 'my' && (
         <div className="mt-8 flex justify-end space-x-4">
           <button 
@@ -476,7 +461,7 @@ const Notifications = () => {
           </button>
           <button 
             onClick={fetchNotifications}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-6 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}
           >
             Refresh
           </button>

@@ -1,16 +1,12 @@
-// Leaderboard API service
 import apiService from './api';
 
 class LeaderboardService {
-  // Get leaderboard with optional filters
   async getLeaderboard(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
       
-      // Add user_type=student to filter for students only
       queryParams.append('user_type', 'student');
       
-      // Add filters
       if (filters.class_id) queryParams.append('class_id', filters.class_id);
       if (filters.subject_id) queryParams.append('subject_id', filters.subject_id);
       if (filters.grade) queryParams.append('grade', filters.grade);

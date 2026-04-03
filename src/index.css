@@ -1,5 +1,48 @@
 @import "tailwindcss";
 
+/* Define custom colors using Tailwind v4 @theme directive */
+@theme {
+  /* Primary brand color - Deep Navy Blue #00167a */
+  --color-primary-50: #e6e8f4;
+  --color-primary-100: #ccd1e9;
+  --color-primary-200: #99a3d3;
+  --color-primary-300: #6675bc;
+  --color-primary-400: #3347a6;
+  --color-primary-500: #00167a;
+  --color-primary-600: #001262;
+  --color-primary-700: #000e4a;
+  --color-primary-800: #000931;
+  --color-primary-900: #000519;
+  
+  /* Secondary brand color - Royal Blue */
+  --color-secondary-50: #e8ebf4;
+  --color-secondary-100: #d1d7e9;
+  --color-secondary-200: #a3afd3;
+  --color-secondary-300: #7587bc;
+  --color-secondary-400: #475fa6;
+  --color-secondary-500: #1e3a8a;
+  --color-secondary-600: #182e6e;
+  --color-secondary-700: #122353;
+  --color-secondary-800: #0c1737;
+  --color-secondary-900: #060c1c;
+  
+  /* Accent color - Vibrant Cyan */
+  --color-accent-50: #e8f7fc;
+  --color-accent-100: #d1eff9;
+  --color-accent-200: #a3dff3;
+  --color-accent-300: #75cfed;
+  --color-accent-400: #47bfe7;
+  --color-accent-500: #1fb7eb;
+  --color-accent-600: #1992bc;
+  --color-accent-700: #136e8d;
+  --color-accent-800: #0c495e;
+  --color-accent-900: #06252f;
+  
+  /* Gradient colors */
+  --color-gradient-start: #5de0e6;
+  --color-gradient-end: #00167a;
+}
+
 /* Custom Animations */
 @keyframes fadeIn {
   from {
@@ -213,7 +256,19 @@
 }
 
 .hover-glow:hover {
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 20px rgba(0, 22, 122, 0.3);
+}
+
+/* Brand Gradient */
+.brand-gradient {
+  background: linear-gradient(135deg, #5de0e6 0%, #00167a 100%);
+}
+
+.brand-gradient-text {
+  background: linear-gradient(135deg, #5de0e6 0%, #00167a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* Loading States */
@@ -303,4 +358,33 @@
   height: 20px;
   cursor: pointer;
   border: none;
+}
+
+/* Primary Button Styles - Using actual hex colors for reliability */
+.btn-primary {
+  background-color: #00167a;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #001262;
+}
+
+/* Text Primary */
+.text-brand {
+  color: #00167a;
+}
+
+/* Background Primary */
+.bg-brand {
+  background-color: #00167a;
+}
+
+.bg-brand-light {
+  background-color: #e6e8f4;
+}
+
+/* Border Primary */
+.border-brand {
+  border-color: #00167a;
 }

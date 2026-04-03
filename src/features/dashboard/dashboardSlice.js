@@ -1,12 +1,13 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import dashboardService from '../../services/dashboardService'
 
-// Async thunks for dashboard API calls
 export const fetchDashboardMetrics = createAsyncThunk(
   'dashboard/fetchDashboardMetrics',
-  async (role = 'principal', { rejectWithValue }) => {
+  async (payload = {}, { rejectWithValue }) => {
     try {
-      const response = await dashboardService.getDashboardMetrics(role)
+      const role = typeof payload === 'string' ? payload : (payload.role ?? 'principal')
+      const filters = typeof payload === 'object' && payload.filters ? payload.filters : {}
+      const response = await dashboardService.getDashboardMetrics(role, filters)
       return response
     } catch (error) {
       return rejectWithValue(error.message)
@@ -76,9 +77,11 @@ export const fetchRecentActivities = createAsyncThunk(
 
 export const fetchQuickSummary = createAsyncThunk(
   'dashboard/fetchQuickSummary',
-  async (role = 'principal', { rejectWithValue }) => {
+  async (payload = {}, { rejectWithValue }) => {
     try {
-      const response = await dashboardService.getQuickSummary()
+      const role = typeof payload === 'string' ? payload : (payload.role ?? 'principal')
+      const filters = typeof payload === 'object' && payload.filters ? payload.filters : {}
+      const response = await dashboardService.getQuickSummary(role, filters)
       return response
     } catch (error) {
       return rejectWithValue(error.message)
@@ -94,6 +97,17 @@ const initialState = {
   alerts: [],
   recentActivities: [],
   quickSummary: [],
+  weakTopicCount: 0,
+  subjectWise: [],
+  classWiseChart: [],
+  principalCharts: {
+    summary: { studentProficiency: 0, attemptRate: 0, weakTopicCount: 0 },
+    subjectProficiency: [],
+    attemptRate: [],
+    teacherProficiency: [],
+    weakTopicCount: [],
+    classes: [],
+  },
   loading: {
     metrics: false,
     progressTrends: false,
@@ -170,12 +184,22 @@ const dashboardSlice = createSlice({
       state.alerts = []
       state.recentActivities = []
       state.quickSummary = []
+      state.weakTopicCount = 0
+      state.subjectWise = []
+      state.classWiseChart = []
+      state.principalCharts = {
+        summary: { studentProficiency: 0, attemptRate: 0, weakTopicCount: 0 },
+        subjectProficiency: [],
+        attemptRate: [],
+        teacherProficiency: [],
+        weakTopicCount: [],
+        classes: [],
+      }
       state.lastUpdated = null
     }
   },
   extraReducers: (builder) => {
     builder
-      // Fetch dashboard metrics
       .addCase(fetchDashboardMetrics.pending, (state) => {
         state.loading.metrics = true
         state.error.metrics = null
@@ -186,11 +210,24 @@ const dashboardSlice = createSlice({
         const metricsData = response.metrics || response
         state.metrics = Array.isArray(metricsData) ? metricsData : []
         
-        // Extract quickSummary from the same response if available
         if (response.quickSummary) {
           state.quickSummary = Array.isArray(response.quickSummary) ? response.quickSummary : []
         }
-        
+        if (response.weakTopicCount !== undefined) {
+          state.weakTopicCount = response.weakTopicCount
+        }
+        state.subjectWise = Array.isArray(response.subjectWise) ? response.subjectWise : []
+        state.classWiseChart = Array.isArray(response.classWiseChart) ? response.classWiseChart : []
+        if (response.principalCharts) {
+          state.principalCharts = {
+            summary: response.principalCharts.summary || { studentProficiency: 0, attemptRate: 0, weakTopicCount: 0 },
+            subjectProficiency: Array.isArray(response.principalCharts.subjectProficiency) ? response.principalCharts.subjectProficiency : [],
+            attemptRate: Array.isArray(response.principalCharts.attemptRate) ? response.principalCharts.attemptRate : [],
+            teacherProficiency: Array.isArray(response.principalCharts.teacherProficiency) ? response.principalCharts.teacherProficiency : [],
+            weakTopicCount: Array.isArray(response.principalCharts.weakTopicCount) ? response.principalCharts.weakTopicCount : [],
+            classes: Array.isArray(response.principalCharts.classes) ? response.principalCharts.classes : [],
+          }
+        }
         state.lastUpdated = new Date().toISOString()
       })
       .addCase(fetchDashboardMetrics.rejected, (state, action) => {
@@ -198,7 +235,6 @@ const dashboardSlice = createSlice({
         state.error.metrics = action.payload
       })
 
-      // Fetch progress trends
       .addCase(fetchProgressTrends.pending, (state) => {
         state.loading.progressTrends = true
         state.error.progressTrends = null
@@ -212,7 +248,6 @@ const dashboardSlice = createSlice({
         state.error.progressTrends = action.payload
       })
 
-      // Fetch subject performance
       .addCase(fetchSubjectPerformance.pending, (state) => {
         state.loading.subjectPerformance = true
         state.error.subjectPerformance = null
@@ -226,7 +261,6 @@ const dashboardSlice = createSlice({
         state.error.subjectPerformance = action.payload
       })
 
-      // Fetch class distribution
       .addCase(fetchClassDistribution.pending, (state) => {
         state.loading.classDistribution = true
         state.error.classDistribution = null
@@ -240,7 +274,6 @@ const dashboardSlice = createSlice({
         state.error.classDistribution = action.payload
       })
 
-      // Fetch dashboard alerts
       .addCase(fetchDashboardAlerts.pending, (state) => {
         state.loading.alerts = true
         state.error.alerts = null
@@ -255,7 +288,6 @@ const dashboardSlice = createSlice({
         state.error.alerts = action.payload
       })
 
-      // Fetch recent activities
       .addCase(fetchRecentActivities.pending, (state) => {
         state.loading.recentActivities = true
         state.error.recentActivities = null
@@ -270,7 +302,6 @@ const dashboardSlice = createSlice({
         state.error.recentActivities = action.payload
       })
 
-      // Fetch quick summary
       .addCase(fetchQuickSummary.pending, (state) => {
         state.loading.quickSummary = true
         state.error.quickSummary = null

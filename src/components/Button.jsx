@@ -9,16 +9,25 @@ const Button = forwardRef(({
   disabled = false,
   loading = false,
   className = '',
+  style = {},
   ...props 
 }, ref) => {
-  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
+  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg'
   
   const variants = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
+    primary: 'text-white',
     secondary: 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500',
-    outline: 'border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:ring-blue-500',
+    outline: 'border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:ring-gray-500',
     ghost: 'text-gray-700 hover:bg-gray-100 focus:ring-gray-500',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
+  }
+  
+  const variantStyles = {
+    primary: { backgroundColor: '#00167a' },
+    secondary: {},
+    outline: {},
+    ghost: {},
+    danger: {}
   }
   
   const sizes = {
@@ -34,6 +43,7 @@ const Button = forwardRef(({
     <button
       ref={ref}
       className={classes}
+      style={{ ...variantStyles[variant], ...style }}
       disabled={disabled || loading}
       {...props}
     >

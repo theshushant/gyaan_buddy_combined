@@ -1,20 +1,23 @@
 import { useState, useEffect, useCallback } from 'react'
-import { X, BookOpen, FileText, Hash, ToggleLeft, ToggleRight, CheckCircle2, AlertCircle, Loader2, Image as ImageIcon, Upload } from 'lucide-react'
+import { X, BookOpen, FileText, Hash, ToggleLeft, ToggleRight, CheckCircle2, AlertCircle, Loader2, Image as ImageIcon, Upload, GraduationCap } from 'lucide-react'
 import subjectsService from '../services/subjectsService'
 import apiService from '../services/api'
 
-const CreateModuleModal = ({ 
-  isOpen, 
-  onClose, 
-  onSave, 
-  loading = false, 
-  error = null, 
-  moduleData = null, 
-  selectedSubject = null 
+const CreateModuleModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  loading = false,
+  error = null,
+  moduleData = null,
+  selectedSubject = null,
+  classes = [],
+  selectedClass = null
 }) => {
   const [formData, setFormData] = useState({
     name: '',
     subject: '',
+    class_instance: '',
     description: '',
     order: 1,
     is_active: true,
@@ -29,37 +32,30 @@ const CreateModuleModal = ({
   const [logoPreview, setLogoPreview] = useState(null)
   const [validationErrors, setValidationErrors] = useState(null)
 
-  // Fetch subjects when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchSubjects()
     }
   }, [isOpen])
 
-  // Parse validation errors from error prop
   useEffect(() => {
     if (error) {
       let parsedErrors = null
       
-      // Check if error is an object with validation error structure
       if (typeof error === 'object' && error !== null) {
-        // Check for errors.errors structure (nested errors object)
         if (error.errors && typeof error.errors === 'object') {
           parsedErrors = error.errors
         } else if (error.non_field_errors || Object.keys(error).some(key => Array.isArray(error[key]))) {
-          // Direct error object structure (errors object itself)
           parsedErrors = error
         }
       }
       
       setValidationErrors(parsedErrors)
       
-      // If there are field-specific errors, update the form errors state
       if (parsedErrors) {
         const fieldErrors = {}
         Object.keys(parsedErrors).forEach(key => {
           if (key !== 'non_field_errors' && Array.isArray(parsedErrors[key]) && parsedErrors[key].length > 0) {
-            // Map common field names from API to form field names
             const fieldMap = {
               'module': 'subject', // module field might map to subject
             }
@@ -70,7 +66,6 @@ const CreateModuleModal = ({
         
         if (Object.keys(fieldErrors).length > 0) {
           setErrors(prev => ({ ...prev, ...fieldErrors }))
-          // Mark fields as touched to show errors
           const touchedFields = {}
           Object.keys(fieldErrors).forEach(field => {
             touchedFields[field] = true
@@ -83,29 +78,23 @@ const CreateModuleModal = ({
     }
   }, [error])
 
-  // Prefill form when moduleData is provided (edit mode) or selectedSubject is provided
   useEffect(() => {
     if (isOpen) {
       if (moduleData) {
         setFormData({
           name: moduleData.name || '',
           subject: moduleData.subject || moduleData.subject?.id || '',
+          class_instance: moduleData.class_instance || '',
           description: moduleData.description || '',
           order: moduleData.order || 1,
           is_active: moduleData.is_active !== undefined ? moduleData.is_active : true,
           is_enabled: moduleData.is_enabled !== undefined ? moduleData.is_enabled : false
         })
-        // Set logo preview if logo exists
         if (moduleData.logo) {
-          // Convert relative URL to full URL if needed
           let logoUrl = moduleData.logo
           if (logoUrl && typeof logoUrl === 'string') {
-            // If it's already a full URL (http:// or https://), use it as is
             if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
-              // Already a full URL, use as is
             } else if (logoUrl.startsWith('/')) {
-              // If it's a relative URL (starts with /), prepend the API base URL
-              // Remove /api from baseURL if present, as media files are served from root
               const baseUrl = apiService.baseURL.replace('/api', '')
               logoUrl = `${baseUrl}${logoUrl}`
             }
@@ -122,6 +111,7 @@ const CreateModuleModal = ({
         setFormData({
           name: '',
           subject: selectedSubject,
+          class_instance: selectedClass || '',
           description: '',
           order: 1,
           is_active: true,
@@ -136,6 +126,7 @@ const CreateModuleModal = ({
         setFormData({
           name: '',
           subject: '',
+          class_instance: selectedClass || '',
           description: '',
           order: 1,
           is_active: true,
@@ -148,7 +139,7 @@ const CreateModuleModal = ({
         setValidationErrors(null)
       }
     }
-  }, [moduleData, selectedSubject, isOpen])
+  }, [moduleData, selectedSubject, selectedClass, isOpen])
 
   const fetchSubjects = async () => {
     setLoadingSubjects(true)
@@ -167,10 +158,10 @@ const CreateModuleModal = ({
   const handleClose = useCallback(() => {
     if (loading) return
     
-    // Reset form on close
     setFormData({
       name: '',
       subject: '',
+      class_instance: '',
       description: '',
       order: 1,
       is_active: true,
@@ -187,13 +178,11 @@ const CreateModuleModal = ({
   const handleLogoChange = (e) => {
     const file = e.target.files[0]
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         setErrors(prev => ({ ...prev, logo: 'Please select a valid image file' }))
         return
       }
       
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setErrors(prev => ({ ...prev, logo: 'Image size must be less than 5MB' }))
         return
@@ -202,7 +191,6 @@ const CreateModuleModal = ({
       setLogoFile(file)
       setErrors(prev => ({ ...prev, logo: '' }))
       
-      // Create preview
       const reader = new FileReader()
       reader.onloadend = () => {
         setLogoPreview(reader.result)
@@ -215,14 +203,12 @@ const CreateModuleModal = ({
     setLogoFile(null)
     setLogoPreview(null)
     setErrors(prev => ({ ...prev, logo: '' }))
-    // Reset file input
     const fileInput = document.getElementById('logo-upload')
     if (fileInput) {
       fileInput.value = ''
     }
   }
 
-  // Handle escape key press
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape' && isOpen && !loading) {
@@ -232,7 +218,6 @@ const CreateModuleModal = ({
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
-      // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden'
     }
 
@@ -244,23 +229,27 @@ const CreateModuleModal = ({
 
   const isEditMode = !!moduleData
 
-  // Validation function
   const validateField = (name, value) => {
     let error = ''
     
     switch (name) {
       case 'name':
         if (!value.trim()) {
-          error = 'Module name is required'
+          error = 'Chapter name is required'
         } else if (value.trim().length < 2) {
-          error = 'Module name must be at least 2 characters'
+          error = 'Chapter name must be at least 2 characters'
         } else if (value.trim().length > 100) {
-          error = 'Module name must be 100 characters or less'
+          error = 'Chapter name must be 100 characters or less'
         }
         break
       case 'subject':
         if (!value) {
           error = 'Subject is required'
+        }
+        break
+      case 'class_instance':
+        if (!value) {
+          error = 'Class is required'
         }
         break
       case 'order':
@@ -299,7 +288,6 @@ const CreateModuleModal = ({
   const handleFieldChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
     }
@@ -316,7 +304,6 @@ const CreateModuleModal = ({
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    // Mark all fields as touched
     const allTouched = {}
     Object.keys(formData).forEach(field => {
       allTouched[field] = true
@@ -324,7 +311,6 @@ const CreateModuleModal = ({
     setTouched(allTouched)
     
     if (validateForm()) {
-      // Include logo file in form data
       const dataToSave = { ...formData }
       if (logoFile) {
         dataToSave.logo = logoFile
@@ -337,17 +323,17 @@ const CreateModuleModal = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop with blur */}
       <div 
         className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
         onClick={handleClose}
       />
       
-      {/* Modal Container */}
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col transform transition-all duration-300 scale-100 overflow-hidden">
-          {/* Header with gradient - Fixed */}
-          <div className="relative bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 px-8 py-6 flex-shrink-0">
+          <div 
+            className="relative px-8 py-6 flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #00167a 0%, #1fb7eb 50%, #1e3a8a 100%)' }}
+          >
             <div className="absolute inset-0 bg-black/5"></div>
             <div className="relative flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -356,10 +342,10 @@ const CreateModuleModal = ({
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold text-white">
-                    {isEditMode ? 'Edit Module' : 'Create New Module'}
+                    {isEditMode ? 'Edit Chapter' : 'Create New Chapter'}
                   </h3>
-                  <p className="text-sm text-blue-100 mt-0.5">
-                    {isEditMode ? 'Update module details' : 'Fill in the details to create a new module'}
+                  <p className="text-sm text-primary-200 mt-0.5">
+                    {isEditMode ? 'Update chapter details' : 'Fill in the details to create a new chapter'}
                   </p>
                 </div>
               </div>
@@ -373,10 +359,8 @@ const CreateModuleModal = ({
             </div>
           </div>
           
-          {/* Form Content - Scrollable */}
           <div className="overflow-y-auto flex-1">
             <form onSubmit={handleSubmit} className="p-8 space-y-8 bg-gray-50">
-            {/* Error message */}
             {error && (
               <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-lg flex items-start space-x-3 animate-slide-down">
                 <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -385,7 +369,6 @@ const CreateModuleModal = ({
                     {typeof error === 'object' && error.message ? error.message : 'Validation Error'}
                   </p>
                   <div className="text-sm text-red-700 mt-1">
-                    {/* Display non_field_errors if present */}
                     {validationErrors && validationErrors.non_field_errors && Array.isArray(validationErrors.non_field_errors) && (
                       <ul className="list-disc list-inside space-y-1">
                         {validationErrors.non_field_errors.map((errMsg, index) => (
@@ -393,7 +376,6 @@ const CreateModuleModal = ({
                         ))}
                       </ul>
                     )}
-                    {/* Display general error message if no validation errors */}
                     {(!validationErrors || !validationErrors.non_field_errors) && (
                       <p>{typeof error === 'object' && error.message ? error.message : String(error)}</p>
                     )}
@@ -402,17 +384,15 @@ const CreateModuleModal = ({
               </div>
             )}
 
-            {/* Module Information Section */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
               <div className="flex items-center space-x-2 mb-6">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FileText className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-primary-100 rounded-lg">
+                  <FileText className="h-5 w-5 text-primary-500" />
                 </div>
-                <h4 className="text-lg font-semibold text-gray-900">Module Information</h4>
+                <h4 className="text-lg font-semibold text-gray-900">Chapter Information</h4>
               </div>
               
               <div className="space-y-6">
-                {/* Subject Field */}
                 <div>
                   <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
                     <BookOpen className="h-4 w-4 text-gray-500" />
@@ -423,7 +403,7 @@ const CreateModuleModal = ({
                       value={formData.subject}
                       onChange={(e) => handleFieldChange('subject', e.target.value)}
                       onBlur={() => handleFieldBlur('subject')}
-                      className={`w-full px-4 py-3 pl-11 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white appearance-none cursor-pointer ${
+                      className={`w-full px-4 py-3 pl-11 border-2 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white appearance-none cursor-pointer ${
                         touched.subject && errors.subject 
                           ? 'border-red-300 bg-red-50' 
                           : 'border-gray-200 hover:border-gray-300'
@@ -456,11 +436,46 @@ const CreateModuleModal = ({
                   )}
                 </div>
 
-                {/* Module Name Field */}
+                <div>
+                  <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
+                    <GraduationCap className="h-4 w-4 text-gray-500" />
+                    <span>Class <span className="text-red-500">*</span></span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={formData.class_instance}
+                      onChange={(e) => handleFieldChange('class_instance', e.target.value)}
+                      onBlur={() => handleFieldBlur('class_instance')}
+                      className={`w-full px-4 py-3 pl-11 border-2 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white appearance-none cursor-pointer ${
+                        touched.class_instance && errors.class_instance
+                          ? 'border-red-300 bg-red-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      } ${loading || !!selectedClass ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      disabled={loading || !!selectedClass}
+                    >
+                      <option value="">Select a class</option>
+                      {classes.map(cls => (
+                        <option key={cls.id} value={cls.id}>
+                          {cls.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                      <GraduationCap className={`h-5 w-5 ${touched.class_instance && errors.class_instance ? 'text-red-400' : 'text-gray-400'}`} />
+                    </div>
+                  </div>
+                  {touched.class_instance && errors.class_instance && (
+                    <p className="mt-2 text-sm text-red-600 flex items-center space-x-1">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>{errors.class_instance}</span>
+                    </p>
+                  )}
+                </div>
+
                 <div>
                   <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
                     <FileText className="h-4 w-4 text-gray-500" />
-                    <span>Module Name <span className="text-red-500">*</span></span>
+                    <span>Chapter Name <span className="text-red-500">*</span></span>
                   </label>
                   <div className="relative">
                     <input
@@ -468,7 +483,7 @@ const CreateModuleModal = ({
                       value={formData.name}
                       onChange={(e) => handleFieldChange('name', e.target.value)}
                       onBlur={() => handleFieldBlur('name')}
-                      className={`w-full px-4 py-3 pl-11 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                      className={`w-full px-4 py-3 pl-11 border-2 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 ${
                         touched.name && errors.name 
                           ? 'border-red-300 bg-red-50' 
                           : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -493,7 +508,6 @@ const CreateModuleModal = ({
                   )}
                 </div>
 
-                {/* Description Field */}
                 <div>
                   <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
                     <FileText className="h-4 w-4 text-gray-500" />
@@ -504,12 +518,12 @@ const CreateModuleModal = ({
                     onChange={(e) => handleFieldChange('description', e.target.value)}
                     onBlur={() => handleFieldBlur('description')}
                     rows={4}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none ${
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 resize-none ${
                       touched.description && errors.description 
                         ? 'border-red-300 bg-red-50' 
                         : 'border-gray-200 hover:border-gray-300 bg-white'
                     } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
-                    placeholder="Brief description of what this module covers..."
+                    placeholder="Brief description of what this chapter covers..."
                     disabled={loading}
                   />
                   <div className="flex justify-between items-center mt-2">
@@ -525,14 +539,12 @@ const CreateModuleModal = ({
                   </div>
                 </div>
 
-                {/* Logo/Image Upload Field */}
                 <div>
                   <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
                     <ImageIcon className="h-4 w-4 text-gray-500" />
                     <span>Logo <span className="text-xs font-normal text-gray-500">(Optional)</span></span>
                   </label>
                   <div className="space-y-3">
-                    {/* File Input */}
                     <div className="relative">
                       <input
                         id="logo-upload"
@@ -547,7 +559,7 @@ const CreateModuleModal = ({
                         className={`flex items-center justify-center space-x-2 px-4 py-3 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
                           errors.logo
                             ? 'border-red-300 bg-red-50'
-                            : 'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50'
+                            : 'border-gray-300 bg-gray-50 hover:border-primary-500 hover:bg-primary-50'
                         } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
                       >
                         <Upload className={`h-5 w-5 ${errors.logo ? 'text-red-400' : 'text-gray-500'}`} />
@@ -557,7 +569,6 @@ const CreateModuleModal = ({
                       </label>
                     </div>
                     
-                    {/* Preview */}
                     {logoPreview && (
                       <div className="relative inline-block">
                         <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-100">
@@ -578,7 +589,6 @@ const CreateModuleModal = ({
                       </div>
                     )}
                     
-                    {/* Error Message */}
                     {errors.logo && (
                       <p className="text-sm text-red-600 flex items-center space-x-1">
                         <AlertCircle className="h-4 w-4" />
@@ -586,14 +596,12 @@ const CreateModuleModal = ({
                       </p>
                     )}
                     
-                    {/* Help Text */}
                     <p className="text-xs text-gray-500">
                       Supported formats: JPG, PNG, GIF. Max size: 5MB
                     </p>
                   </div>
                 </div>
 
-                {/* Order Field */}
                 <div>
                   <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
                     <Hash className="h-4 w-4 text-gray-500" />
@@ -606,7 +614,7 @@ const CreateModuleModal = ({
                       value={formData.order}
                       onChange={(e) => handleFieldChange('order', parseInt(e.target.value) || 1)}
                       onBlur={() => handleFieldBlur('order')}
-                      className={`w-full px-4 py-3 pl-11 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                      className={`w-full px-4 py-3 pl-11 border-2 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 ${
                         touched.order && errors.order 
                           ? 'border-red-300 bg-red-50' 
                           : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -625,23 +633,21 @@ const CreateModuleModal = ({
                     </p>
                   )}
                   <p className="mt-2 text-xs text-gray-500 flex items-center space-x-1">
-                    <span>Order determines the sequence of modules within the subject</span>
+                    <span>Order determines the sequence of chapters within the subject</span>
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Module Settings Section */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
               <div className="flex items-center space-x-2 mb-6">
                 <div className="p-2 bg-indigo-100 rounded-lg">
                   <ToggleRight className="h-5 w-5 text-indigo-600" />
                 </div>
-                <h4 className="text-lg font-semibold text-gray-900">Module Settings</h4>
+                <h4 className="text-lg font-semibold text-gray-900">Chapter Settings</h4>
               </div>
               
               <div className="space-y-5">
-                {/* Active Toggle */}
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 rounded-lg ${formData.is_active ? 'bg-green-100' : 'bg-gray-200'}`}>
@@ -656,7 +662,7 @@ const CreateModuleModal = ({
                         Active
                       </label>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Module will be visible and accessible
+                        Chapter will be visible and accessible
                       </p>
                     </div>
                   </div>
@@ -664,7 +670,7 @@ const CreateModuleModal = ({
                     type="button"
                     onClick={() => handleFieldChange('is_active', !formData.is_active)}
                     disabled={loading}
-                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                       formData.is_active ? 'bg-green-500' : 'bg-gray-300'
                     } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
@@ -676,12 +682,11 @@ const CreateModuleModal = ({
                   </button>
                 </div>
 
-                {/* Enabled Toggle */}
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
                   <div className="flex items-center space-x-3">
-                    <div className={`p-2 rounded-lg ${formData.is_enabled ? 'bg-blue-100' : 'bg-gray-200'}`}>
+                    <div className={`p-2 rounded-lg ${formData.is_enabled ? 'bg-primary-100' : 'bg-gray-200'}`}>
                       {formData.is_enabled ? (
-                        <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                        <CheckCircle2 className="h-5 w-5 text-primary-500" />
                       ) : (
                         <ToggleLeft className="h-5 w-5 text-gray-500" />
                       )}
@@ -691,7 +696,7 @@ const CreateModuleModal = ({
                         Enabled
                       </label>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Module will be enabled for students
+                        Chapter will be enabled for students
                       </p>
                     </div>
                   </div>
@@ -699,9 +704,10 @@ const CreateModuleModal = ({
                     type="button"
                     onClick={() => handleFieldChange('is_enabled', !formData.is_enabled)}
                     disabled={loading}
-                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                      formData.is_enabled ? 'bg-blue-500' : 'bg-gray-300'
+                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                      !formData.is_enabled ? 'bg-gray-300' : ''
                     } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    style={formData.is_enabled ? { backgroundColor: '#00167a' } : {}}
                   >
                     <span
                       className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${
@@ -713,7 +719,6 @@ const CreateModuleModal = ({
               </div>
             </div>
             
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
               <button
                 type="button"
@@ -725,7 +730,8 @@ const CreateModuleModal = ({
               </button>
               <button
                 type="submit"
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center space-x-2"
+                className="px-6 py-3 text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center space-x-2"
+                style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
                 disabled={loading}
               >
                 {loading ? (
@@ -736,7 +742,7 @@ const CreateModuleModal = ({
                 ) : (
                   <>
                     <CheckCircle2 className="h-5 w-5" />
-                    <span>{isEditMode ? 'Update Module' : 'Create Module'}</span>
+                    <span>{isEditMode ? 'Update Chapter' : 'Create Chapter'}</span>
                   </>
                 )}
               </button>

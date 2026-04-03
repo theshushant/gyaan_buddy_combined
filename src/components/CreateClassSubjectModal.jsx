@@ -17,14 +17,12 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
 
-  // Fetch classes when modal opens and type is subject
   useEffect(() => {
     if (isOpen && type === 'subject') {
       fetchClasses()
     }
   }, [isOpen, type])
 
-  // Update type when initialType changes (when modal is opened with different type)
   useEffect(() => {
     if (isOpen) {
       setType(initialType)
@@ -60,13 +58,11 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
   const handleLogoChange = (e) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         setErrors(prev => ({ ...prev, logo: 'Please select an image file' }))
         return
       }
       
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setErrors(prev => ({ ...prev, logo: 'Image size must be less than 5MB' }))
         return
@@ -79,7 +75,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
         return newErrors
       })
       
-      // Create preview
       const reader = new FileReader()
       reader.onloadend = () => {
         setLogoPreview(reader.result)
@@ -99,7 +94,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Validate required fields
     const newErrors = {}
     if (!name.trim()) {
       newErrors.name = `${type === 'class' ? 'Class' : 'Subject'} name is required`
@@ -136,14 +130,11 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
         response = await subjectsService.createSubject(subjectData, logoFile)
       }
       
-      // Extract the created item's ID from response
       const createdItem = response.data || response
       const createdId = createdItem?.id
       
-      // Reset form
       resetForm()
       
-      // Notify parent component with the created item info
       if (onSuccess) {
         onSuccess(type, createdId)
       }
@@ -152,7 +143,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
     } catch (err) {
       console.error(`Failed to create ${type}:`, err)
       
-      // Handle validation errors from backend
       if (err.responseData && typeof err.responseData === 'object') {
         if (err.responseData.errors) {
           const fieldErrors = {}
@@ -199,14 +189,12 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
           </div>
           
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Error Messages */}
             {errors.general && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 {errors.general}
               </div>
             )}
 
-            {/* Toggle for Class/Subject */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">Type</label>
               <div className="flex gap-4">
@@ -218,7 +206,7 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                   }}
                   className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
                     type === 'class'
-                      ? 'border-blue-600 bg-blue-50 text-blue-700 font-medium'
+                      ? 'border-primary-500 bg-primary-50 text-primary-500 font-medium'
                       : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                   }`}
                   disabled={loading}
@@ -234,7 +222,7 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                   }}
                   className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
                     type === 'subject'
-                      ? 'border-blue-600 bg-blue-50 text-blue-700 font-medium'
+                      ? 'border-primary-500 bg-primary-50 text-primary-500 font-medium'
                       : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                   }`}
                   disabled={loading}
@@ -244,7 +232,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
               </div>
             </div>
 
-            {/* Name Field */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {type === 'class' ? 'Class' : 'Subject'} Name <span className="text-red-500">*</span>
@@ -260,7 +247,7 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                     return newErrors
                   })
                 }}
-                className={`w-full px-3 py-2 border ${errors.name ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                className={`w-full px-3 py-2 border ${errors.name ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                 placeholder={`Enter ${type === 'class' ? 'class' : 'subject'} name`}
                 required
                 disabled={loading}
@@ -271,10 +258,8 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
               )}
             </div>
 
-            {/* Subject-specific fields */}
             {type === 'subject' && (
               <>
-                {/* Code Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Subject Code <span className="text-red-500">*</span>
@@ -290,7 +275,7 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                         return newErrors
                       })
                     }}
-                    className={`w-full px-3 py-2 border ${errors.code ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase`}
+                    className={`w-full px-3 py-2 border ${errors.code ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent uppercase`}
                     placeholder="e.g., MATH"
                     required
                     disabled={loading}
@@ -302,7 +287,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                   )}
                 </div>
 
-                {/* Description Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description
@@ -318,7 +302,7 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                       })
                     }}
                     rows={3}
-                    className={`w-full px-3 py-2 border ${errors.description ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                    className={`w-full px-3 py-2 border ${errors.description ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                     placeholder="Enter subject description (optional)"
                     disabled={loading}
                   />
@@ -327,7 +311,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                   )}
                 </div>
 
-                {/* Logo Upload */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Logo
@@ -377,7 +360,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                   </div>
                 </div>
 
-                {/* Classes Assignment */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Assign to Classes (Optional)
@@ -395,7 +377,7 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                               type="checkbox"
                               checked={selectedClasses.includes(cls.id)}
                               onChange={() => handleClassToggle(cls.id)}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
                               disabled={loading}
                             />
                             <span className="text-gray-700">{cls.name}</span>
@@ -406,7 +388,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                   )}
                 </div>
 
-                {/* Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
                   <div className="flex items-center">
@@ -415,7 +396,7 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                       id="is_active"
                       checked={isActive}
                       onChange={(e) => setIsActive(e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
                       disabled={loading}
                     />
                     <label htmlFor="is_active" className="ml-2 text-sm font-medium text-gray-700">
@@ -426,7 +407,6 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
               </>
             )}
 
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
               <button
                 type="button"
@@ -438,7 +418,8 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#00167a' }}
                 disabled={loading}
               >
                 {loading ? 'Creating...' : `Create ${type === 'class' ? 'Class' : 'Subject'}`}

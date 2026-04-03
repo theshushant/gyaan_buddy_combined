@@ -17,20 +17,16 @@ const DailyMissions = () => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [allMissions, setAllMissions] = useState([]); // Store all missions for the month (for calendar indicators)
 
-  // Generate calendar days for current month
   const getCalendarDays = useCallback(() => {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
     const days = [];
     
-    // Add empty cells for days before the first day of the month
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push({ day: null, hasActivity: false });
     }
     
-    // Add days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      // Check if there are missions for this day
       const hasActivity = allMissions.some(mission => {
         if (mission.mission_date) {
           const missionDate = new Date(mission.mission_date);
@@ -53,7 +49,6 @@ const DailyMissions = () => {
 
   const calendarDays = getCalendarDays();
 
-  // Fetch classes
   const fetchClasses = useCallback(async () => {
     setLoadingClasses(true);
     try {
@@ -65,7 +60,6 @@ const DailyMissions = () => {
       })).filter(cls => cls.id && cls.name);
       setClasses(classesList);
       
-      // Auto-select first class if available
       if (classesList.length > 0 && !selectedClass) {
         setSelectedClass(classesList[0].id);
       }
@@ -77,7 +71,6 @@ const DailyMissions = () => {
     }
   }, [selectedClass]);
 
-  // Fetch subjects
   const fetchSubjects = useCallback(async () => {
     setLoadingSubjects(true);
     try {
@@ -89,7 +82,6 @@ const DailyMissions = () => {
       })).filter(subject => subject.id && subject.name);
       setSubjects(subjectsList);
       
-      // Auto-select first subject if available
       if (subjectsList.length > 0 && !selectedSubject) {
         setSelectedSubject(subjectsList[0].id);
       }
@@ -101,7 +93,6 @@ const DailyMissions = () => {
     }
   }, [selectedSubject]);
 
-  // Fetch missions based on selected filters
   const fetchMissions = useCallback(async () => {
     if (!selectedClass || !selectedSubject) {
       setMissions([]);
@@ -111,7 +102,6 @@ const DailyMissions = () => {
 
     setLoadingMissions(true);
     try {
-      // Fetch all missions for the selected class and subject
       const response = await testsService.getMissions({
         class: selectedClass,
         subject: selectedSubject
@@ -119,7 +109,6 @@ const DailyMissions = () => {
       
       const missionsData = response.data || response || [];
       
-      // Filter missions for the current month
       const monthMissions = missionsData.filter(mission => {
         if (mission.mission_date) {
           const missionDate = new Date(mission.mission_date);
@@ -129,14 +118,11 @@ const DailyMissions = () => {
         return false;
       });
       
-      // Store all missions for calendar indicators
       setAllMissions(monthMissions);
       
-      // Build date for selected day
       const selectedDateObj = new Date(currentYear, currentMonth, selectedDate);
       const dateString = selectedDateObj.toISOString().split('T')[0];
       
-      // Filter missions for the selected date
       const filteredMissions = monthMissions.filter(mission => {
         if (mission.mission_date) {
           const missionDate = new Date(mission.mission_date).toISOString().split('T')[0];
@@ -145,10 +131,14 @@ const DailyMissions = () => {
         return false;
       });
       
-      // Transform missions to include completion rate and status
       const transformedMissions = filteredMissions.map(mission => {
-        // Calculate completion rate (mock for now, can be enhanced with real progress data)
-        const completionRate = Math.floor(Math.random() * 100);
+        let completionRate = 0;
+        if (mission.progress) {
+          completionRate = mission.progress.percentage || 0;
+        } else {
+          completionRate = Math.floor(Math.random() * 100);
+        }
+        
         let status, statusColor;
         if (completionRate >= 70) {
           status = 'High';
@@ -161,17 +151,27 @@ const DailyMissions = () => {
           statusColor = 'red';
         }
         
+        const missionTitle = mission.title || 
+          (mission.module_name && mission.chapter_title 
+            ? `${mission.module_name} - ${mission.chapter_title}` 
+            : mission.module_name || 'Untitled Mission');
+        
         return {
           id: mission.id || mission.uuid,
-          name: mission.title,
+          name: missionTitle,
           description: mission.description,
           completionRate,
           status,
           statusColor,
-          mission_date: mission.mission_date,
+          mission_date: mission.mission_date || mission.test_datetime,
           duration: mission.duration,
           base_exp: mission.base_exp,
-          exp_multiplier: mission.exp_multiplier
+          exp_multiplier: mission.exp_multiplier,
+          question_count: mission.question_count || mission.questions?.length || 0,
+          subject_name: mission.subject_name || mission.subject?.name,
+          module_name: mission.module_name,
+          chapter_title: mission.chapter_title,
+          progress: mission.progress
         };
       });
       
@@ -185,20 +185,17 @@ const DailyMissions = () => {
     }
   }, [selectedClass, selectedSubject, selectedDate, currentMonth, currentYear]);
 
-  // Fetch classes and subjects on mount
   useEffect(() => {
     fetchClasses();
     fetchSubjects();
   }, [fetchClasses, fetchSubjects]);
 
-  // Fetch missions when filters change
   useEffect(() => {
     if (selectedClass && selectedSubject) {
       fetchMissions();
     }
   }, [selectedClass, selectedSubject, selectedDate, currentMonth, currentYear, fetchMissions]);
 
-  // Handle month navigation
   const handlePreviousMonth = () => {
     if (currentMonth === 0) {
       setCurrentMonth(11);
@@ -222,13 +219,11 @@ const DailyMissions = () => {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 animate-slide-down">Daily Missions</h1>
         <p className="text-gray-600 mt-2 animate-slide-right" style={{animationDelay: '0.1s'}}>Select a class and subject to view mission completion rates.</p>
       </div>
 
-      {/* Filters */}
       <div className="mb-6 flex space-x-4">
         <div className="animate-slide-right" style={{animationDelay: '0.2s'}}>
           <label className="block text-sm font-medium text-gray-700 mb-2">Class</label>
@@ -236,7 +231,7 @@ const DailyMissions = () => {
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}
             disabled={loadingClasses}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transform transition-all duration-200 hover:scale-105 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105 disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
             <option value="">{loadingClasses ? 'Loading classes...' : 'Select Class'}</option>
             {classes.map((cls) => (
@@ -253,7 +248,7 @@ const DailyMissions = () => {
             value={selectedSubject}
             onChange={(e) => setSelectedSubject(e.target.value)}
             disabled={loadingSubjects}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transform transition-all duration-200 hover:scale-105 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105 disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
             <option value="">{loadingSubjects ? 'Loading subjects...' : 'Select Subject'}</option>
             {subjects.map((subject) => (
@@ -266,12 +261,12 @@ const DailyMissions = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Calendar */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.4s'}}>
         <div className="flex justify-between items-center mb-4">
           <button 
             onClick={handlePreviousMonth}
-            className="text-gray-400 hover:text-gray-600 transform transition-all duration-200 hover:scale-125 hover:-translate-x-1"
+            className="text-gray-600 hover:text-gray-900 transform transition-all duration-200 hover:scale-125 hover:-translate-x-1"
+            style={{ color: '#00167a' }}
           >
             ◀
           </button>
@@ -280,13 +275,13 @@ const DailyMissions = () => {
           </h3>
           <button 
             onClick={handleNextMonth}
-            className="text-gray-400 hover:text-gray-600 transform transition-all duration-200 hover:scale-125 hover:translate-x-1"
+            className="text-gray-600 hover:text-gray-900 transform transition-all duration-200 hover:scale-125 hover:translate-x-1"
+            style={{ color: '#00167a' }}
           >
             ▶
           </button>
         </div>
 
-          {/* Days of week */}
           <div className="grid grid-cols-7 gap-1 mb-2">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
               <div key={day} className="text-center text-sm font-medium text-gray-500 py-2 animate-slide-down" style={{animationDelay: `${0.5 + index * 0.05}s`}}>
@@ -295,7 +290,6 @@ const DailyMissions = () => {
             ))}
           </div>
 
-          {/* Calendar grid */}
           <div className="grid grid-cols-7 gap-1">
             {calendarDays.map(({ day, hasActivity, isSelected }, index) => (
               day === null ? (
@@ -306,10 +300,13 @@ const DailyMissions = () => {
                   onClick={() => setSelectedDate(day)}
                   className={`relative p-2 text-sm rounded-lg transition-all duration-300 transform hover:scale-110 animate-slide-up ${
                     isSelected
-                      ? 'bg-blue-600 text-white shadow-lg'
+                      ? 'text-white shadow-lg'
                       : 'text-gray-700 hover:bg-gray-100 hover:shadow-md'
                   }`}
-                  style={{animationDelay: `${0.6 + index * 0.01}s`}}
+                  style={{
+                    animationDelay: `${0.6 + index * 0.01}s`,
+                    ...(isSelected ? { backgroundColor: '#00167a' } : {})
+                  }}
                 >
                   {day}
                   {hasActivity && (
@@ -321,7 +318,6 @@ const DailyMissions = () => {
           </div>
         </div>
 
-        {/* Missions List */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.7s'}}>
           <h3 className="text-lg font-semibold text-gray-800 mb-4 animate-slide-right">
             Missions for {monthNames[currentMonth]} {selectedDate}, {currentYear}
@@ -343,12 +339,17 @@ const DailyMissions = () => {
             <div className="space-y-4">
               {missions.map((mission, index) => (
               <div 
-                key={index} 
-                className="border border-gray-200 rounded-lg p-4 transform hover:scale-105 transition-all duration-300 hover:shadow-md hover:bg-blue-50 animate-slide-up"
+                key={mission.id || index} 
+                className="border border-gray-200 rounded-lg p-4 transform hover:scale-105 transition-all duration-300 hover:shadow-md hover:bg-primary-50 animate-slide-up"
                 style={{animationDelay: `${0.8 + index * 0.1}s`}}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-medium text-gray-800">{mission.name}</h4>
+                  <div>
+                    <h4 className="font-medium text-gray-800">{mission.name}</h4>
+                    {mission.subject_name && (
+                      <p className="text-xs text-gray-500 mt-1">{mission.subject_name}</p>
+                    )}
+                  </div>
                   <span className={`px-2 py-1 text-xs font-medium rounded-full transform transition-all duration-200 hover:scale-110 ${
                     mission.statusColor === 'green' ? 'bg-green-100 text-green-800' :
                     mission.statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
@@ -356,6 +357,27 @@ const DailyMissions = () => {
                   }`}>
                     {mission.status}
                   </span>
+                </div>
+
+                <div className="flex items-center space-x-4 text-xs text-gray-500 mb-3">
+                  {mission.duration && (
+                    <span className="flex items-center space-x-1">
+                      <span>⏱️</span>
+                      <span>{mission.duration} min</span>
+                    </span>
+                  )}
+                  {mission.question_count > 0 && (
+                    <span className="flex items-center space-x-1">
+                      <span>❓</span>
+                      <span>{mission.question_count} questions</span>
+                    </span>
+                  )}
+                  {mission.base_exp && (
+                    <span className="flex items-center space-x-1">
+                      <span>⭐</span>
+                      <span>{mission.base_exp} EXP</span>
+                    </span>
+                  )}
                 </div>
 
                 <div className="mb-3">
@@ -375,7 +397,7 @@ const DailyMissions = () => {
                   </div>
                 </div>
 
-                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium transform transition-all duration-200 hover:scale-105 hover:translate-x-1">
+                <button className="text-primary-500 hover:text-primary-700 text-sm font-medium transform transition-all duration-200 hover:scale-105 hover:translate-x-1">
                   View Details
                 </button>
               </div>

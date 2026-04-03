@@ -1,4 +1,3 @@
-// Mock teachers data
 export default {
   '/teachers': {
     teachers: [

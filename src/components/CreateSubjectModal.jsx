@@ -26,14 +26,12 @@ const CreateSubjectModal = ({
   const [errors, setErrors] = useState({})
   const [validationErrors, setValidationErrors] = useState(null)
 
-  // Fetch classes when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchClasses()
     }
   }, [isOpen])
 
-  // Pre-fill form when editing a subject
   useEffect(() => {
     if (isOpen && subject) {
       setFormData({
@@ -44,9 +42,7 @@ const CreateSubjectModal = ({
         classes: subject.classes || []
       })
       
-      // Set logo preview if logo exists
       if (subject.logo) {
-        // Convert relative URL to full URL if needed
         const logoUrl = typeof subject.logo === 'string' 
           ? (subject.logo.startsWith('http') ? subject.logo : `${import.meta.env.VITE_API_BASE_URL || ''}${subject.logo}`)
           : null
@@ -55,7 +51,6 @@ const CreateSubjectModal = ({
         }
       }
     } else if (isOpen && !subject) {
-      // Reset form when adding new subject
       setFormData({
         name: '',
         code: '',
@@ -90,7 +85,6 @@ const CreateSubjectModal = ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }))
-    // Clear error for this field
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev }
@@ -103,13 +97,11 @@ const CreateSubjectModal = ({
   const handleLogoChange = (e) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         setErrors(prev => ({ ...prev, logo: 'Please select an image file' }))
         return
       }
       
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setErrors(prev => ({ ...prev, logo: 'Image size must be less than 5MB' }))
         return
@@ -122,7 +114,6 @@ const CreateSubjectModal = ({
         return newErrors
       })
       
-      // Create preview
       const reader = new FileReader()
       reader.onloadend = () => {
         setLogoPreview(reader.result)
@@ -143,7 +134,6 @@ const CreateSubjectModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Validate required fields
     const newErrors = {}
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required'
@@ -173,18 +163,14 @@ const CreateSubjectModal = ({
 
       let response
       if (subject) {
-        // Update existing subject
         response = await subjectsService.updateSubject(subject.id, submitData, logoFile)
       } else {
-        // Create new subject
         response = await subjectsService.createSubject(submitData, logoFile)
       }
       
-      // Extract the created/updated item's ID from response
       const item = response.data || response
       const itemId = item?.id
       
-      // Reset form
       setFormData({
         name: '',
         code: '',
@@ -197,7 +183,6 @@ const CreateSubjectModal = ({
       setErrors({})
       setValidationErrors(null)
       
-      // Notify parent component
       if (onSuccess) {
         onSuccess(itemId || item)
       }
@@ -206,11 +191,9 @@ const CreateSubjectModal = ({
     } catch (err) {
       console.error(`Failed to ${subject ? 'update' : 'create'} subject:`, err)
       
-      // Handle validation errors from backend
       if (err.responseData && typeof err.responseData === 'object') {
         if (err.responseData.errors) {
           setValidationErrors(err.responseData.errors)
-          // Map field errors
           const fieldErrors = {}
           Object.keys(err.responseData.errors).forEach(key => {
             if (Array.isArray(err.responseData.errors[key]) && err.responseData.errors[key].length > 0) {
@@ -264,7 +247,6 @@ const CreateSubjectModal = ({
           </div>
           
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Error Messages */}
             {errors.general && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 {errors.general}
@@ -279,7 +261,6 @@ const CreateSubjectModal = ({
               </div>
             )}
 
-            {/* Basic Information */}
             <div>
               <h4 className="text-md font-semibold text-gray-900 mb-4">Basic Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -292,7 +273,7 @@ const CreateSubjectModal = ({
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border ${errors.name ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                    className={`w-full px-3 py-2 border ${errors.name ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                     placeholder="e.g., Mathematics"
                     required
                     disabled={loading}
@@ -319,7 +300,7 @@ const CreateSubjectModal = ({
                     name="code"
                     value={formData.code}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border ${errors.code ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase`}
+                    className={`w-full px-3 py-2 border ${errors.code ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent uppercase`}
                     placeholder="e.g., MATH"
                     required
                     disabled={loading}
@@ -348,7 +329,7 @@ const CreateSubjectModal = ({
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={3}
-                  className={`w-full px-3 py-2 border ${errors.description ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  className={`w-full px-3 py-2 border ${errors.description ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                   placeholder="Enter subject description (optional)"
                   disabled={loading}
                 />
@@ -358,7 +339,6 @@ const CreateSubjectModal = ({
               </div>
             </div>
 
-            {/* Logo Upload */}
             <div>
               <h4 className="text-md font-semibold text-gray-900 mb-4">Logo</h4>
               <div className="space-y-4">
@@ -418,7 +398,6 @@ const CreateSubjectModal = ({
               </div>
             </div>
 
-            {/* Classes Assignment */}
             <div>
               <h4 className="text-md font-semibold text-gray-900 mb-4">Assign to Classes (Optional)</h4>
               {loadingClasses ? (
@@ -434,7 +413,7 @@ const CreateSubjectModal = ({
                           type="checkbox"
                           checked={formData.classes.includes(cls.id)}
                           onChange={() => handleClassToggle(cls.id)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
                           disabled={loading}
                         />
                         <span className="text-gray-700">{cls.name}</span>
@@ -445,7 +424,6 @@ const CreateSubjectModal = ({
               )}
             </div>
 
-            {/* Status */}
             <div>
               <h4 className="text-md font-semibold text-gray-900 mb-4">Status</h4>
               <div className="flex items-center">
@@ -455,7 +433,7 @@ const CreateSubjectModal = ({
                   name="is_active"
                   checked={formData.is_active}
                   onChange={handleInputChange}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
                   disabled={loading}
                 />
                 <label htmlFor="is_active" className="ml-2 text-sm font-medium text-gray-700">
@@ -464,7 +442,6 @@ const CreateSubjectModal = ({
               </div>
             </div>
             
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
               <button
                 type="button"
@@ -476,7 +453,8 @@ const CreateSubjectModal = ({
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#00167a' }}
                 disabled={loading}
               >
                 {loading ? (subject ? 'Updating...' : 'Creating...') : (subject ? 'Update Subject' : 'Create Subject')}

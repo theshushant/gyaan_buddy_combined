@@ -1,9 +1,8 @@
-// Mock dashboard data
 export default {
   '/dashboard/metrics': {
     metrics: [
       {
-        title: 'Overall Student Proficiency',
+        title: 'Overall Student Performance',
         value: '78%',
         change: '+5% vs last month',
         changeType: 'positive',

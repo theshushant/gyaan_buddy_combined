@@ -18,14 +18,14 @@ src/models/
 ├── subjects/                    # Subject and content models
 │   ├── Subject.js              # Subject management
 │   ├── Module.js               # Module within subjects
-│   ├── ModuleChapter.js        # Chapters within modules
+│   ├── ModuleChapter.js        # Topics within modules
 │   ├── Question.js             # Questions
 │   ├── Theory.js               # Theoretical content
 │   ├── Option.js               # Question options
-│   └── ModuleContent.js        # Content within chapters
+│   └── ModuleContent.js        # Content within topics
 ├── progress/                    # Progress tracking models
 │   ├── UserModuleProgress.js   # User progress on modules
-│   └── UserChapterProgress.js  # User progress on chapters
+│   └── UserChapterProgress.js  # User progress on topics
 ├── missions/                    # Mission-related models
 │   ├── Mission.js              # Daily missions
 │   ├── MissionQuestion.js      # Mission-question relationship
@@ -111,7 +111,7 @@ question.addOption({
 - **User** belongs to **School** and **Class**
 - **User** has many **UserModuleProgress** and **UserChapterProgress**
 - **Subject** has many **Modules**
-- **Module** has many **ModuleChapters**
+- **Module** has many **ModuleChapters** (topics)
 - **ModuleChapter** has many **ModuleContents** (Questions/Theories)
 - **Question** has many **Options**
 - **Mission** belongs to **Class** and has many **Questions**

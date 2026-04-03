@@ -1,4 +1,3 @@
-// Mock questions data
 export default {
   '/questions': {
     questions: [

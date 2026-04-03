@@ -1,8 +1,5 @@
 import TimeStampUUID from '../base/TimeStampUUID.js';
 
-/**
- * Model for tracking individual user progress on modules.
- */
 export default class UserModuleProgress extends TimeStampUUID {
   constructor(data = {}) {
     super(data);
@@ -16,9 +13,6 @@ export default class UserModuleProgress extends TimeStampUUID {
     this.current_question = data.current_question || null; // Question ID or Question object
   }
 
-  /**
-   * Status choices
-   */
   static STATUS_CHOICES = [
     ['not_started', 'Not Started'],
     ['in_progress', 'In Progress'],
@@ -26,10 +20,6 @@ export default class UserModuleProgress extends TimeStampUUID {
     ['completed', 'Completed']
   ];
 
-  /**
-   * Validate progress data
-   * @returns {Object} Validation result with isValid and errors
-   */
   validate() {
     const errors = {};
 
@@ -57,9 +47,6 @@ export default class UserModuleProgress extends TimeStampUUID {
     };
   }
 
-  /**
-   * Start the module
-   */
   start() {
     this.status = 'in_progress';
     this.started_at = new Date();
@@ -67,9 +54,6 @@ export default class UserModuleProgress extends TimeStampUUID {
     this.touch();
   }
 
-  /**
-   * Complete the module
-   */
   complete() {
     this.status = 'completed';
     this.percentage = 100;
@@ -78,19 +62,12 @@ export default class UserModuleProgress extends TimeStampUUID {
     this.touch();
   }
 
-  /**
-   * Mark as due
-   */
   markDue() {
     this.status = 'due';
     this.last_accessed = new Date();
     this.touch();
   }
 
-  /**
-   * Update progress percentage
-   * @param {number} percentage - New percentage (0-100)
-   */
   updateProgress(percentage) {
     if (percentage >= 0 && percentage <= 100) {
       this.percentage = percentage;
@@ -106,52 +83,28 @@ export default class UserModuleProgress extends TimeStampUUID {
     }
   }
 
-  /**
-   * Set current question
-   * @param {string|Object} question - Question ID or Question object
-   */
   setCurrentQuestion(question) {
     this.current_question = question;
     this.last_accessed = new Date();
     this.touch();
   }
 
-  /**
-   * Check if the module is overdue
-   * @returns {boolean} True if overdue
-   */
   get is_overdue() {
     return this.status === 'due' && this.percentage < 100;
   }
 
-  /**
-   * Get user ID
-   * @returns {string|null} User ID
-   */
   getUserId() {
     return typeof this.user === 'object' ? this.user.id : this.user;
   }
 
-  /**
-   * Get module ID
-   * @returns {string|null} Module ID
-   */
   getModuleId() {
     return typeof this.module === 'object' ? this.module.id : this.module;
   }
 
-  /**
-   * Get current question ID
-   * @returns {string|null} Question ID
-   */
   getCurrentQuestionId() {
     return typeof this.current_question === 'object' ? this.current_question.id : this.current_question;
   }
 
-  /**
-   * Convert to plain object
-   * @returns {Object} Plain object representation
-   */
   toJSON() {
     return {
       ...super.toJSON(),
@@ -166,10 +119,6 @@ export default class UserModuleProgress extends TimeStampUUID {
     };
   }
 
-  /**
-   * String representation
-   * @returns {string} String representation
-   */
   toString() {
     const username = typeof this.user === 'object' ? this.user.username : 'Unknown User';
     const moduleName = typeof this.module === 'object' ? this.module.name : 'Unknown Module';

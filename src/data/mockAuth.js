@@ -1,4 +1,3 @@
-// Mock authentication data
 export default {
   '/auth/login': {
     success: true,

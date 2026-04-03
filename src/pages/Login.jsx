@@ -18,6 +18,7 @@ const Login = () => {
 
   const [showPassword, setShowPassword] = useState(false)
   const [formErrors, setFormErrors] = useState({})
+  const [portalMode, setPortalMode] = useState('principal')
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -25,7 +26,6 @@ const Login = () => {
       ...prev,
       [name]: value
     }))
-    // Clear error when user starts typing
     if (formErrors[name]) {
       setFormErrors(prev => ({
         ...prev,
@@ -57,16 +57,12 @@ const Login = () => {
     }
 
     try {
-      // Add type as 'dashboard' for web login
       const loginData = {
         ...formData,
-        type: 'dashboard'
+        type: portalMode === 'parent' ? 'parent_dashboard' : 'dashboard'
       }
       const result = await dispatch(loginUser(loginData)).unwrap()
       if (result.user) {
-        // The role will be set in Redux by authSlice (mapped from user_type)
-        // AppRoutes component will automatically show the correct dashboard based on role
-        // Teachers will see TeacherDashboard, others will see the principal Dashboard
         navigate('/')
       }
     } catch (error) {
@@ -74,25 +70,9 @@ const Login = () => {
     }
   }
 
-  const handleDemoLogin = (role) => {
-    // These are placeholder credentials - replace with actual backend users
-    const demoCredentials = {
-      principal: {
-        username: 'admin', // Replace with actual principal username from backend
-        password: 'admin123' // Replace with actual password
-      },
-      teacher: {
-        username: 'teacher1', // Replace with actual teacher username from backend
-        password: 'teacher123' // Replace with actual password
-      }
-    }
-    setFormData(demoCredentials[role])
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#00167a' }}>
       <div className="max-w-md w-full">
-        {/* Logo and Title */}
         <div className="text-center mb-8">
           <div>
             <img 
@@ -101,19 +81,39 @@ const Login = () => {
               className="w-full h-full object-contain"
             />
           </div>
-          {/* <h1 className="text-3xl font-bold text-gray-900 mb-2">Gyan Buddy</h1>
-          <p className="text-gray-600">Educational Management System</p> */}
         </div>
 
-        {/* Login Form */}
         <div className="bg-white rounded-xl shadow-lg p-8">
           <div className="mb-6">
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">Welcome Back</h2>
             <p className="text-gray-600">Sign in to your account to continue</p>
           </div>
 
+          <div className="grid grid-cols-3 gap-2 mb-6">
+            <button
+              type="button"
+              onClick={() => setPortalMode('principal')}
+              className={`text-sm py-2 rounded-lg border ${portalMode === 'principal' ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-white border-gray-300 text-gray-600'}`}
+            >
+              Principal
+            </button>
+            <button
+              type="button"
+              onClick={() => setPortalMode('teacher')}
+              className={`text-sm py-2 rounded-lg border ${portalMode === 'teacher' ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-white border-gray-300 text-gray-600'}`}
+            >
+              Teacher
+            </button>
+            <button
+              type="button"
+              onClick={() => setPortalMode('parent')}
+              className={`text-sm py-2 rounded-lg border ${portalMode === 'parent' ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-white border-gray-300 text-gray-600'}`}
+            >
+              Parent
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Username Field */}
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
                 Username
@@ -128,7 +128,7 @@ const Login = () => {
                   type="text"
                   value={formData.username}
                   onChange={handleInputChange}
-                  className={`block w-full pl-10 pr-3 py-3 border rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`block w-full pl-10 pr-3 py-3 border rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
                     formErrors.username ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Enter your username"
@@ -139,7 +139,6 @@ const Login = () => {
               )}
             </div>
 
-            {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
@@ -154,7 +153,7 @@ const Login = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={handleInputChange}
-                  className={`block w-full pl-10 pr-12 py-3 border rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`block w-full pl-10 pr-12 py-3 border rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
                     formErrors.password ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Enter your password"
@@ -176,18 +175,61 @@ const Login = () => {
               )}
             </div>
 
-            {/* Error Message */}
             {loginError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-sm text-red-600">{loginError}</p>
+                <p className="text-xs text-gray-600 mt-2">Backend unavailable? Try demo login below.</p>
               </div>
             )}
 
-            {/* Submit Button */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({ username: 'admin', password: 'admin123' })
+                  setPortalMode('principal')
+                  setFormErrors({})
+                }}
+                className="flex-1 py-2 px-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-700 text-sm hover:bg-gray-100"
+              >
+                Demo: Principal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({ username: 'teacher1', password: 'teacher123' })
+                  setPortalMode('teacher')
+                  setFormErrors({})
+                }}
+                className="flex-1 py-2 px-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-700 text-sm hover:bg-gray-100"
+              >
+                Demo: Teacher
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({ username: 'student1', password: 'student123' })
+                  setPortalMode('parent')
+                  setFormErrors({})
+                }}
+                className="flex-1 py-2 px-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-700 text-sm hover:bg-gray-100"
+              >
+                Demo: Parent
+              </button>
+            </div>
+            {portalMode === 'parent' && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Parent login uses a student account from your backend data. If demo credentials fail, use a valid student username/password.
+              </p>
+            )}
+
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full py-3 px-4 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02]"
+              style={{ backgroundColor: '#1fb7eb', color: 'white' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#001262'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#00167a'}
             >
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>

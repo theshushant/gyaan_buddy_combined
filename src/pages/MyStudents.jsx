@@ -25,9 +25,7 @@ const MyStudents = () => {
 
   const { classes } = useSelector(state => state.classes);
 
-  // Fetch students, stats, and classes on component mount
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = error.students !== null || error.stats !== null
     if (hasError) {
       return // Don't retry if there's already an error
@@ -48,9 +46,7 @@ const MyStudents = () => {
     fetchData();
   }, [dispatch, error.students, error.stats]);
 
-  // Update filters and refetch when search or class filter changes
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
     const hasError = error.students !== null
     if (hasError) {
       return // Don't retry if there's already an error
@@ -66,7 +62,6 @@ const MyStudents = () => {
     
     dispatch(setFilters(filters));
     
-    // Debounce search to avoid too many API calls
     const timeoutId = setTimeout(() => {
       dispatch(fetchStudents(filters));
     }, 300);
@@ -74,7 +69,6 @@ const MyStudents = () => {
     return () => clearTimeout(timeoutId);
   }, [dispatch, searchTerm, selectedClass, error.students]);
 
-  // Transform API student data to match UI expectations
   const transformStudent = (student) => {
     const firstName = student.first_name || student.firstName || '';
     const lastName = student.last_name || student.lastName || '';
@@ -99,7 +93,6 @@ const MyStudents = () => {
     };
   };
 
-  // Filter students based on search and class
   const filteredStudents = (students || []).map(transformStudent).filter(student => {
     const matchesSearch = !searchTerm || 
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -111,13 +104,11 @@ const MyStudents = () => {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 animate-slide-down">My Students</h1>
         <p className="text-gray-600 mt-2 animate-slide-right" style={{animationDelay: '0.1s'}}>Manage and track your students' progress and performance.</p>
       </div>
 
-      {/* Error Display */}
       {error.students && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-sm text-red-800">{error.students}</p>
@@ -130,7 +121,6 @@ const MyStudents = () => {
         </div>
       )}
 
-      {/* Filters and Search */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <div className="flex-1 animate-slide-right" style={{animationDelay: '0.2s'}}>
           <input
@@ -139,7 +129,7 @@ const MyStudents = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             disabled={loading.students}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transform transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
         
@@ -148,7 +138,7 @@ const MyStudents = () => {
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}
             disabled={loading.students}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transform transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option>All Classes</option>
             {Array.isArray(classes) && classes.map((classItem) => {
@@ -164,11 +154,10 @@ const MyStudents = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.4s'}}>
           <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600 mb-2 animate-count-up">
+            <div className="text-3xl font-bold text-primary-500 mb-2 animate-count-up">
               {loading.stats ? '...' : (studentStats?.totalStudents || studentStats?.total_students || filteredStudents.length || 0)}
             </div>
             <div className="text-sm text-gray-600">Total Students</div>
@@ -211,10 +200,9 @@ const MyStudents = () => {
         </div>
       </div>
 
-      {/* Students Table */}
       {loading.students ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading students...</p>
         </div>
       ) : (
@@ -254,8 +242,8 @@ const MyStudents = () => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10">
-                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center transform transition-all duration-200 hover:scale-110">
-                        <span className="text-sm font-medium text-blue-600">
+                      <div className="h-10 w-10 rounded-full bg-primary-50 flex items-center justify-center transform transition-all duration-200 hover:scale-110">
+                        <span className="text-sm font-medium text-primary-500">
                           {(student.firstName?.charAt(0) || student.name?.charAt(0) || '').toUpperCase()}
                           {(student.lastName?.charAt(0) || student.name?.split(' ')[1]?.charAt(0) || '').toUpperCase()}
                         </span>
@@ -291,15 +279,12 @@ const MyStudents = () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex space-x-2">
-                    <button 
-                      onClick={() => navigate(`/students/${student.id}`)}
-                      className="text-blue-600 hover:text-blue-900 transform transition-all duration-200 hover:scale-105"
-                    >
-                      View
-                    </button>
-                    <button className="text-green-600 hover:text-green-900 transform transition-all duration-200 hover:scale-105">Message</button>
-                  </div>
+                  <button 
+                    onClick={() => navigate(`/students/${student.id}`)}
+                    className="text-primary-500 hover:text-primary-700 transform transition-all duration-200 hover:scale-105"
+                  >
+                    View
+                  </button>
                 </td>
               </tr>
                 ))

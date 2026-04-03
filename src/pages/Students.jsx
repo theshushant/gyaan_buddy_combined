@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Search, Filter, Plus, Eye, Trash2, AlertTriangle } from 'lucide-react'
+import { Search, Filter, Plus, Eye, Trash2, AlertTriangle, Upload } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import studentsService from '../services/studentsService'
 import AddStudentModal from '../components/AddStudentModal'
 import SuccessModal from '../components/SuccessModal'
 import Modal from '../components/Modal'
@@ -40,19 +41,16 @@ const Students = () => {
   const [editingStudent, setEditingStudent] = useState(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [studentToDelete, setStudentToDelete] = useState(null)
+  const [bulkImporting, setBulkImporting] = useState(false)
+  const [showBulkResultModal, setShowBulkResultModal] = useState(false)
+  const [bulkResult, setBulkResult] = useState(null)
+  const bulkFileRef = useRef(null)
 
+  // On mount: load supporting data and students for whatever class is already selected
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
-    const hasError = error.students !== null || error.stats !== null
-    if (hasError) {
-      return // Don't retry if there's already an error
-    }
-
-    // Fetch all students once on mount (without filters), stats, classes, and subjects
     const fetchData = async () => {
       try {
         await Promise.all([
-          dispatch(fetchStudents({})), // Fetch all students without filters
           dispatch(fetchStudentStats()),
           dispatch(fetchClasses({})),
           dispatch(fetchSubjects({}))
@@ -61,9 +59,28 @@ const Students = () => {
         console.error('Error fetching students data:', err)
       }
     }
-
     fetchData()
-  }, [dispatch, error.students, error.stats])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch])
+
+  // Pre-select the first class (first visit) OR re-fetch students when returning to page
+  useEffect(() => {
+    if (classes.length === 0) return
+
+    if (!filters.class) {
+      // First visit: auto-select first class and fetch its students
+      const firstId = (classes[0].id ?? classes[0].uuid ?? '').toString()
+      if (firstId) {
+        dispatch(setFilters({ class: firstId }))
+        dispatch(fetchStudents({ class: firstId }))
+      }
+    } else {
+      // Returning to page with a previously selected class: re-fetch students
+      dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
+    }
+  // Run when classes finish loading (length goes from 0 → N); not on every filter change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classes.length, dispatch])
 
   const handleSearch = (value) => {
     dispatch(setFilters({ search: value }))
@@ -71,20 +88,20 @@ const Students = () => {
 
   const handleClassFilter = (value) => {
     dispatch(setFilters({ class: value }))
+    dispatch(fetchStudents({ class: value, subject: filters.subject }))
   }
 
   const handleSubjectFilter = (value) => {
     dispatch(setFilters({ subject: value }))
+    dispatch(fetchStudents({ class: filters.class, subject: value }))
   }
 
   const handleAddStudent = async (studentData) => {
     try {
       await dispatch(createStudent(studentData)).unwrap()
-      // Close modal on success
       setShowAddModal(false)
-      // Refresh students list (without filters) and stats
       await Promise.all([
-        dispatch(fetchStudents({})), // Fetch all students without filters
+        dispatch(fetchStudents({ class: filters.class, subject: filters.subject })),
         dispatch(fetchStudentStats())
       ])
       setSuccessData({
@@ -93,7 +110,6 @@ const Students = () => {
       })
       setShowSuccessModal(true)
     } catch (error) {
-      // Error is handled by Redux, modal will stay open
       console.error('Error adding student:', error)
     }
   }
@@ -103,9 +119,8 @@ const Students = () => {
       await dispatch(updateStudent({ studentId: editingStudent.id, studentData })).unwrap()
       setEditingStudent(null)
       setShowAddModal(false)
-      // Refresh students list (without filters) and stats
       await Promise.all([
-        dispatch(fetchStudents({})), // Fetch all students without filters
+        dispatch(fetchStudents({ class: filters.class, subject: filters.subject })),
         dispatch(fetchStudentStats())
       ])
       setSuccessData({
@@ -128,9 +143,8 @@ const Students = () => {
 
     try {
       await dispatch(deleteStudent(studentToDelete.id)).unwrap()
-      // Refresh students list (without filters) and stats
       await Promise.all([
-        dispatch(fetchStudents({})), // Fetch all students without filters
+        dispatch(fetchStudents({ class: filters.class, subject: filters.subject })),
         dispatch(fetchStudentStats())
       ])
       setSuccessData({
@@ -142,7 +156,6 @@ const Students = () => {
       setShowSuccessModal(true)
     } catch (error) {
       console.error('Error deleting student:', error)
-      // Keep modal open on error so user can try again or cancel
     }
   }
 
@@ -157,92 +170,56 @@ const Students = () => {
 
   const handleEditStudent = async (student) => {
     try {
-      // Fetch full student details to ensure we have all fields (parent_name, date_of_birth, subjects, etc.)
       const fullStudent = await dispatch(fetchStudentById(student.id)).unwrap()
       setEditingStudent(fullStudent)
       setShowAddModal(true)
     } catch (error) {
       console.error('Error fetching student details:', error)
-      // Fallback to using the student from the list if fetch fails
       setEditingStudent(student)
       setShowAddModal(true)
     }
   }
 
-  const clearFilters = () => {
-    dispatch(setFilters({
-      search: '',
-      class: '',
-      subject: ''
-    }))
+  const handleBulkImport = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Reset so the same file can be re-selected if needed
+    e.target.value = ''
+    setBulkImporting(true)
+    try {
+      const response = await studentsService.bulkImportStudents(file)
+      const data = response?.data ?? response
+      setBulkResult(data)
+      setShowBulkResultModal(true)
+      // Refresh list with current filters after import
+      dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
+      dispatch(fetchStudentStats())
+    } catch (err) {
+      setBulkResult({ error: err.message })
+      setShowBulkResultModal(true)
+    } finally {
+      setBulkImporting(false)
+    }
   }
 
-  // Local filtering logic - filter students based on search, class, and subject
+  const clearFilters = () => {
+    const firstClassId = classes.length > 0 ? (classes[0].id ?? classes[0].uuid ?? '').toString() : ''
+    dispatch(setFilters({ search: '', class: firstClassId, subject: '' }))
+    dispatch(fetchStudents({ class: firstClassId }))
+  }
+
+  // Class and subject filtering is done server-side; only apply local search for instant feedback
   const filteredStudents = (students || []).filter(student => {
-    // Search filter - check if name matches search term
-    if (filters.search) {
-      const firstName = (student.first_name || student.firstName || '').toLowerCase()
-      const lastName = (student.last_name || student.lastName || '').toLowerCase()
-      const fullName = `${firstName} ${lastName}`.trim()
-      const searchTerm = filters.search.toLowerCase()
-      
-      if (!fullName.includes(searchTerm)) {
-        return false
-      }
-    }
-
-    // Class filter - check if student's class matches selected class
-    if (filters.class) {
-      const studentClassId = (
-        student.class_id?.toString() || 
-        student.class_instance?.toString() || 
-        student.profile?.class_instance?.id?.toString() ||
-        ''
-      )
-      const studentClassName = (
-        student.class_name || 
-        student.class || 
-        student.profile?.class_instance?.name ||
-        ''
-      ).toString()
-      const filterClassValue = filters.class.toString()
-      
-      // Match by ID or name
-      if (studentClassId !== filterClassValue && studentClassName !== filterClassValue) {
-        return false
-      }
-    }
-
-    // Subject filter - check if student has the selected subject
-    if (filters.subject) {
-      const studentSubjects = student.subjects || student.subject_ids || []
-      const filterSubjectValue = filters.subject.toString()
-      
-      // Check if student has this subject (by ID or name)
-      const hasSubject = studentSubjects.some(subject => {
-        if (typeof subject === 'object') {
-          const subjectId = (subject.id || subject.uuid || '').toString()
-          const subjectName = (subject.name || subject.subject_name || '').toString().toLowerCase()
-          return subjectId === filterSubjectValue || subjectName === filterSubjectValue.toLowerCase()
-        } else {
-          // Subject might be a string or ID
-          const subjectStr = subject.toString()
-          return subjectStr === filterSubjectValue || subjectStr === filterSubjectValue.toLowerCase()
-        }
-      })
-      
-      if (!hasSubject) {
-        return false
-      }
-    }
-
-    return true
+    if (!filters.search) return true
+    const firstName = (student.first_name || student.firstName || '').toLowerCase()
+    const lastName = (student.last_name || student.lastName || '').toLowerCase()
+    const fullName = `${firstName} ${lastName}`.trim()
+    return fullName.includes(filters.search.toLowerCase())
   })
 
-  // Prepare summary cards data
   const summaryCards = [
-    { label: 'Total Students', value: studentStats?.totalStudents?.toString() || '0' },
-    { label: 'Average Score', value: `${studentStats?.averageScore || 0}%` },
+    { label: 'Total Students', value: (studentStats?.totalStudents ?? studentStats?.total_students ?? 0).toString() },
+    { label: 'Average Score', value: `${studentStats?.averageScore ?? studentStats?.average_score ?? 0}%` },
     { label: 'Top Performer', value: summary?.topPerformer || 'N/A' }
   ]
 
@@ -252,7 +229,7 @@ const Students = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     )
   }
@@ -279,7 +256,6 @@ const Students = () => {
         <p className="text-gray-600 mt-2">Filter and view student performance data.</p>
       </div>
 
-      {/* Search and Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1">
@@ -290,7 +266,7 @@ const Students = () => {
                 placeholder="Search for a student by name..."
                 value={filters.search}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -299,7 +275,7 @@ const Students = () => {
             <select
               value={filters.class}
               onChange={(e) => handleClassFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="">Select Class</option>
               {Array.isArray(classes) && classes.map((classItem) => {
@@ -316,7 +292,7 @@ const Students = () => {
             <select
               value={filters.subject}
               onChange={(e) => handleSubjectFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="">Select Subject</option>
               {Array.isArray(subjects) && subjects.map((subject) => {
@@ -340,7 +316,6 @@ const Students = () => {
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {summaryCards.map((card, index) => (
           <div key={index} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -349,25 +324,48 @@ const Students = () => {
                 <p className="text-sm font-medium text-gray-600">{card.label}</p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">{card.value}</p>
               </div>
-              <div className="h-12 w-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                <Eye className="h-6 w-6 text-blue-600" />
+              <div className="h-12 w-12 bg-primary-50 rounded-lg flex items-center justify-center">
+                <Eye className="h-6 w-6 text-primary-500" />
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Students Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-900">Students</h2>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Add Student
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Hidden file input for bulk import */}
+            <input
+              ref={bulkFileRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleBulkImport}
+            />
+            <button
+              onClick={() => bulkFileRef.current?.click()}
+              disabled={bulkImporting}
+              className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-60"
+              style={{ backgroundColor: '#1fb7eb' }}
+            >
+              {bulkImporting ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
+              {bulkImporting ? 'Importing…' : 'Bulk Add'}
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors"
+              style={{ backgroundColor: '#00167a' }}
+            >
+              <Plus className="h-4 w-4" />
+              Add Student
+            </button>
+          </div>
         </div>
         
         <div className="overflow-x-auto">
@@ -386,8 +384,8 @@ const Students = () => {
                 <tr key={student.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-600">
+                      <div className="h-10 w-10 rounded-full bg-primary-50 flex items-center justify-center">
+                        <span className="text-sm font-medium text-primary-500">
                           {(student.first_name?.charAt(0) || '').toUpperCase()}{(student.last_name?.charAt(0) || '').toUpperCase()}
                         </span>
                       </div>
@@ -405,7 +403,7 @@ const Students = () => {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleViewStudent(student.id)}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-primary-500 hover:text-primary-600"
                       >
                         <Eye className="h-4 w-4" />
                       </button>
@@ -436,7 +434,6 @@ const Students = () => {
         </div>
       </div>
 
-      {/* Modals */}
       {showAddModal && (
         <AddStudentModal
           isOpen={showAddModal}
@@ -493,7 +490,7 @@ const Students = () => {
             <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
               <button
                 onClick={handleDeleteCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
               >
                 Cancel
               </button>
@@ -521,6 +518,77 @@ const Students = () => {
                 <p className="text-sm text-red-800">{error.delete}</p>
               </div>
             )}
+          </div>
+        </Modal>
+      )}
+
+      {/* Bulk Import Result Modal */}
+      {showBulkResultModal && bulkResult && (
+        <Modal
+          isOpen={showBulkResultModal}
+          onClose={() => setShowBulkResultModal(false)}
+          title="Bulk Import Result"
+          size="md"
+        >
+          <div className="space-y-4">
+            {bulkResult.error ? (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800 font-medium">Import failed</p>
+                <p className="text-sm text-red-600 mt-1">{bulkResult.error}</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: 'Created', value: bulkResult.created ?? 0, color: 'green' },
+                    { label: 'Updated', value: bulkResult.updated ?? 0, color: 'blue' },
+                    { label: 'Skipped', value: bulkResult.skipped ?? 0, color: 'yellow' },
+                    { label: 'Errors', value: bulkResult.errors ?? 0, color: 'red' },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} className={`p-3 bg-${color}-50 border border-${color}-200 rounded-lg text-center`}>
+                      <div className={`text-2xl font-bold text-${color}-700`}>{value}</div>
+                      <div className={`text-sm text-${color}-600`}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {Array.isArray(bulkResult.sheets) && bulkResult.sheets.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 mb-2">Per sheet</p>
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      {bulkResult.sheets.map((s, i) => (
+                        <div key={i} className="flex justify-between text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded">
+                          <span className="font-medium">{s.sheet}</span>
+                          <span>{s.created} created · {s.updated} updated · {s.skipped} skipped · {s.errors} errors{s.note ? ` · ${s.note}` : ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {Array.isArray(bulkResult.rowErrors) && bulkResult.rowErrors.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-red-700 mb-2">Row errors</p>
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {bulkResult.rowErrors.map((e, i) => (
+                        <div key={i} className="text-xs text-red-600 bg-red-50 px-3 py-1.5 rounded">
+                          [{e.sheet}] {e.student}: {e.error}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            <div className="flex justify-end pt-3 border-t border-gray-200">
+              <button
+                onClick={() => setShowBulkResultModal(false)}
+                className="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors"
+                style={{ backgroundColor: '#00167a' }}
+              >
+                Done
+              </button>
+            </div>
           </div>
         </Modal>
       )}

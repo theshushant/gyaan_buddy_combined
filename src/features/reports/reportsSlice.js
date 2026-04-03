@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import reportsService from '../../services/reportsService'
 
-// Async thunks for reports API calls
 export const fetchStudentPerformanceReport = createAsyncThunk(
   'reports/fetchStudentPerformanceReport',
   async (filters = {}, { rejectWithValue }) => {
@@ -196,7 +195,6 @@ const reportsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch student performance report
       .addCase(fetchStudentPerformanceReport.pending, (state) => {
         state.loading.studentPerformance = true
         state.error.studentPerformance = null
@@ -210,7 +208,6 @@ const reportsSlice = createSlice({
         state.error.studentPerformance = action.payload
       })
 
-      // Fetch progress over time report
       .addCase(fetchProgressOverTimeReport.pending, (state) => {
         state.loading.progressOverTime = true
         state.error.progressOverTime = null
@@ -224,7 +221,6 @@ const reportsSlice = createSlice({
         state.error.progressOverTime = action.payload
       })
 
-      // Fetch quiz assignment summaries
       .addCase(fetchQuizAssignmentSummaries.pending, (state) => {
         state.loading.quizAssignmentSummaries = true
         state.error.quizAssignmentSummaries = null
@@ -238,7 +234,6 @@ const reportsSlice = createSlice({
         state.error.quizAssignmentSummaries = action.payload
       })
 
-      // Fetch AI insights report
       .addCase(fetchAIInsightsReport.pending, (state) => {
         state.loading.aiInsights = true
         state.error.aiInsights = null
@@ -252,7 +247,6 @@ const reportsSlice = createSlice({
         state.error.aiInsights = action.payload
       })
 
-      // Fetch analytics report
       .addCase(fetchAnalyticsReport.pending, (state) => {
         state.loading.analytics = true
         state.error.analytics = null
@@ -266,7 +260,6 @@ const reportsSlice = createSlice({
         state.error.analytics = action.payload
       })
 
-      // Generate custom report
       .addCase(generateCustomReport.pending, (state) => {
         state.loading.customReport = true
         state.error.customReport = null
@@ -280,7 +273,6 @@ const reportsSlice = createSlice({
         state.error.customReport = action.payload
       })
 
-      // Fetch report templates
       .addCase(fetchReportTemplates.pending, (state) => {
         state.loading.templates = true
         state.error.templates = null
@@ -294,7 +286,6 @@ const reportsSlice = createSlice({
         state.error.templates = action.payload
       })
 
-      // Export report
       .addCase(exportReport.pending, (state) => {
         state.loading.export = true
         state.error.export = null

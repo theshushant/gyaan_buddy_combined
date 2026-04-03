@@ -81,7 +81,7 @@ const Layout = ({ children }) => {
     { name: 'Classes', href: '/classes', icon: BookOpen },
     { name: 'Subjects', href: '/subjects', icon: Layers },
     { name: 'Reports', href: '/reports', icon: BarChart3 },
-    { name: 'AI Insights', href: '/ai-insights', icon: Brain },
+    // { name: 'AI Insights', href: '/ai-insights', icon: Brain },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
@@ -93,7 +93,7 @@ const Layout = ({ children }) => {
     { name: 'Tests & Quizzes', href: '/tests', icon: ClipboardList },
     { name: 'Reports & Analytics', href: '/reports', icon: BarChart3 },
     { name: 'Leaderboards', href: '/leaderboards', icon: Trophy },
-    { name: 'Daily Missions', href: '/missions', icon: Calendar },
+    // { name: 'Daily Missions', href: '/missions', icon: Calendar },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
 

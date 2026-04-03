@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, TrendingUp, Target, ChevronDown, ChevronRight, GraduationCap, BookOpen, Layers, FileText, Search, Loader2 } from 'lucide-react';
 import reportsService from '../services/reportsService';
 
@@ -33,6 +33,7 @@ const ReportsAnalytics = () => {
   const [studentModule, setStudentModule] = useState('');
   const [studentChapter, setStudentChapter] = useState('');
   const [showStudentTable, setShowStudentTable] = useState(false);
+  const studentTableRef = useRef(null);
   const [expandedModules, setExpandedModules] = useState({ 1: true });
 
   const [loading, setLoading] = useState(true);
@@ -190,6 +191,7 @@ const ReportsAnalytics = () => {
       chapter: studentChapter || undefined,
     });
     setShowStudentTable(true);
+    setTimeout(() => studentTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
   const tabs = [
@@ -426,7 +428,7 @@ const ReportsAnalytics = () => {
           {/* Chapter-wise filter (top) – drives summary and chapter-wise proficiency table */}
           <div className="mb-6 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
             <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Chapter-wise filter</h3>
-            <p className="text-xs text-gray-500 mb-4">Filter report data and chapter-wise proficiency by subject, module, and topic.</p>
+            <p className="text-xs text-gray-500 mb-4">Filter report data and chapter-wise proficiency by subject, chapter, and topic.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Class</label>
@@ -456,14 +458,14 @@ const ReportsAnalytics = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Module</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Chapter</label>
                 <select
                   value={reportModule}
                   onChange={handleModuleChange}
                   disabled={!reportSubject}
                   className={`w-full px-3 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-medium focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${!reportSubject ? 'cursor-not-allowed opacity-60 text-gray-400' : 'text-gray-700'}`}
                 >
-                  <option value="">Select Module</option>
+                  <option value="">Select Chapter</option>
                   {modulesList.map((mod) => (
                     <option key={mod.id} value={mod.id}>{mod.name}</option>
                   ))}
@@ -541,7 +543,7 @@ const ReportsAnalytics = () => {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/3">Module / Chapter</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/3">Chapter</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/5">Performance</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Attempt Rate</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Weak Subtopics</th>
@@ -705,7 +707,7 @@ const ReportsAnalytics = () => {
               </div>
 
               <div className="relative group">
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Module</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Chapter</label>
                 <div className="relative">
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 p-1.5 bg-purple-100 rounded-lg">
                     <Layers className="h-4 w-4 text-purple-600" />
@@ -716,7 +718,7 @@ const ReportsAnalytics = () => {
                     disabled={!studentSubject}
                     className={`w-full pl-12 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl font-medium appearance-none transition-all duration-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 hover:border-purple-300 ${!studentSubject ? 'cursor-not-allowed opacity-60 text-gray-400' : 'cursor-pointer text-gray-700'}`}
                   >
-                    <option value="">Select Module</option>
+                    <option value="">Select Chapter</option>
                     {studentModulesList.map((mod) => (
                       <option key={mod.id} value={mod.id}>{mod.name}</option>
                     ))}
@@ -759,7 +761,7 @@ const ReportsAnalytics = () => {
           </div>
 
           {showStudentTable && (
-            <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-slide-up">
+            <div ref={studentTableRef} className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-slide-up">
               <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-secondary-500/10 to-primary-500/10">
                 <h3 className="text-lg font-semibold text-gray-800">Student Performance Results</h3>
                 <p className="text-sm text-gray-500 mt-1">

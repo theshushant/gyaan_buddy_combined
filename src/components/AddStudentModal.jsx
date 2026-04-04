@@ -41,10 +41,16 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     }
   }, [])
 
-  const fetchSubjects = useCallback(async () => {
+  const fetchSubjects = useCallback(async (classId = '') => {
+    if (!classId) {
+      setSubjects([])
+      setLoadingSubjects(false)
+      return
+    }
+
     setLoadingSubjects(true)
     try {
-      const response = await subjectsService.getSubjects()
+      const response = await subjectsService.getSubjects({ class: classId })
       const subjectsData = response.data || response || []
       const subjectsList = subjectsData.map(subject => ({
         id: subject.id || subject.uuid,
@@ -62,9 +68,14 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
   useEffect(() => {
     if (isOpen) {
       fetchClasses()
-      fetchSubjects()
     }
-  }, [isOpen, fetchClasses, fetchSubjects])
+  }, [isOpen, fetchClasses])
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchSubjects(formData.classId)
+    }
+  }, [isOpen, formData.classId, fetchSubjects])
 
   useEffect(() => {
     if (isOpen && student) {
@@ -126,8 +137,6 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
       let parentContact = ''
       if (student.email) {
         parentContact = student.email
-      } else if (student.phone_number || student.phoneNumber) {
-        parentContact = student.phone_number || student.phoneNumber
       } else if (student.parent_contact || student.parentContact) {
         parentContact = student.parent_contact || student.parentContact
       }
@@ -213,9 +222,9 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
         
       case 'parentContact':
         if (!value.trim()) {
-          error = 'Parent/Guardian contact is required'
-        } else if (!/^[\w\.-]+@[\w\.-]+\.\w+$/.test(value.trim()) && !/^[\+]?[1-9][\d]{0,15}$/.test(value.trim())) {
-          error = 'Please enter a valid email address or phone number'
+          error = 'Email is required'
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) {
+          error = 'Please enter a valid email address'
         }
         break
         
@@ -252,6 +261,13 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
     }
+  }
+
+  const handleClassChange = (value) => {
+    setFormData(prev => ({ ...prev, classId: value, subjectIds: [] }))
+
+    setTouched(prev => ({ ...prev, classId: true, subjectIds: false }))
+    setErrors(prev => ({ ...prev, classId: '', subjectIds: '' }))
   }
 
   const handleFieldBlur = (field) => {
@@ -428,16 +444,16 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Parent/Guardian Contact (Email/Phone)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                   <input
-                    type="text"
+                    type="email"
                     value={formData.parentContact}
                     onChange={(e) => handleFieldChange('parentContact', e.target.value)}
                     onBlur={() => handleFieldBlur('parentContact')}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.parentContact && errors.parentContact ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="Enter email or phone number"
+                    placeholder="Enter email address"
                   />
                   {touched.parentContact && errors.parentContact && (
                     <p className="mt-1 text-sm text-red-600">{errors.parentContact}</p>
@@ -451,6 +467,8 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                   }`}>
                     {loadingSubjects ? (
                       <div className="text-center text-sm text-gray-500 py-4">Loading subjects...</div>
+                    ) : !formData.classId ? (
+                      <div className="text-center text-sm text-gray-500 py-4">Select a class to view subjects</div>
                     ) : subjects.length === 0 ? (
                       <div className="text-center text-sm text-gray-500 py-4">No subjects available</div>
                     ) : (
@@ -472,7 +490,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                             )
                           })}
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">Select all subjects this student is enrolled in.</p>
+                        <p className="text-xs text-gray-500 mt-2">Select all subjects this student is enrolled in for the chosen class.</p>
                       </>
                     )}
                   </div>
@@ -523,7 +541,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                   <label className="block text-sm font-medium text-gray-700 mb-2">Class</label>
                   <select
                     value={formData.classId}
-                    onChange={(e) => handleFieldChange('classId', e.target.value)}
+                    onChange={(e) => handleClassChange(e.target.value)}
                     onBlur={() => handleFieldBlur('classId')}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
                       touched.classId && errors.classId ? 'border-red-500' : 'border-gray-300'

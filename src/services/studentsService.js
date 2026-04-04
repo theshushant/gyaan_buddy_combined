@@ -14,7 +14,7 @@ class StudentsService {
       if (filters.page) queryParams.append('page', filters.page);
       if (filters.limit) queryParams.append('limit', filters.limit);
 
-      const endpoint = `/users/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const endpoint = `/students/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch students: ${error.message}`);
@@ -23,7 +23,7 @@ class StudentsService {
 
   async getStudentById(studentId) {
     try {
-      const response = await apiService.get(`/users/${studentId}/`);
+      const response = await apiService.get(`/students/${studentId}/`);
       if (response && response.data) {
         return response.data;
       }
@@ -69,12 +69,7 @@ class StudentsService {
       }
       
       if (studentData.parentContact) {
-        const contact = studentData.parentContact.trim();
-        if (contact.includes('@')) {
-          payload.email = contact;
-        } else {
-          payload.phone_number = contact;
-        }
+        payload.email = studentData.parentContact.trim();
       }
       
       if (studentData.email) payload.email = studentData.email;
@@ -83,7 +78,7 @@ class StudentsService {
       
       console.log('StudentsService: Transformed payload:', payload);
       
-      const response = await apiService.post('/users/', payload);
+      const response = await apiService.post('/students/', payload);
       console.log('StudentsService: Student created successfully:', response);
       
       if (response && response.data) {
@@ -135,12 +130,7 @@ class StudentsService {
       }
       
       if (studentData.parentContact !== undefined) {
-        const contact = studentData.parentContact.trim();
-        if (contact.includes('@')) {
-          payload.email = contact;
-        } else if (contact) {
-          payload.phone_number = contact;
-        }
+        payload.email = studentData.parentContact.trim();
       }
       
       if (studentData.email !== undefined) payload.email = studentData.email;
@@ -149,7 +139,7 @@ class StudentsService {
       
       console.log('StudentsService: Transformed update payload:', payload);
       
-      const response = await apiService.put(`/users/${studentId}/`, payload);
+      const response = await apiService.put(`/students/${studentId}/`, payload);
       console.log('StudentsService: Student updated successfully:', response);
       
       if (response && response.data) {
@@ -165,7 +155,7 @@ class StudentsService {
   async deleteStudent(studentId) {
     try {
       console.log('StudentsService: Deleting student:', studentId);
-      const response = await apiService.delete(`/users/${studentId}/`);
+      const response = await apiService.delete(`/students/${studentId}/`);
       console.log('StudentsService: Student deleted successfully:', response);
       return response;
     } catch (error) {

@@ -137,6 +137,43 @@ const Reports = () => {
     return data.sectionWisePerformance
   }, [data.sectionWisePerformance])
 
+  // fix naming and calc
+  const sectionSummary = useMemo(() => {
+    if (!sectionRows.length) {
+      return {
+        totalStudents: data.summary.totalStudents || 0,
+        averageScore: data.summary.averageScore || 0,
+        attemptRate: 0,
+      }
+    }
+
+    const totalStudents = sectionRows.reduce((sum, row) => sum + (row.students || 0), 0)
+
+    if (!totalStudents) {
+      return {
+        totalStudents: 0,
+        averageScore: 0,
+        attemptRate: 0,
+      }
+    }
+    
+    //average score fix aadi
+    // replace with formula (teacher dashboard) // todo
+    const averageScore = Math.round(
+      sectionRows.reduce((sum, row) => sum + ((row.averageScore || 0) * (row.students || 0)), 0) / totalStudents
+    )
+
+    const attemptRate = Math.round(
+      sectionRows.reduce((sum, row) => sum + ((row.attemptRate || row.completionRate || 0) * (row.students || 0)), 0) / totalStudents
+    )
+
+    return {
+      totalStudents,
+      averageScore,
+      attemptRate,
+    }
+  }, [sectionRows, data.summary.totalStudents, data.summary.averageScore])
+
   const topicDifferenceSummary = useMemo(() => {
     const rows = Array.isArray(diffData.sectionWisePerformance) ? diffData.sectionWisePerformance : []
     const goodSet = new Set()
@@ -236,17 +273,17 @@ const Reports = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Students</p>
-          <p className="text-3xl font-bold mt-2" style={{ color: '#00167a' }}>{data.summary.totalStudents}</p>
+          <p className="text-3xl font-bold mt-2" style={{ color: '#00167a' }}>{sectionSummary.totalStudents}</p>
         </div>
 
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Average Score</p>
-          <p className="text-3xl font-bold mt-2" style={{ color: '#1fb7eb' }}>{data.summary.averageScore}%</p>
+          <p className="text-3xl font-bold mt-2" style={{ color: '#1fb7eb' }}>{sectionSummary.averageScore}%</p>
         </div>
 
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Attempt Rate</p>
-          <p className="text-3xl font-bold mt-2 text-green-600">{data.summary.completionRate}%</p>
+          <p className="text-3xl font-bold mt-2 text-green-600">{sectionSummary.attemptRate}%</p>
         </div>
       </div>
 

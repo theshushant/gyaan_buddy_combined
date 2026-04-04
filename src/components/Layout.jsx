@@ -19,7 +19,6 @@ import {
   Calendar,
   Lightbulb,
   FileText,
-  Brain,
   Target,
   LogOut,
   Wand2,
@@ -81,7 +80,6 @@ const Layout = ({ children }) => {
     { name: 'Classes', href: '/classes', icon: BookOpen },
     { name: 'Subjects', href: '/subjects', icon: Layers },
     { name: 'Reports', href: '/reports', icon: BarChart3 },
-    { name: 'AI Insights', href: '/ai-insights', icon: Brain },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
 

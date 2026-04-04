@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Search, Filter, Plus, Eye, Trash2, AlertTriangle, Upload } from 'lucide-react'
+import { Search, RefreshCw, Plus, Eye, Trash2, AlertTriangle, Upload } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import studentsService from '../services/studentsService'
 import AddStudentModal from '../components/AddStudentModal'
@@ -8,7 +8,6 @@ import SuccessModal from '../components/SuccessModal'
 import Modal from '../components/Modal'
 import {
   fetchStudents,
-  fetchStudentStats,
   fetchStudentById,
   createStudent,
   updateStudent,
@@ -25,7 +24,6 @@ const Students = () => {
   
   const {
     students,
-    studentStats,
     summary,
     loading,
     error,
@@ -46,14 +44,29 @@ const Students = () => {
   const [bulkResult, setBulkResult] = useState(null)
   const bulkFileRef = useRef(null)
 
-  // On mount: load supporting data and students for whatever class is already selected
+  const getStudentXp = (student) => {
+    const xp = Number(student?.total_exp ?? student?.total_XP ?? student?.xp ?? 0)
+    return Number.isFinite(xp) ? xp : 0
+  }
+
+  const getStudentAverageScore = (student) => {
+    const rawScore = Number(student?.average_score ?? student?.averageScore)
+    if (Number.isFinite(rawScore)) {
+      return Math.max(0, Math.min(100, Math.round(rawScore)))
+    }
+
+    const xp = getStudentXp(student)
+    return Math.max(0, Math.min(100, Math.round(xp / 10)))
+  }
+
+  // On mount: load supporting data and unfiltered students
   useEffect(() => {
     const fetchData = async () => {
       try {
         await Promise.all([
-          dispatch(fetchStudentStats()),
           dispatch(fetchClasses({})),
-          dispatch(fetchSubjects({}))
+          dispatch(fetchSubjects({})),
+          dispatch(fetchStudents({}))
         ])
       } catch (err) {
         console.error('Error fetching students data:', err)
@@ -63,32 +76,14 @@ const Students = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch])
 
-  // Pre-select the first class (first visit) OR re-fetch students when returning to page
-  useEffect(() => {
-    if (classes.length === 0) return
-
-    if (!filters.class) {
-      // First visit: auto-select first class and fetch its students
-      const firstId = (classes[0].id ?? classes[0].uuid ?? '').toString()
-      if (firstId) {
-        dispatch(setFilters({ class: firstId }))
-        dispatch(fetchStudents({ class: firstId }))
-      }
-    } else {
-      // Returning to page with a previously selected class: re-fetch students
-      dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
-    }
-  // Run when classes finish loading (length goes from 0 → N); not on every filter change
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classes.length, dispatch])
-
   const handleSearch = (value) => {
     dispatch(setFilters({ search: value }))
   }
 
   const handleClassFilter = (value) => {
-    dispatch(setFilters({ class: value }))
-    dispatch(fetchStudents({ class: value, subject: filters.subject }))
+    dispatch(setFilters({ class: value, subject: '' }))
+    dispatch(fetchSubjects(value ? { class: value } : {}))
+    dispatch(fetchStudents({ class: value, subject: '' }))
   }
 
   const handleSubjectFilter = (value) => {
@@ -96,14 +91,16 @@ const Students = () => {
     dispatch(fetchStudents({ class: filters.class, subject: value }))
   }
 
+  const handleRefresh = () => {
+    dispatch(fetchSubjects(filters.class ? { class: filters.class } : {}))
+    dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
+  }
+
   const handleAddStudent = async (studentData) => {
     try {
       await dispatch(createStudent(studentData)).unwrap()
       setShowAddModal(false)
-      await Promise.all([
-        dispatch(fetchStudents({ class: filters.class, subject: filters.subject })),
-        dispatch(fetchStudentStats())
-      ])
+      await dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
       setSuccessData({
         title: 'Student Added Successfully',
         message: `${studentData.firstName} ${studentData.lastName} has been added to the system.`
@@ -119,10 +116,7 @@ const Students = () => {
       await dispatch(updateStudent({ studentId: editingStudent.id, studentData })).unwrap()
       setEditingStudent(null)
       setShowAddModal(false)
-      await Promise.all([
-        dispatch(fetchStudents({ class: filters.class, subject: filters.subject })),
-        dispatch(fetchStudentStats())
-      ])
+      await dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
       setSuccessData({
         title: 'Student Updated Successfully',
         message: `${studentData.first_name} ${studentData.last_name} has been updated.`
@@ -143,10 +137,7 @@ const Students = () => {
 
     try {
       await dispatch(deleteStudent(studentToDelete.id)).unwrap()
-      await Promise.all([
-        dispatch(fetchStudents({ class: filters.class, subject: filters.subject })),
-        dispatch(fetchStudentStats())
-      ])
+      await dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
       setSuccessData({
         title: 'Student Deleted Successfully',
         message: `${studentToDelete.first_name || ''} ${studentToDelete.last_name || ''} has been removed from the system.`
@@ -193,19 +184,12 @@ const Students = () => {
       setShowBulkResultModal(true)
       // Refresh list with current filters after import
       dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
-      dispatch(fetchStudentStats())
     } catch (err) {
       setBulkResult({ error: err.message })
       setShowBulkResultModal(true)
     } finally {
       setBulkImporting(false)
     }
-  }
-
-  const clearFilters = () => {
-    const firstClassId = classes.length > 0 ? (classes[0].id ?? classes[0].uuid ?? '').toString() : ''
-    dispatch(setFilters({ search: '', class: firstClassId, subject: '' }))
-    dispatch(fetchStudents({ class: firstClassId }))
   }
 
   // Class and subject filtering is done server-side; only apply local search for instant feedback
@@ -217,14 +201,50 @@ const Students = () => {
     return fullName.includes(filters.search.toLowerCase())
   })
 
+  const studentsSummary = useMemo(() => {
+    const totalStudents = filteredStudents.length
+
+    if (totalStudents === 0) {
+      return {
+        totalStudents: 0,
+        averageScore: 0,
+        topPerformer: 'N/A',
+        topPerformerXp: null
+      }
+    }
+
+    const averageScore = Math.round(
+      filteredStudents.reduce((sum, student) => sum + getStudentAverageScore(student), 0) / totalStudents
+    )
+
+    const topStudent = filteredStudents.reduce((best, student) => {
+      if (!best) return student
+      return getStudentXp(student) > getStudentXp(best) ? student : best
+    }, null)
+
+    const topStudentName = [topStudent?.first_name, topStudent?.last_name].filter(Boolean).join(' ').trim() || 'N/A'
+    const topStudentXp = getStudentXp(topStudent)
+
+    return {
+      totalStudents,
+      averageScore,
+      topPerformer: topStudentName,
+      topPerformerXp: topStudent && topStudentName !== 'N/A' ? topStudentXp : null
+    }
+  }, [filteredStudents])
+
   const summaryCards = [
-    { label: 'Total Students', value: (studentStats?.totalStudents ?? studentStats?.total_students ?? 0).toString() },
-    { label: 'Average Score', value: `${studentStats?.averageScore ?? studentStats?.average_score ?? 0}%` },
-    { label: 'Top Performer', value: summary?.topPerformer || 'N/A' }
+    { label: 'Total Students', value: studentsSummary.totalStudents.toString() },
+    { label: 'Average Score', value: `${studentsSummary.averageScore}%` },
+    {
+      label: 'Top Performer',
+      value: studentsSummary.topPerformer || summary?.topPerformer || 'N/A',
+      secondary: studentsSummary.topPerformerXp != null ? `${studentsSummary.topPerformerXp} XP` : null
+    }
   ]
 
-  const isLoading = loading.students || loading.stats
-  const hasError = error.students || error.stats
+  const isLoading = loading.students
+  const hasError = error.students
 
   if (isLoading) {
     return (
@@ -277,7 +297,7 @@ const Students = () => {
               onChange={(e) => handleClassFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
-              <option value="">Select Class</option>
+              <option value="">All Classes</option>
               {Array.isArray(classes) && classes.map((classItem) => {
                 const className = classItem.name || classItem.class_name || `${classItem.id}`
                 const classValue = classItem.id?.toString() || classItem.name || classItem.class_name || ''
@@ -292,9 +312,10 @@ const Students = () => {
             <select
               value={filters.subject}
               onChange={(e) => handleSubjectFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              disabled={!filters.class}
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
             >
-              <option value="">Select Subject</option>
+              <option value="">{filters.class ? 'All Subjects' : 'Subject'}</option>
               {Array.isArray(subjects) && subjects.map((subject) => {
                 const subjectName = subject.name || subject.subject_name || `${subject.id}`
                 const subjectValue = subject.id?.toString() || subject.name || subject.subject_name || ''
@@ -307,10 +328,11 @@ const Students = () => {
             </select>
             
             <button
-              onClick={clearFilters}
+              onClick={handleRefresh}
               className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition-colors"
+              title="Refresh students"
             >
-              <Filter className="h-4 w-4" />
+              <RefreshCw className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -323,6 +345,9 @@ const Students = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">{card.label}</p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">{card.value}</p>
+                {card.secondary && (
+                  <p className="text-sm font-medium text-gray-500 mt-1">{card.secondary}</p>
+                )}
               </div>
               <div className="h-12 w-12 bg-primary-50 rounded-lg flex items-center justify-center">
                 <Eye className="h-6 w-6 text-primary-500" />
@@ -397,8 +422,8 @@ const Students = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.class_name || 'N/A'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.averageScore || 0}%</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.total_exp || student.total_XP || student.xp || 0}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getStudentAverageScore(student)}%</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getStudentXp(student)}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <button

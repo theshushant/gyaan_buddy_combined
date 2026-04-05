@@ -272,7 +272,7 @@ const MyStudents = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <div className="flex items-center space-x-2">
-                    <span>{student.progressModule} modules</span>
+                    <span>{student.progressModule} chapters</span>
                     {student.pendingAssignments > 0 && (
                       <span className="text-red-600">({student.pendingAssignments} pending)</span>
                     )}

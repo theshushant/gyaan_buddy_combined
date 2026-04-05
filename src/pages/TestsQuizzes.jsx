@@ -1538,7 +1538,7 @@ const TestsQuizzes = () => {
                 <span>AI Generation Settings</span>
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Questions will be generated with a <strong>mix of question types</strong> (MCQ single/multiple, rearrange) and a <strong>mix of difficulty levels</strong> (1–5) across all selected modules and topics.
+                Questions will be generated with a <strong>mix of question types</strong> (MCQ single/multiple, rearrange) and a <strong>mix of difficulty levels</strong> (1–5) across all selected chapters and topics.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>

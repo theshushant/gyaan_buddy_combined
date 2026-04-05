@@ -68,7 +68,7 @@ const ViewQuestions = () => {
     <div className="p-6 animate-fade-in">
       <div className="mb-8 flex justify-between items-center animate-slide-down">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">View Questions (Module - Visual Probability)</h1>
+          <h1 className="text-3xl font-bold text-gray-800">View Questions (Chapter - Visual Probability)</h1>
         </div>
         <Link to="/tests" className="px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg" style={{ backgroundColor: '#00167a' }}>
           <span className="transform transition-transform duration-200 hover:-translate-x-1">←</span>

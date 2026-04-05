@@ -351,7 +351,7 @@ const Notifications = () => {
             }`}
             style={filter === 'module' ? { backgroundColor: '#00167a' } : {}}
           >
-            Modules
+            Chapters
           </button>
           <button
             onClick={() => setFilter('user')}

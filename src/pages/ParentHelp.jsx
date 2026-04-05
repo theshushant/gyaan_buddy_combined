@@ -13,7 +13,7 @@ const ParentHelp = () => {
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-5">
           <h2 className="text-lg font-semibold text-gray-900 mb-2">Detailed Reports</h2>
-          <p className="text-sm text-gray-600">See trend lines, subject accuracy, and module completion to track progress over time.</p>
+          <p className="text-sm text-gray-600">See trend lines, subject accuracy, and chapter completion to track progress over time.</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-5">
           <h2 className="text-lg font-semibold text-gray-900 mb-2">Upcoming Tests</h2>

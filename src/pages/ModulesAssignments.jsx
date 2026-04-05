@@ -331,12 +331,12 @@ const ModulesAssignments = () => {
   };
 
   const handleDeleteModule = async (module) => {
-    if (!window.confirm(`Delete module "${module.title || module.name}"? This will remove the module and all its assignments.`)) return;
+    if (!window.confirm(`Delete chapter "${module.title || module.name}"? This will remove the chapter and all its assignments.`)) return;
     try {
       await modulesService.deleteModule(module.id);
       setExpandedChapters(prev => prev.filter(id => id !== module.id));
       await fetchAllModulesData();
-      setSuccessData({ title: 'Module deleted', message: 'Module has been deleted successfully.' });
+      setSuccessData({ title: 'Chapter deleted', message: 'Chapter has been deleted successfully.' });
       setShowSuccessModal(true);
     } catch (err) {
       console.error('Error deleting module:', err);
@@ -428,7 +428,7 @@ const ModulesAssignments = () => {
     setCreateChapterError(null);
   };
 
-  const handleToggleModuleDue = async (module, newDueStatus) => {
+  const handleToggleModuleDue = async (module, newDueStatus, anchorRect = null) => {
     const key = `module-${module.id}`;
     setTogglingDueKey(key);
     try {
@@ -437,6 +437,9 @@ const ModulesAssignments = () => {
       setAllModulesData(prev => prev.map(m =>
         m.id === module.id ? { ...m, isDue: newDueStatus, dueDate: newDueStatus ? today : null } : m
       ));
+      if (newDueStatus && anchorRect) {
+        setDueDatePickerFor({ type: 'module', id: module.id, anchor: { left: anchorRect.left, top: anchorRect.top, bottom: anchorRect.bottom } });
+      }
     } catch (err) {
       console.error('Error updating module due status:', err);
       setCreateChapterError(err.message || 'Failed to update due status.');
@@ -445,7 +448,7 @@ const ModulesAssignments = () => {
     }
   };
 
-  const handleToggleChapterDue = async (chapter, parentModule, newDueStatus) => {
+  const handleToggleChapterDue = async (chapter, parentModule, newDueStatus, anchorRect = null) => {
     const key = `chapter-${chapter.id}`;
     setTogglingDueKey(key);
     try {
@@ -459,6 +462,9 @@ const ModulesAssignments = () => {
           )
         };
       }));
+      if (newDueStatus && anchorRect) {
+        setDueDatePickerFor({ type: 'chapter', id: chapter.id, parentId: parentModule.id, anchor: { left: anchorRect.left, top: anchorRect.top, bottom: anchorRect.bottom } });
+      }
     } catch (err) {
       console.error('Error updating assignment due status:', err);
       setCreateChapterError(err.message || 'Failed to update due status.');
@@ -857,7 +863,7 @@ const ModulesAssignments = () => {
               <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-primary-500"></div>
               <Loader2 className="h-8 w-8 text-primary-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-spin" />
             </div>
-            <p className="text-gray-600 mt-4 font-medium">Loading modules...</p>
+            <p className="text-gray-600 mt-4 font-medium">Loading chapters...</p>
           </div>
         )}
 
@@ -866,7 +872,7 @@ const ModulesAssignments = () => {
             <div className="flex items-start space-x-3">
               <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="text-red-800 font-semibold text-lg mb-1">Error Loading Modules</h3>
+                <h3 className="text-red-800 font-semibold text-lg mb-1">Error Loading Chapters</h3>
                 <p className="text-red-700 mb-4">{error}</p>
                 <button
                   onClick={() => {
@@ -890,11 +896,11 @@ const ModulesAssignments = () => {
                   <div className="p-4 bg-gray-100 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                     <BookOpen className="h-10 w-10 text-gray-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Modules Found</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Chapters Found</h3>
                   <p className="text-gray-600 mb-6">
-                    {selectedSubject 
-                      ? `No modules found for the selected subject. Create your first module to get started!`
-                      : 'Please select a subject to view modules.'}
+                    {selectedSubject
+                      ? `No chapters found for the selected subject. Create your first chapter to get started!`
+                      : 'Please select a subject to view chapters.'}
                   </p>
                   {selectedSubject && (
                     <button
@@ -906,7 +912,7 @@ const ModulesAssignments = () => {
                       style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
                     >
                       <Plus className="h-5 w-5" />
-                      <span>Create First Module</span>
+                      <span>Create First Chapter</span>
                     </button>
                   )}
                 </div>
@@ -991,7 +997,9 @@ const ModulesAssignments = () => {
                               disabled={togglingDueKey === `module-${chapter.id}`}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleToggleModuleDue(chapter, !chapter.isDue);
+                                const newDue = !chapter.isDue;
+                                const rect = newDue ? e.currentTarget.getBoundingClientRect() : null;
+                                handleToggleModuleDue(chapter, newDue, rect);
                               }}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 disabled:opacity-60 disabled:pointer-events-none ${
                                 chapter.isDue ? '' : 'bg-gray-300'
@@ -1050,14 +1058,16 @@ const ModulesAssignments = () => {
                                 >
                                   <Calendar className="h-4 w-4" />
                                 </button>
-                                <div className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg">
+                                <div style={{ display: 'none' }} className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg">
                                   <span className="text-sm text-gray-600">Due</span>
                                   <button
                                     type="button"
                                     disabled={togglingDueKey === `chapter-${module.id}`}
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleToggleChapterDue(module, chapter, !module.isDue);
+                                      const newDue = !module.isDue;
+                                      const rect = newDue ? e.currentTarget.getBoundingClientRect() : null;
+                                      handleToggleChapterDue(module, chapter, newDue, rect);
                                     }}
                                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 disabled:opacity-60 disabled:pointer-events-none ${
                                       module.isDue ? '' : 'bg-gray-300'
@@ -1111,7 +1121,7 @@ const ModulesAssignments = () => {
                         ))
                       ) : (
                         <div className="text-center py-6 text-gray-500">
-                          <p>No assignments in this module yet.</p>
+                          <p>No assignments in this chapter yet.</p>
                         </div>
                       )}
                       <div className="pt-3 border-t border-gray-200">

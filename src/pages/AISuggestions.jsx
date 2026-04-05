@@ -27,8 +27,8 @@ const AISuggestions = () => {
     {
       id: 3,
       category: 'engagement',
-      title: 'Gamified Learning Module',
-      description: 'Transform the current physics module into a game-based learning experience with points, badges, and leaderboards.',
+      title: 'Gamified Learning Chapter',
+      description: 'Transform the current physics chapter into a game-based learning experience with points, badges, and leaderboards.',
       priority: 'high',
       impact: 'Increased student motivation',
       timeEstimate: '2 hours',

@@ -131,6 +131,15 @@ const ReportsAnalytics = () => {
     }
   }, [selectedPeriod, studentClass, studentSubject, studentModule, studentChapter]);
 
+  const handleStudentClassChange = (e) => {
+    const val = e.target.value;
+    setStudentClass(val);
+    setStudentSubject('');
+    setStudentModule('');
+    setStudentChapter('');
+    fetchStudentProficiencyOnly({ class: val, subject: '', module: '', chapter: '' });
+  };
+
   const handleStudentSubjectChange = (e) => {
     const val = e.target.value;
     setStudentSubject(val);
@@ -673,7 +682,7 @@ const ReportsAnalytics = () => {
                   </div>
                   <select
                     value={studentClass}
-                    onChange={(e) => setStudentClass(e.target.value)}
+                    onChange={handleStudentClassChange}
                     className="w-full pl-12 pr-10 py-3 bg-white border-2 border-slate-200 rounded-xl text-gray-700 font-medium appearance-none cursor-pointer focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all duration-200 hover:border-primary-500/50"
                   >
                     <option value="">Select Class</option>
@@ -765,7 +774,7 @@ const ReportsAnalytics = () => {
               <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-secondary-500/10 to-primary-500/10">
                 <h3 className="text-lg font-semibold text-gray-800">Student Performance Results</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  Showing results for: {studentClass || 'All Classes'} • {studentSubjectsList.find(s => s.id === studentSubject)?.name || studentSubject || 'All Subjects'} • {studentModulesList.find(m => m.id === studentModule)?.name || studentModule || 'All Modules'} • {studentChaptersList.find(c => c.id === studentChapter)?.name || studentChapter || 'All Topics'}
+                  Showing results for: {studentClass || 'All Classes'} • {studentSubjectsList.find(s => s.id === studentSubject)?.name || studentSubject || 'All Subjects'} • {studentModulesList.find(m => m.id === studentModule)?.name || studentModule || 'All Chapters'} • {studentChaptersList.find(c => c.id === studentChapter)?.name || studentChapter || 'All Topics'}
                 </p>
               </div>
               <div className="overflow-x-auto">

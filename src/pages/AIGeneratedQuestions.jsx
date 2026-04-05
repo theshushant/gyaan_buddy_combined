@@ -75,7 +75,7 @@ const AIGeneratedQuestions = () => {
         <div className="flex justify-between items-center mb-4 animate-slide-down">
           <div>
             <nav className="text-sm text-gray-500 mb-2">
-              Modules & Assignments &gt; AI Generated Questions
+              Chapters & Assignments &gt; AI Generated Questions
             </nav>
             <h1 className="text-3xl font-bold text-gray-800">AI Generated Questions</h1>
             <p className="text-gray-600 mt-2">Review, edit, and select questions to add to your question bank.</p>

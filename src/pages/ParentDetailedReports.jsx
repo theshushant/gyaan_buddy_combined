@@ -195,7 +195,7 @@ const ParentDetailedReports = () => {
     const focusModule = moduleProgress[moduleProgress.length - 1]
 
     if (!moduleProgress.length) {
-      return `${selectedSubject.name} has ${avg}% accuracy currently. Complete more tests to unlock module-wise insights.`
+      return `${selectedSubject.name} has ${avg}% accuracy currently. Complete more tests to unlock chapter-wise insights.`
     }
 
     return `${progress?.student_name || 'Student'} is at ${avg}% in ${selectedSubject.name}. Strongest area is ${bestModule.moduleName} (${bestModule.percentage}%). Focus next on ${focusModule.moduleName} to improve overall consistency.`
@@ -301,7 +301,7 @@ const ParentDetailedReports = () => {
       </div>
 
       <div className="bg-white border border-gray-200 rounded-2xl p-6">
-        <h2 className="text-4xl max-sm:text-2xl font-extrabold text-gray-900 mb-4">Module-wise Progress in {subjectTitle}</h2>
+        <h2 className="text-4xl max-sm:text-2xl font-extrabold text-gray-900 mb-4">Chapter-wise Progress in {subjectTitle}</h2>
         <div className="space-y-4">
           {moduleProgress.map((module) => (
             <div key={module.moduleName} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
@@ -320,7 +320,7 @@ const ParentDetailedReports = () => {
 
           {!moduleProgress.length && (
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-              Module-wise progress is unavailable because there are no completed tests with module mappings for this filter.
+              Chapter-wise progress is unavailable because there are no completed tests with chapter mappings for this filter.
             </div>
           )}
         </div>

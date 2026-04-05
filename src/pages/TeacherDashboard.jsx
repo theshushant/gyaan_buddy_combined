@@ -50,7 +50,7 @@ const TeacherDashboard = () => {
   const labelMapping = {
     "My Students' Average Score": "Attempt rate",
     "Module Completed": "Last Assignment Attempt Rate",
-    "Students Engaged": "Last Module Student Engagement",
+    "Students Engaged": "Last Chapter Student Engagement",
     "Questions Created": "Topics covered"
   }
 

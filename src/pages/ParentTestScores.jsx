@@ -230,7 +230,7 @@ const ParentTestScores = () => {
                       {test.class_group_name || 'Class not set'}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      {moduleCount} modules • {chapterCount} chapters • {questionCount} questions • {xp} XP
+                      {moduleCount} chapters • {chapterCount} topics • {questionCount} questions • {xp} XP
                     </p>
                   </div>
 

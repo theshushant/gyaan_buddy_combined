@@ -250,13 +250,13 @@ const Students = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="flex flex-col gap-6 h-full">
+      <div className="flex-shrink-0">
         <h1 className="text-3xl font-bold text-gray-900">Student Overview</h1>
         <p className="text-gray-600 mt-2">Filter and view student performance data.</p>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <div className="flex-shrink-0 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
@@ -316,7 +316,7 @@ const Students = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="flex-shrink-0 grid grid-cols-1 md:grid-cols-3 gap-6">
         {summaryCards.map((card, index) => (
           <div key={index} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
@@ -332,8 +332,8 @@ const Students = () => {
         ))}
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <div className="flex flex-col flex-1 min-h-0 bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-900">Students</h2>
           <div className="flex items-center gap-3">
             {/* Hidden file input for bulk import */}
@@ -368,7 +368,7 @@ const Students = () => {
           </div>
         </div>
         
-        <div className="overflow-x-auto">
+        <div className="flex-1 min-h-0 overflow-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>

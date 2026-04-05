@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import leaderboardService from '../services/leaderboardService';
 import classesService from '../services/classesService';
-import subjectsService from '../services/subjectsService';
 
 const Leaderboards = () => {
   const [activeTab, setActiveTab] = useState('xp');
@@ -13,15 +12,11 @@ const Leaderboards = () => {
     best_average_score: 0,
     active_students: 0,
     class_active_students: null,
-    subject_active_students: null,
   });
   const [classes, setClasses] = useState([]);
-  const [subjects, setSubjects] = useState([]);
   const [filters, setFilters] = useState({
     class_id: '',
-    subject_id: '',
   });
-  const [scope, setScope] = useState('class'); // 'class' or 'grade'
 
   const fetchClasses = useCallback(async () => {
     try {
@@ -35,21 +30,6 @@ const Leaderboards = () => {
     } catch (error) {
       console.error('Failed to fetch classes:', error);
       setClasses([]);
-    }
-  }, []);
-
-  const fetchSubjects = useCallback(async () => {
-    try {
-      const response = await subjectsService.getSubjects();
-      const subjectsData = response.data || response || [];
-      const subjectsList = subjectsData.map(subject => ({
-        id: subject.id || subject.uuid,
-        name: subject.name || subject
-      })).filter(subject => subject.id && subject.name);
-      setSubjects(subjectsList);
-    } catch (error) {
-      console.error('Failed to fetch subjects:', error);
-      setSubjects([]);
     }
   }, []);
 
@@ -93,7 +73,6 @@ const Leaderboards = () => {
         best_average_score: stats.best_average_score || 0,
         active_students: stats.active_students || 0,
         class_active_students: stats.class_active_students,
-        subject_active_students: stats.subject_active_students,
       });
     } catch (error) {
       console.error('Failed to fetch leaderboard:', error);
@@ -108,15 +87,6 @@ const Leaderboards = () => {
 
     if (filters.class_id) {
       filtered = filtered.filter(student => student.class_id === filters.class_id);
-    }
-
-    if (filters.subject_id) {
-      filtered = filtered.filter(student => {
-        if (!student.subjects || !Array.isArray(student.subjects)) return false;
-        return student.subjects.some(subject => 
-          (subject.id || subject.uuid) === filters.subject_id
-        );
-      });
     }
 
     if (activeTab === 'xp') {
@@ -136,8 +106,7 @@ const Leaderboards = () => {
 
   useEffect(() => {
     fetchClasses();
-    fetchSubjects();
-  }, [fetchClasses, fetchSubjects]);
+  }, [fetchClasses]);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -168,24 +137,8 @@ const Leaderboards = () => {
 
       <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="animate-slide-right" style={{animationDelay: '0.1s'}}>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
-          <select 
-            value={filters.subject_id}
-            onChange={(e) => handleFilterChange('subject_id', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
-          >
-            <option value="">All Subjects</option>
-            {subjects.map((subject) => (
-              <option key={subject.id} value={subject.id}>
-                {subject.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="animate-slide-right" style={{animationDelay: '0.2s'}}>
           <label className="block text-sm font-medium text-gray-700 mb-2">Class</label>
-          <select 
+          <select
             value={filters.class_id}
             onChange={(e) => handleFilterChange('class_id', e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
@@ -197,30 +150,6 @@ const Leaderboards = () => {
               </option>
             ))}
           </select>
-        </div>
-
-        <div className="animate-slide-right" style={{animationDelay: '0.3s'}}>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Scope</label>
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button 
-              onClick={() => setScope('class')}
-              className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transform transition-all duration-200 hover:scale-105 ${
-                scope === 'class' ? 'text-white' : 'text-gray-500'
-              }`}
-              style={scope === 'class' ? { backgroundColor: '#00167a' } : {}}
-            >
-              Class
-            </button>
-            <button 
-              onClick={() => setScope('grade')}
-              className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transform transition-all duration-200 hover:scale-105 ${
-                scope === 'grade' ? 'text-white' : 'text-gray-500'
-              }`}
-              style={scope === 'grade' ? { backgroundColor: '#00167a' } : {}}
-            >
-              Grade
-            </button>
-          </div>
         </div>
       </div>
 
@@ -338,16 +267,12 @@ const Leaderboards = () => {
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.8s'}}>
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-600 mb-2 animate-count-up">
-              {statistics.class_active_students !== null 
-                ? statistics.class_active_students 
-                : statistics.subject_active_students !== null 
-                  ? statistics.subject_active_students 
-                  : statistics.active_students}
+              {statistics.class_active_students !== null
+                ? statistics.class_active_students
+                : statistics.active_students}
             </div>
             <div className="text-sm text-gray-600">
-              {filters.class_id ? 'Active Students (Class)' : 
-               filters.subject_id ? 'Active Students (Subject)' : 
-               'Active Students'}
+              {filters.class_id ? 'Active Students (Class)' : 'Active Students'}
             </div>
           </div>
         </div>

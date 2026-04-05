@@ -23,6 +23,7 @@ const CreateTopicModal = ({
 
   const [logoFile, setLogoFile] = useState(null)
   const [logoPreview, setLogoPreview] = useState(null)
+  const [logoRemoved, setLogoRemoved] = useState(false)
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
 
@@ -57,6 +58,7 @@ const CreateTopicModal = ({
           setLogoPreview(null)
         }
         setLogoFile(null)
+        setLogoRemoved(false)
         setErrors({})
         setTouched({})
       } else {
@@ -72,6 +74,7 @@ const CreateTopicModal = ({
         })
         setLogoFile(null)
         setLogoPreview(null)
+        setLogoRemoved(false)
         setErrors({})
         setTouched({})
       }
@@ -211,6 +214,7 @@ const CreateTopicModal = ({
   const handleRemoveLogo = () => {
     setLogoFile(null)
     setLogoPreview(null)
+    setLogoRemoved(true)
     setErrors(prev => {
       const newErrors = { ...prev }
       delete newErrors.logo
@@ -235,6 +239,8 @@ const CreateTopicModal = ({
       const dataToSave = { ...formData }
       if (logoFile) {
         dataToSave.logo = logoFile
+      } else if (logoRemoved) {
+        dataToSave.logo = null
       }
       onSave(dataToSave)
     }
@@ -446,39 +452,6 @@ const CreateTopicModal = ({
               </div>
             </div>
 
-            <div>
-              <h4 className="text-md font-semibold text-gray-900 mb-4">Topic Settings</h4>
-              
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="is_enabled"
-                    checked={formData.is_enabled}
-                    onChange={(e) => handleFieldChange('is_enabled', e.target.checked)}
-                    className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
-                    disabled={loading}
-                  />
-                  <label htmlFor="is_enabled" className="ml-2 text-sm font-medium text-gray-700">
-                    Enabled
-                  </label>
-                </div>
-
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="is_important"
-                    checked={formData.is_important}
-                    onChange={(e) => handleFieldChange('is_important', e.target.checked)}
-                    className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
-                    disabled={loading}
-                  />
-                  <label htmlFor="is_important" className="ml-2 text-sm font-medium text-gray-700">
-                    Important
-                  </label>
-                </div>
-              </div>
-            </div>
             
             <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
               <button

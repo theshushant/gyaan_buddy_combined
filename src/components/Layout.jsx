@@ -90,8 +90,8 @@ const Layout = ({ children }) => {
     { name: 'My Profile', href: '/profile', icon: UserCheck },
     { name: 'My Students', href: '/students', icon: GraduationCap },
     { name: 'Chapters & Assignments', href: '/modules', icon: BookOpen },
-    { name: 'Tests & Quizzes', href: '/tests', icon: ClipboardList },
     { name: 'Reports & Analytics', href: '/reports', icon: BarChart3 },
+    { name: 'Tests', href: '/tests', icon: ClipboardList },
     { name: 'Leaderboards', href: '/leaderboards', icon: Trophy },
     // { name: 'Daily Missions', href: '/missions', icon: Calendar },
     { name: 'Settings', href: '/settings', icon: Settings },
@@ -322,7 +322,7 @@ const Layout = ({ children }) => {
           </div>
         )}
 
-        <main className={role === 'parent' ? 'p-6 bg-[#f6f8fc] min-h-screen' : 'p-6'}>
+        <main className={role === 'parent' ? 'p-6 bg-[#f6f8fc] min-h-screen' : 'p-6 h-[calc(100vh-4rem)] overflow-y-auto'}>
           {children}
         </main>
       </div>

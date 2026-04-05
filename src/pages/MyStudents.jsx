@@ -8,11 +8,13 @@ import {
   clearError
 } from '../features/students/studentsSlice';
 import { fetchClasses } from '../features/classes/classesSlice';
+import { fetchSubjects } from '../features/subjects/subjectsSlice';
 
 const MyStudents = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [selectedClass, setSelectedClass] = useState('All Classes');
+  const [selectedSubject, setSelectedSubject] = useState('All Subjects');
   const [searchTerm, setSearchTerm] = useState('');
 
   const {
@@ -24,6 +26,7 @@ const MyStudents = () => {
   } = useSelector(state => state.students);
 
   const { classes } = useSelector(state => state.classes);
+  const { subjects } = useSelector(state => state.subjects);
 
   useEffect(() => {
     const hasError = error.students !== null || error.stats !== null
@@ -36,7 +39,8 @@ const MyStudents = () => {
         await Promise.all([
           dispatch(fetchStudents({})),
           dispatch(fetchStudentStats()),
-          dispatch(fetchClasses({}))
+          dispatch(fetchClasses({})),
+          dispatch(fetchSubjects({}))
         ]);
       } catch (err) {
         console.error('Error fetching students data:', err);
@@ -59,15 +63,18 @@ const MyStudents = () => {
     if (selectedClass && selectedClass !== 'All Classes') {
       filters.class = selectedClass;
     }
-    
+    if (selectedSubject && selectedSubject !== 'All Subjects') {
+      filters.subject = selectedSubject;
+    }
+
     dispatch(setFilters(filters));
-    
+
     const timeoutId = setTimeout(() => {
       dispatch(fetchStudents(filters));
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [dispatch, searchTerm, selectedClass, error.students]);
+  }, [dispatch, searchTerm, selectedClass, selectedSubject, error.students]);
 
   const transformStudent = (student) => {
     const firstName = student.first_name || student.firstName || '';
@@ -152,6 +159,26 @@ const MyStudents = () => {
             })}
           </select>
         </div>
+
+        <div className="animate-slide-right" style={{animationDelay: '0.35s'}}>
+          <select
+            value={selectedSubject}
+            onChange={(e) => setSelectedSubject(e.target.value)}
+            disabled={loading.students}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <option>All Subjects</option>
+            {Array.isArray(subjects) && subjects.map((subject) => {
+              const subjectName = subject.name || subject.subject_name || `Subject ${subject.id}`;
+              const subjectValue = subject.id?.toString() || subject.name || '';
+              return (
+                <option key={subject.id || subject.name} value={subjectValue}>
+                  {subjectName}
+                </option>
+              );
+            })}
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -164,7 +191,7 @@ const MyStudents = () => {
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.5s'}}>
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.5s', display: 'none'}}>
           <div className="text-center">
             <div className="text-3xl font-bold text-green-600 mb-2 animate-count-up">
               {loading.stats ? '...' : (studentStats?.activeStudents || studentStats?.active_students || studentStats?.active_today || studentStats?.activeToday || 0)}
@@ -220,7 +247,7 @@ const MyStudents = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   XP
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{display: 'none'}}>
                   Avg Score
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -261,7 +288,7 @@ const MyStudents = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <span className="animate-count-up">{student.totalXP}</span> XP
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-nowrap" style={{display: 'none'}}>
                   <span className={`px-2 py-1 text-xs font-medium rounded-full transform transition-all duration-200 hover:scale-110 ${
                     student.averageScore >= 80 ? 'bg-green-100 text-green-800' :
                     student.averageScore >= 70 ? 'bg-yellow-100 text-yellow-800' :

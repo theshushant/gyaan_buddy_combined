@@ -283,7 +283,7 @@ const TeacherDashboard = () => {
               <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>
                 {quickSummary?.find((i) => i.label === 'Chapter Covered')?.value ?? '0/0'}
               </div>
-              <div className="text-gray-600">Chapters Covered</div>
+              <div className="text-gray-600">Topics Covered</div>
             </div>
           </div>
 

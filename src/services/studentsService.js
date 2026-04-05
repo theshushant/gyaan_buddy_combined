@@ -4,9 +4,7 @@ class StudentsService {
   async getStudents(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
-      
-      queryParams.append('user_type', 'student');
-      
+
       if (filters.search) queryParams.append('search', filters.search);
       if (filters.class) queryParams.append('class', filters.class);
       if (filters.subject) queryParams.append('subject', filters.subject);
@@ -14,7 +12,7 @@ class StudentsService {
       if (filters.page) queryParams.append('page', filters.page);
       if (filters.limit) queryParams.append('limit', filters.limit);
 
-      const endpoint = `/users/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const endpoint = `/students/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch students: ${error.message}`);

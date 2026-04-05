@@ -963,12 +963,10 @@ const ModulesAssignments = () => {
                             e.stopPropagation();
                             handleOpenPdfModal(chapter);
                           }}
-                          className="flex items-center justify-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all duration-200 shadow-sm hover:shadow-md w-36"
+                          className="flex items-center justify-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md w-24"
                         >
                           <Upload className="h-4 w-4" />
-                          <span className="text-sm font-medium">
-                            PDF{chapterPdfs[chapter.id] ? ` (${chapterPdfs[chapter.id].length}/2)` : ''}
-                          </span>
+                          <span className="text-sm font-medium">PDF</span>
                         </button>
                         <button
                           onClick={(e) => {

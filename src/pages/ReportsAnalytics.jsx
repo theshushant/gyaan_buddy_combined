@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, TrendingUp, Target, ChevronDown, ChevronRight, GraduationCap, BookOpen, Layers, FileText, Search, Loader2 } from 'lucide-react';
 import reportsService from '../services/reportsService';
+import subjectsService from '../services/subjectsService';
 
 const PERIOD_MAP = {
   'Last 7 days': 7,
@@ -37,6 +38,7 @@ const ReportsAnalytics = () => {
   const [expandedModules, setExpandedModules] = useState({ 1: true });
 
   const [loading, setLoading] = useState(true);
+  const [filterLoading, setFilterLoading] = useState(false);
   const [error, setError] = useState(null);
   const [summary, setSummary] = useState(defaultSummary);
   const [filterOptions, setFilterOptions] = useState(defaultFilterOptions);
@@ -50,9 +52,15 @@ const ReportsAnalytics = () => {
     recentActivity: [],
   });
   const [studentProficiencyData, setStudentProficiencyData] = useState([]);
+  const [subjectOptions, setSubjectOptions] = useState([]);
 
   const fetchReportsAnalytics = useCallback(async (opts = {}) => {
-    setLoading(true);
+    const isFilterUpdate = opts._isFilterUpdate ?? false;
+    if (isFilterUpdate) {
+      setFilterLoading(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
     try {
       const period = opts.period ?? PERIOD_MAP[selectedPeriod] ?? 30;
@@ -66,7 +74,10 @@ const ReportsAnalytics = () => {
       const data = await reportsService.getReportsAnalytics(params);
       setSummary(data.summary ?? defaultSummary);
       setFilterOptions(data.filterOptions ?? defaultFilterOptions);
-      setStudentFilterOptions(data.filterOptions ?? defaultFilterOptions);
+      // Only initialize student filter options on load — don't overwrite when report filters change
+      if (!opts._skipStudentOptions) {
+        setStudentFilterOptions(data.filterOptions ?? defaultFilterOptions);
+      }
       setModuleProficiencyData(Array.isArray(data.moduleProficiencyData) ? data.moduleProficiencyData : []);
       setReportsData(data.reportsData ?? { summary: (data.summary ?? defaultSummary), chapterProficiency: [] });
       setAnalyticsData({
@@ -79,7 +90,11 @@ const ReportsAnalytics = () => {
     } catch (err) {
       setError(err.message || 'Failed to load reports analytics');
     } finally {
-      setLoading(false);
+      if (isFilterUpdate) {
+        setFilterLoading(false);
+      } else {
+        setLoading(false);
+      }
     }
   }, [selectedPeriod, selectedClass, reportClass, reportSubject, reportModule, reportChapter]);
 
@@ -87,10 +102,21 @@ const ReportsAnalytics = () => {
     fetchReportsAnalytics();
   }, [selectedPeriod, selectedClass]);
 
+  useEffect(() => {
+    subjectsService.getSubjects({}).then((res) => {
+      const data = res?.data ?? res;
+      const list = Array.isArray(data) ? data : (data?.subjects ?? data?.results ?? []);
+      setSubjectOptions(list.map((s) => ({ id: String(s.id), name: s.name })));
+    }).catch(() => {});
+  }, []);
+
   const handleReportClassChange = (e) => {
     const val = e.target.value;
     setReportClass(val);
-    fetchReportsAnalytics({ class: val || undefined, subject: reportSubject, module: reportModule, chapter: reportChapter });
+    setReportSubject('');
+    setReportModule('');
+    setReportChapter('');
+    fetchReportsAnalytics({ class: val || undefined, subject: '', module: '', chapter: '', _isFilterUpdate: true, _skipStudentOptions: true });
   };
 
   const handleSubjectChange = (e) => {
@@ -98,20 +124,20 @@ const ReportsAnalytics = () => {
     setReportSubject(val);
     setReportModule('');
     setReportChapter('');
-    fetchReportsAnalytics({ class: reportClass || undefined, subject: val, module: '', chapter: '' });
+    fetchReportsAnalytics({ class: reportClass || undefined, subject: val, module: '', chapter: '', _isFilterUpdate: true, _skipStudentOptions: true });
   };
 
   const handleModuleChange = (e) => {
     const val = e.target.value;
     setReportModule(val);
     setReportChapter('');
-    fetchReportsAnalytics({ class: reportClass || undefined, subject: reportSubject, module: val, chapter: '' });
+    fetchReportsAnalytics({ class: reportClass || undefined, subject: reportSubject, module: val, chapter: '', _isFilterUpdate: true, _skipStudentOptions: true });
   };
 
   const handleChapterChange = (e) => {
     const val = e.target.value;
     setReportChapter(val);
-    fetchReportsAnalytics({ class: reportClass || undefined, subject: reportSubject, module: reportModule, chapter: val });
+    fetchReportsAnalytics({ class: reportClass || undefined, subject: reportSubject, module: reportModule, chapter: val, _isFilterUpdate: true, _skipStudentOptions: true });
   };
 
   const fetchStudentProficiencyOnly = useCallback(async (opts = {}) => {
@@ -209,7 +235,7 @@ const ReportsAnalytics = () => {
   ];
 
   const classesList = Array.isArray(filterOptions.classes) ? filterOptions.classes : [];
-  const subjectsList = normalizeOptions(filterOptions.subjects);
+  const subjectsList = subjectOptions.length > 0 ? subjectOptions : normalizeOptions(filterOptions.subjects);
   const modulesList = normalizeOptions(filterOptions.modules);
   const chaptersList = normalizeOptions(filterOptions.chapters);
 
@@ -436,7 +462,10 @@ const ReportsAnalytics = () => {
         <>
           {/* Chapter-wise filter (top) – drives summary and chapter-wise proficiency table */}
           <div className="mb-6 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Chapter-wise filter</h3>
+            <div className="flex items-center gap-3 mb-3">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Chapter-wise filter</h3>
+              {filterLoading && <Loader2 className="h-4 w-4 text-primary-500 animate-spin" />}
+            </div>
             <p className="text-xs text-gray-500 mb-4">Filter report data and chapter-wise proficiency by subject, chapter, and topic.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
@@ -561,6 +590,13 @@ const ReportsAnalytics = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
+                  {moduleProficiencyData.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center text-gray-400 text-sm">
+                        No chapter data available. Select a subject in the filter above to narrow results, or check that modules and chapters have been configured.
+                      </td>
+                    </tr>
+                  )}
                   {moduleProficiencyData.map((mod) => {
                     const modProficiency = getModuleProficiency(mod.chapters);
                     const modWeakLevels = getWeakLevels(modProficiency);
@@ -612,6 +648,11 @@ const ReportsAnalytics = () => {
                       </tr>
 
                       {/* Chapter rows */}
+                      {expandedModules[mod.id] && mod.chapters.length === 0 && (
+                        <tr key={`${mod.id}-empty`} className="bg-white border-l-4 border-blue-600">
+                          <td colSpan={6} className="px-6 py-3 pl-12 text-sm text-gray-400 italic">No topics found in this chapter.</td>
+                        </tr>
+                      )}
                       {expandedModules[mod.id] && mod.chapters.map((ch, ci) => {
                         const status = getTopicStatus(ch.proficiency);
                         const chWeakLevels = getWeakLevels(ch.proficiency);

@@ -178,49 +178,7 @@ const Login = () => {
             {loginError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-sm text-red-600">{loginError}</p>
-                <p className="text-xs text-gray-600 mt-2">Backend unavailable? Try demo login below.</p>
               </div>
-            )}
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData({ username: 'admin', password: 'admin123' })
-                  setPortalMode('principal')
-                  setFormErrors({})
-                }}
-                className="flex-1 py-2 px-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-700 text-sm hover:bg-gray-100"
-              >
-                Demo: Principal
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData({ username: 'teacher1', password: 'teacher123' })
-                  setPortalMode('teacher')
-                  setFormErrors({})
-                }}
-                className="flex-1 py-2 px-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-700 text-sm hover:bg-gray-100"
-              >
-                Demo: Teacher
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData({ username: 'student1', password: 'student123' })
-                  setPortalMode('parent')
-                  setFormErrors({})
-                }}
-                className="flex-1 py-2 px-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-700 text-sm hover:bg-gray-100"
-              >
-                Demo: Parent
-              </button>
-            </div>
-            {portalMode === 'parent' && (
-              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                Parent login uses a student account from your backend data. If demo credentials fail, use a valid student username/password.
-              </p>
             )}
 
             <button

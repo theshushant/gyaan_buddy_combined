@@ -14,6 +14,9 @@ const EMPTY_DATA = {
     chapters: [],
   },
   sectionWisePerformance: [],
+  reportsData: {
+    chapterProficiency: [],
+  },
 }
 
 const renderTopicTags = (topics, colorClass) => {
@@ -63,6 +66,9 @@ const Reports = () => {
           chapters: response.filterOptions?.chapters || [],
         },
         sectionWisePerformance: response.sectionWisePerformance || [],
+        reportsData: {
+          chapterProficiency: response.reportsData?.chapterProficiency || [],
+        },
       })
     } catch (err) {
       setError(err.message || 'Failed to load reports')
@@ -110,6 +116,9 @@ const Reports = () => {
           chapters: response.filterOptions?.chapters || [],
         },
         sectionWisePerformance: response.sectionWisePerformance || [],
+        reportsData: {
+          chapterProficiency: response.reportsData?.chapterProficiency || [],
+        },
       })
     } finally {
       setTopicDiffLoading(false)
@@ -175,22 +184,28 @@ const Reports = () => {
   }, [sectionRows, data.summary.totalStudents, data.summary.averageScore])
 
   const topicDifferenceSummary = useMemo(() => {
-    const rows = Array.isArray(diffData.sectionWisePerformance) ? diffData.sectionWisePerformance : []
+    const chapters = Array.isArray(diffData.reportsData?.chapterProficiency)
+      ? diffData.reportsData.chapterProficiency
+      : []
     const goodSet = new Set()
     const weakSet = new Set()
-    rows.forEach((row) => {
-      ;(row.goodTopics || []).forEach((topic) => {
-        goodSet.add(topic)
-      })
-      ;(row.strugglingTopics || []).forEach((topic) => {
-        weakSet.add(topic)
-      })
+
+    chapters.forEach((chapter) => {
+      const chapterName = chapter.chapterName || chapter.name
+      const proficiency = Number(chapter.proficient ?? chapter.proficiency ?? 0)
+      if (!chapterName) return
+      if (proficiency > 50) {
+        goodSet.add(chapterName)
+      } else {
+        weakSet.add(chapterName)
+      }
     })
+
     return {
       goodTopics: [...goodSet],
       weakTopics: [...weakSet],
     }
-  }, [diffData.sectionWisePerformance, diffTopic])
+  }, [diffData.reportsData?.chapterProficiency, diffTopic])
 
   if (loading) {
     return (

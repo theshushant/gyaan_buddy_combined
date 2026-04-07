@@ -1820,9 +1820,10 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
     setModifyError(null);
     try {
       // Strip the temp id before sending
-      const { id: _tempId, level: _level, ...questionPayload } = question;
+      const { id: questionId, level: _level, ...questionPayload } = question;
       const response = await aiService.modifyAssessmentQuestion({
         session_id: assessmentSessionId,
+        question_id: questionId,
         question: questionPayload,
         modification_type: modifyType,
         instruction: modifyInstruction,

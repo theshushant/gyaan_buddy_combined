@@ -246,8 +246,8 @@ const studentsSlice = createSlice({
           state.students = action.payload.results
           if (action.payload.pagination) state.pagination = action.payload.pagination
           if (action.payload.summary) state.summary = action.payload.summary
-          // Capture DRF total count as fallback for studentStats
-          if (action.payload.count != null && !state.studentStats?.totalStudents) {
+          // Update total count from DRF pagination to reflect current filter
+          if (action.payload.count != null) {
             state.studentStats = {
               ...(state.studentStats || {}),
               totalStudents: action.payload.count,

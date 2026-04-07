@@ -1056,7 +1056,7 @@ const ModulesAssignments = () => {
                                 >
                                   <Calendar className="h-4 w-4" />
                                 </button>
-                                <div style={{ display: 'none' }} className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg">
+                                <div className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg">
                                   <span className="text-sm text-gray-600">Due</span>
                                   <button
                                     type="button"

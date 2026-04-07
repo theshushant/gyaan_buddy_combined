@@ -1833,7 +1833,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
       setGeneratedQuestions(prev =>
         prev.map(q =>
           q.id === question.id
-            ? { ...modified, id: question.id, level: modified.difficulty_level }
+            ? { ...modified, level: modified.level ?? modified.difficulty_level }
             : q
         )
       );

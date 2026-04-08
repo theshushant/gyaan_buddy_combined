@@ -455,11 +455,15 @@ const ModulesAssignments = () => {
       await modulesService.setChapterDue(chapter.id, newDueStatus);
       setAllModulesData(prev => prev.map(m => {
         if (m.id !== parentModule.id || !Array.isArray(m.modules)) return m;
+        const updatedModules = m.modules.map(ch =>
+          ch.id === chapter.id ? { ...ch, isDue: newDueStatus, dueDate: newDueStatus ? new Date().toISOString().slice(0, 10) : null } : ch
+        );
+        const anyChapterDue = updatedModules.some(ch => ch.isDue);
         return {
           ...m,
-          modules: m.modules.map(ch =>
-            ch.id === chapter.id ? { ...ch, isDue: newDueStatus, dueDate: newDueStatus ? new Date().toISOString().slice(0, 10) : null } : ch
-          )
+          is_enabled: newDueStatus ? true : anyChapterDue,
+          isDue: newDueStatus ? true : anyChapterDue,
+          modules: updatedModules,
         };
       }));
       if (newDueStatus && anchorRect) {
@@ -508,11 +512,15 @@ const ModulesAssignments = () => {
       await modulesService.updateChapterDueDate(chapter.id, newDate || null);
       setAllModulesData(prev => prev.map(m => {
         if (m.id !== parentModule.id || !Array.isArray(m.modules)) return m;
+        const updatedModules = m.modules.map(ch =>
+          ch.id === chapter.id ? { ...ch, dueDate: newDate || null, isDue: !!newDate } : ch
+        );
+        const anyChapterDue = updatedModules.some(ch => ch.isDue);
         return {
           ...m,
-          modules: m.modules.map(ch =>
-            ch.id === chapter.id ? { ...ch, dueDate: newDate || null, isDue: !!newDate } : ch
-          )
+          is_enabled: !!newDate ? true : anyChapterDue,
+          isDue: !!newDate ? true : anyChapterDue,
+          modules: updatedModules,
         };
       }));
     } catch (err) {

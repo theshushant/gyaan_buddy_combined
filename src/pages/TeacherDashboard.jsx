@@ -26,6 +26,28 @@ import {
 import classesService from '../services/classesService'
 import subjectsService from '../services/subjectsService'
 
+const InfoTooltip = ({ text }) => (
+  <div className="relative inline-block group">
+    <span className="ml-1 text-gray-400 hover:text-gray-600 cursor-help text-sm select-none">ⓘ</span>
+    <div className="absolute z-50 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 text-xs text-white bg-gray-800 rounded-lg px-3 py-2 shadow-lg pointer-events-none">
+      {text}
+      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+    </div>
+  </div>
+)
+
+const CARD_TOOLTIPS = {
+  'Attempt Rate': 'Percentage of your students who attempted at least one question in the selected subject / class.',
+  'Overall Student Percentage': 'Average score (%) across all quiz attempts by your students in the selected subject / class.',
+  'Topics Covered': 'Chapters started by students vs. total available chapters in the selected subject (e.g. 3/10).',
+  'Last Assignment Attempt Rate': 'Percentage of students who attempted the most recently assigned assignment.',
+  'Weak Topics': 'Number of topics where the average student score is below 50%.',
+  'Total Students': 'Total students enrolled across all classes you teach.',
+  'My Students': 'Total students enrolled across all classes you teach.',
+  'Classes Teaching': 'Number of classes you are currently assigned to teach.',
+  'Chapter Covered': 'Chapters completed by students / total chapters in the selected subject.',
+}
+
 const TeacherDashboard = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -265,7 +287,9 @@ const TeacherDashboard = () => {
               <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>
                 {quickSummary?.find((i) => i.label === 'Attempt Rate')?.value ?? '—'}
               </div>
-              <div className="text-gray-600">Attempt Rate</div>
+              <div className="text-gray-600 flex items-center justify-center">
+                Attempt Rate<InfoTooltip text={CARD_TOOLTIPS['Attempt Rate']} />
+              </div>
             </div>
           </div>
 
@@ -274,7 +298,9 @@ const TeacherDashboard = () => {
               <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>
                 {quickSummary?.find((i) => i.label === 'Overall Student Percentage')?.value ?? '—'}
               </div>
-              <div className="text-gray-600">Overall Student Percentage</div>
+              <div className="text-gray-600 flex items-center justify-center">
+                Overall Student Percentage<InfoTooltip text={CARD_TOOLTIPS['Overall Student Percentage']} />
+              </div>
             </div>
           </div>
 
@@ -283,7 +309,9 @@ const TeacherDashboard = () => {
               <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>
                 {quickSummary?.find((i) => i.label === 'Chapter Covered')?.value ?? '0/0'}
               </div>
-              <div className="text-gray-600">Topics Covered</div>
+              <div className="text-gray-600 flex items-center justify-center">
+                Topics Covered<InfoTooltip text={CARD_TOOLTIPS['Topics Covered']} />
+              </div>
             </div>
           </div>
 
@@ -292,14 +320,18 @@ const TeacherDashboard = () => {
               <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>
                 {quickSummary?.find((i) => i.label === 'Last Assignment Attempt Rate')?.value ?? '—'}
               </div>
-              <div className="text-gray-600">Last Assignment Attempt Rate</div>
+              <div className="text-gray-600 flex items-center justify-center">
+                Last Assignment Attempt Rate<InfoTooltip text={CARD_TOOLTIPS['Last Assignment Attempt Rate']} />
+              </div>
             </div>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.5s'}}>
             <div className="text-center">
               <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>{weakTopicCount ?? 0}</div>
-              <div className="text-gray-600">Weak Topics</div>
+              <div className="text-gray-600 flex items-center justify-center">
+                Weak Topics<InfoTooltip text={CARD_TOOLTIPS['Weak Topics']} />
+              </div>
             </div>
           </div>
 
@@ -308,7 +340,9 @@ const TeacherDashboard = () => {
               <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>
                 {quickSummary?.find((i) => i.label === 'My Students')?.value ?? '—'}
               </div>
-              <div className="text-gray-600">Total Students</div>
+              <div className="text-gray-600 flex items-center justify-center">
+                Total Students<InfoTooltip text={CARD_TOOLTIPS['Total Students']} />
+              </div>
             </div>
           </div>
         </div>
@@ -416,7 +450,10 @@ const TeacherDashboard = () => {
             {quickSummaryData.map((item, index) => (
               <div key={index} className="text-center animate-slide-up" style={{animationDelay: `${(index + 1) * 0.1}s`}}>
                 <div className="text-2xl font-bold text-gray-800">{item.value}</div>
-                <div className="text-sm text-gray-600">{getMappedLabel(item.label)}</div>
+                <div className="text-sm text-gray-600 flex items-center justify-center">
+                  {getMappedLabel(item.label)}
+                  {CARD_TOOLTIPS[item.label] && <InfoTooltip text={CARD_TOOLTIPS[item.label]} />}
+                </div>
               </div>
             ))}
           </div>

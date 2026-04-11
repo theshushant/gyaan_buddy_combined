@@ -307,7 +307,7 @@ const TeacherDashboard = () => {
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.3s'}}>
             <div className="text-center">
               <div className="text-4xl font-bold mb-2 animate-count-up" style={{ color: '#00167a' }}>
-                {quickSummary?.find((i) => i.label === 'Chapter Covered')?.value ?? '0/0'}
+                {quickSummary?.find((i) => i.label === 'Topics Covered')?.value ?? '0/0'}
               </div>
               <div className="text-gray-600 flex items-center justify-center">
                 Topics Covered<InfoTooltip text={CARD_TOOLTIPS['Topics Covered']} />

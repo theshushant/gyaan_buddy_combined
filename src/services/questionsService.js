@@ -121,6 +121,31 @@ class QuestionsService {
       throw new Error(`Failed to create question options: ${error.message}`);
     }
   }
+
+  async getQuestionBank(filters = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      if (filters.topic) queryParams.append('topic', filters.topic);
+      if (filters.level) queryParams.append('level', filters.level);
+      if (filters.page) queryParams.append('page', filters.page);
+      if (filters.page_size) queryParams.append('page_size', filters.page_size);
+      const endpoint = `/question-bank/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      return await apiService.get(endpoint);
+    } catch (error) {
+      throw new Error(`Failed to fetch question bank: ${error.message}`);
+    }
+  }
+
+  async addBankQuestionsToChapter(chapterId, questionIds) {
+    try {
+      return await apiService.post('/question-bank/add-to-chapter/', {
+        chapter_id: chapterId,
+        question_ids: questionIds,
+      });
+    } catch (error) {
+      throw new Error(`Failed to add questions to assignment: ${error.message}`);
+    }
+  }
 }
 
 export default new QuestionsService();

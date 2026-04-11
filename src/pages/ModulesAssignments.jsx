@@ -70,6 +70,8 @@ const ModulesAssignments = () => {
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
   const [selectedChapterForAI, setSelectedChapterForAI] = useState(null);
+  const [showQuestionBankModal, setShowQuestionBankModal] = useState(false);
+  const [selectedChapterForBank, setSelectedChapterForBank] = useState(null);
   const [selectedModuleForQuestion, setSelectedModuleForQuestion] = useState(null);
   const [chaptersLoadingForModuleId, setChaptersLoadingForModuleId] = useState(null);
   const [togglingDueKey, setTogglingDueKey] = useState(null);
@@ -606,6 +608,15 @@ const ModulesAssignments = () => {
     });
     setShowCreateQuestionModal(false);
     setShowAIGenerateModal(true);
+  };
+
+  const handleOpenQuestionBank = () => {
+    setSelectedChapterForBank({
+      chapter: selectedChapterForQuestion,
+      module: selectedModuleForQuestion
+    });
+    setShowCreateQuestionModal(false);
+    setShowQuestionBankModal(true);
   };
 
   const handleSaveQuestion = async (questionData) => {
@@ -1490,13 +1501,22 @@ const ModulesAssignments = () => {
                     </div>
                     <div className="flex items-center space-x-3">
                       {!editingQuestion && (
-                        <button
-                          onClick={handleOpenAIGenerate}
-                          className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-medium rounded-lg backdrop-blur-sm transition-all duration-200"
-                        >
-                          <Brain className="h-5 w-5" />
-                          <span>Generate with AI</span>
-                        </button>
+                        <>
+                          <button
+                            onClick={handleOpenQuestionBank}
+                            className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-medium rounded-lg backdrop-blur-sm transition-all duration-200"
+                          >
+                            <BookOpen className="h-5 w-5" />
+                            <span>Question Bank</span>
+                          </button>
+                          <button
+                            onClick={handleOpenAIGenerate}
+                            className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-medium rounded-lg backdrop-blur-sm transition-all duration-200"
+                          >
+                            <Brain className="h-5 w-5" />
+                            <span>Generate with AI</span>
+                          </button>
+                        </>
                       )}
                     <button
                       onClick={() => {
@@ -1555,6 +1575,27 @@ const ModulesAssignments = () => {
               setSuccessData({
                 title: 'Questions Generated Successfully',
                 message: 'AI-generated questions have been added to the assignment successfully.'
+              });
+              setShowSuccessModal(true);
+              fetchAllModulesData();
+            }}
+          />
+        )}
+
+        {showQuestionBankModal && (
+          <QuestionBankModal
+            isOpen={showQuestionBankModal}
+            onClose={() => {
+              setShowQuestionBankModal(false);
+              setSelectedChapterForBank(null);
+            }}
+            chapterData={selectedChapterForBank}
+            onSuccess={() => {
+              setShowQuestionBankModal(false);
+              setSelectedChapterForBank(null);
+              setSuccessData({
+                title: 'Questions Added Successfully',
+                message: 'Selected questions from the bank have been added to the assignment.'
               });
               setShowSuccessModal(true);
               fetchAllModulesData();
@@ -2894,6 +2935,292 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
         </button>
       </div>
     </form>
+  );
+};
+
+const LEVEL_OPTIONS = [
+  { value: '', label: 'All Levels' },
+  { value: '1', label: 'Level 1' },
+  { value: '2', label: 'Level 2' },
+  { value: '3', label: 'Level 3' },
+  { value: '4', label: 'Level 4' },
+  { value: '5', label: 'Level 5 (HOTS)' },
+];
+
+const QuestionBankModal = ({ isOpen, onClose, chapterData, onSuccess }) => {
+  const chapter = chapterData?.chapter;
+  const parentModule = chapterData?.module;
+
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [selectedLevel, setSelectedLevel] = useState('');
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState(null);
+  const [pagination, setPagination] = useState({ count: 0, next: null, previous: null, page: 1 });
+
+  const topic = chapter?.title || chapter?.name || '';
+
+  const fetchQuestions = useCallback(async (page = 1, level = '') => {
+    if (!topic) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await questionsService.getQuestionBank({ topic, level: level || undefined, page, page_size: 20 });
+      const data = res?.data || [];
+      const pg = res?.pagination || {};
+      setQuestions(data);
+      setPagination(prev => ({ ...prev, count: pg.count || 0, next: pg.next, previous: pg.previous, page }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [topic]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedIds(new Set());
+      setAddError(null);
+      fetchQuestions(1, selectedLevel);
+    }
+  }, [isOpen]);
+
+  const handleLevelChange = (level) => {
+    setSelectedLevel(level);
+    setSelectedIds(new Set());
+    fetchQuestions(1, level);
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectedIds.size === questions.length && questions.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(questions.map(q => q.id)));
+    }
+  };
+
+  const handleAdd = async () => {
+    if (!chapter?.id || selectedIds.size === 0) return;
+    setAdding(true);
+    setAddError(null);
+    try {
+      await questionsService.addBankQuestionsToChapter(chapter.id, Array.from(selectedIds));
+      onSuccess();
+    } catch (err) {
+      setAddError(err.message);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const allSelected = questions.length > 0 && selectedIds.size === questions.length;
+  const pageCount = Math.ceil(pagination.count / 20);
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          {/* Header */}
+          <div className="px-8 py-6" style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                  <BookOpen className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Question Bank</h2>
+                  <p className="text-sm text-blue-200 mt-0.5">{chapter?.title || 'Assignment'}</p>
+                </div>
+              </div>
+              <button onClick={onClose} className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all duration-200">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            {/* Filters */}
+            <div className="mt-4 flex items-center space-x-3">
+              <div className="flex items-center space-x-2 bg-white/10 rounded-lg px-3 py-2">
+                <Filter className="h-4 w-4 text-white/70" />
+                <select
+                  value={selectedLevel}
+                  onChange={e => handleLevelChange(e.target.value)}
+                  className="bg-transparent text-white text-sm font-medium focus:outline-none cursor-pointer"
+                >
+                  {LEVEL_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value} className="text-gray-900">{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              {pagination.count > 0 && (
+                <span className="text-white/70 text-sm">{pagination.count} question{pagination.count !== 1 ? 's' : ''} found</span>
+              )}
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="flex-1 overflow-y-auto bg-gray-50">
+            {!topic ? (
+              <div className="flex items-center justify-center h-48 text-gray-500">
+                <p>No module information available.</p>
+              </div>
+            ) : loading ? (
+              <div className="flex items-center justify-center h-48">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center h-48">
+                <div className="flex items-center space-x-2 text-red-600">
+                  <AlertCircle className="h-5 w-5" />
+                  <span>{error}</span>
+                </div>
+              </div>
+            ) : questions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-48 text-gray-400 space-y-2">
+                <BookOpen className="h-10 w-10 opacity-40" />
+                <p className="text-sm">No questions found for this module{selectedLevel ? ` at level ${selectedLevel}` : ''}.</p>
+              </div>
+            ) : (
+              <div className="p-4 space-y-3">
+                {/* Select all row */}
+                <div className="flex items-center justify-between px-4 py-2 bg-white rounded-lg border border-gray-200">
+                  <label className="flex items-center space-x-3 cursor-pointer select-none">
+                    <button onClick={toggleAll} className="text-blue-600 hover:text-blue-700">
+                      {allSelected ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5" />}
+                    </button>
+                    <span className="text-sm font-medium text-gray-700">
+                      {allSelected ? 'Deselect all' : 'Select all on this page'}
+                    </span>
+                  </label>
+                  {selectedIds.size > 0 && (
+                    <span className="text-sm text-blue-600 font-medium">{selectedIds.size} selected</span>
+                  )}
+                </div>
+
+                {questions.map((q, idx) => {
+                  const isSelected = selectedIds.has(q.id);
+                  return (
+                    <div
+                      key={q.id}
+                      onClick={() => toggleSelect(q.id)}
+                      className={`bg-white rounded-lg border-2 p-4 cursor-pointer transition-all duration-150 ${isSelected ? 'border-blue-500 shadow-sm shadow-blue-100' : 'border-gray-200 hover:border-gray-300'}`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className="pt-0.5 shrink-0 text-blue-600">
+                          {isSelected ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5 text-gray-400" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 mb-1.5 flex-wrap gap-y-1">
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                              Level {q.level}
+                            </span>
+                            {q.difficulty_level && (
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                q.difficulty_level === 'hard' ? 'bg-red-100 text-red-700'
+                                : q.difficulty_level === 'medium' ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-green-100 text-green-700'
+                              }`}>
+                                {q.difficulty_level}
+                              </span>
+                            )}
+                            {q.created_by_you && (
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">Your question</span>
+                            )}
+                            {q.your_school && !q.created_by_you && (
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">Your school</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-900 font-medium leading-snug">
+                            {idx + 1 + (pagination.page - 1) * 20}. {q.question_text}
+                          </p>
+                          {q.options?.length > 0 && (
+                            <ul className="mt-2 space-y-1">
+                              {q.options.map((opt, oi) => (
+                                <li key={oi} className={`text-xs px-2 py-1 rounded ${opt.is_correct ? 'bg-green-50 text-green-700 font-medium' : 'text-gray-500'}`}>
+                                  {String.fromCharCode(65 + oi)}. {opt.text}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="px-8 py-4 border-t border-gray-200 bg-white flex items-center justify-between">
+            {/* Pagination */}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => fetchQuestions(pagination.page - 1, selectedLevel)}
+                disabled={!pagination.previous || loading}
+                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-500">
+                Page {pagination.page}{pageCount > 0 ? ` of ${pageCount}` : ''}
+              </span>
+              <button
+                onClick={() => fetchQuestions(pagination.page + 1, selectedLevel)}
+                disabled={!pagination.next || loading}
+                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center space-x-3">
+              {addError && (
+                <span className="text-sm text-red-600 flex items-center space-x-1">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{addError}</span>
+                </span>
+              )}
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAdd}
+                disabled={selectedIds.size === 0 || adding}
+                className="flex items-center space-x-2 px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+              >
+                {adding ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Adding...</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4" />
+                    <span>Add {selectedIds.size > 0 ? `${selectedIds.size} ` : ''}to Assignment</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

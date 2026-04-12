@@ -11,9 +11,11 @@ const EMPTY_DATA = {
   filterOptions: {
     classes: [],
     subjects: [],
+    modules: [],
     chapters: [],
   },
   sectionWisePerformance: [],
+  moduleProficiencyData: [],
   reportsData: {
     chapterProficiency: [],
   },
@@ -63,9 +65,11 @@ const Reports = () => {
         filterOptions: {
           classes: response.filterOptions?.classes || [],
           subjects: response.filterOptions?.subjects || [],
+          modules: response.filterOptions?.modules || [],
           chapters: response.filterOptions?.chapters || [],
         },
         sectionWisePerformance: response.sectionWisePerformance || [],
+        moduleProficiencyData: response.moduleProficiencyData || [],
         reportsData: {
           chapterProficiency: response.reportsData?.chapterProficiency || [],
         },
@@ -106,16 +110,18 @@ const Reports = () => {
         period: '30',
         class: filters.class ?? diffClass,
         subject: filters.subject ?? diffSubject,
-        chapter: filters.topic ?? diffTopic,
+        module: filters.module ?? diffTopic,
       })
       setDiffData({
         summary: response.summary || EMPTY_DATA.summary,
         filterOptions: {
           classes: response.filterOptions?.classes || [],
           subjects: response.filterOptions?.subjects || [],
+          modules: response.filterOptions?.modules || [],
           chapters: response.filterOptions?.chapters || [],
         },
         sectionWisePerformance: response.sectionWisePerformance || [],
+        moduleProficiencyData: response.moduleProficiencyData || [],
         reportsData: {
           chapterProficiency: response.reportsData?.chapterProficiency || [],
         },
@@ -133,12 +139,12 @@ const Reports = () => {
   const handleDiffSubjectChange = (value) => {
     setDiffSubject(value)
     setDiffTopic('')
-    fetchTopicDiffData({ subject: value, topic: '' })
+    fetchTopicDiffData({ subject: value, module: '' })
   }
 
   const handleDiffTopicChange = (value) => {
     setDiffTopic(value)
-    fetchTopicDiffData({ topic: value })
+    fetchTopicDiffData({ module: value })
   }
 
   const sectionRows = useMemo(() => {
@@ -184,28 +190,35 @@ const Reports = () => {
   }, [sectionRows, data.summary.totalStudents, data.summary.averageScore])
 
   const topicDifferenceSummary = useMemo(() => {
-    const chapters = Array.isArray(diffData.reportsData?.chapterProficiency)
-      ? diffData.reportsData.chapterProficiency
-      : []
+    const moduleRows = Array.isArray(diffData.moduleProficiencyData) ? diffData.moduleProficiencyData : []
     const goodSet = new Set()
     const weakSet = new Set()
 
-    chapters.forEach((chapter) => {
-      const chapterName = chapter.chapterName || chapter.name
-      const proficiency = Number(chapter.proficient ?? chapter.proficiency ?? 0)
-      if (!chapterName) return
-      if (proficiency > 50) {
-        goodSet.add(chapterName)
-      } else {
-        weakSet.add(chapterName)
-      }
+    const modulesToInspect = moduleRows
+
+    modulesToInspect.forEach((moduleRow) => {
+      const backendWeakTopics = Array.isArray(moduleRow.weakSubtopics) ? moduleRow.weakSubtopics : []
+
+      backendWeakTopics.forEach((topicName) => {
+        if (topicName) weakSet.add(topicName)
+      })
+
+      ;(moduleRow.chapters || []).forEach((chapter) => {
+        const topicName = chapter.name || chapter.chapterName
+        const proficiency = Number(chapter.proficiency ?? chapter.proficient ?? 0)
+        if (!topicName) return
+
+        if (proficiency > 50) {
+          goodSet.add(topicName)
+        }
+      })
     })
 
     return {
       goodTopics: [...goodSet],
       weakTopics: [...weakSet],
     }
-  }, [diffData.reportsData?.chapterProficiency, diffTopic])
+  }, [diffData.moduleProficiencyData, diffTopic])
 
   if (loading) {
     return (
@@ -235,7 +248,7 @@ const Reports = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Reports Dashboard</h1>
-        <p className="text-gray-600 mt-1">Live section-wise performance with class, subject, and topic filters.</p>
+        <p className="text-gray-600 mt-1">Live section-wise performance with class, subject, and chapter filters.</p>
       </div>
 
       <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
@@ -269,14 +282,14 @@ const Reports = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Topic</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Chapter</label>
             <select
               value={selectedTopic}
               onChange={(e) => handleTopicChange(e.target.value)}
               disabled={!selectedSubject}
               className={`px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 ${!selectedSubject ? 'text-gray-400 cursor-not-allowed' : 'text-gray-900'}`}
             >
-              <option value="">All Topics</option>
+              <option value="">All Chapters</option>
               {data.filterOptions.chapters.map((chapter) => (
                 <option key={chapter.id} value={chapter.id}>{chapter.name}</option>
               ))}
@@ -354,7 +367,7 @@ const Reports = () => {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Topic Difference Table</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Topic Analyzer</h2>
         </div>
 
         <div className="p-5 border-b border-gray-100">
@@ -388,16 +401,16 @@ const Reports = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Topic</label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Chapter</label>
               <select
                 value={diffTopic}
                 onChange={(e) => handleDiffTopicChange(e.target.value)}
                 disabled={!diffSubject}
                 className={`px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 ${!diffSubject ? 'text-gray-400 cursor-not-allowed' : 'text-gray-900'}`}
               >
-                <option value="">All Topics</option>
-                {diffData.filterOptions.chapters.map((chapter) => (
-                  <option key={chapter.id} value={chapter.id}>{chapter.name}</option>
+                <option value="">All Chapters</option>
+                {diffData.filterOptions.modules.map((module) => (
+                  <option key={module.id} value={module.id}>{module.name}</option>
                 ))}
               </select>
             </div>

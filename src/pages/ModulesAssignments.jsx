@@ -86,6 +86,7 @@ const ModulesAssignments = () => {
   const [pdfDeletingId, setPdfDeletingId] = useState(null);
   const [pdfError, setPdfError] = useState(null);
   const pdfInputRef = useRef(null);
+  const fetchCountRef = useRef(0);
 
   const toggleChapter = (chapterId) => {
     setExpandedChapters(prev => 
@@ -201,12 +202,17 @@ const ModulesAssignments = () => {
   }, [expandedChapters, allModulesData, loadChaptersForModule]);
 
   const fetchAllModulesData = useCallback(async () => {
+    const fetchId = ++fetchCountRef.current;
     setLoading(true);
     setError(null);
 
     try {
       const filters = selectedClass ? { class: selectedClass } : {};
       const modulesResponse = await modulesService.getModules(filters);
+
+      // Ignore this response if a newer fetch has already started
+      if (fetchId !== fetchCountRef.current) return;
+
       const modulesData = modulesResponse.data || modulesResponse;
       const modulesList = Array.isArray(modulesData) ? modulesData : [];
 
@@ -234,10 +240,11 @@ const ModulesAssignments = () => {
 
       setAllModulesData(modulesWithoutChapters);
     } catch (err) {
+      if (fetchId !== fetchCountRef.current) return;
       console.error('Error fetching modules:', err);
       setError(err.message || 'Failed to load modules. Please try again.');
     } finally {
-      setLoading(false);
+      if (fetchId === fetchCountRef.current) setLoading(false);
     }
   }, [selectedClass]);
 
@@ -255,6 +262,15 @@ const ModulesAssignments = () => {
       const selectedSubjectId = selectedSubject.toString();
       return moduleSubjectId === selectedSubjectId;
     });
+
+    // If the current subject has no modules but other subjects do, auto-select the first available
+    if (filteredModules.length === 0 && allModulesData.length > 0) {
+      const firstAvailableSubjectId = allModulesData[0].subjectId?.toString();
+      if (firstAvailableSubjectId && firstAvailableSubjectId !== selectedSubject.toString()) {
+        setSelectedSubject(firstAvailableSubjectId);
+        return;
+      }
+    }
 
     setChapters(filteredModules);
     const subjectChanged = prevSubjectRef.current !== selectedSubject;
@@ -3148,7 +3164,7 @@ const QuestionBankModal = ({ isOpen, onClose, chapterData, onSuccess }) => {
                             <ul className="mt-2 space-y-1">
                               {q.options.map((opt, oi) => (
                                 <li key={oi} className={`text-xs px-2 py-1 rounded ${opt.is_correct ? 'bg-green-50 text-green-700 font-medium' : 'text-gray-500'}`}>
-                                  {String.fromCharCode(65 + oi)}. {opt.text}
+                                  {String.fromCharCode(65 + oi)}. {opt.option_text}
                                 </li>
                               ))}
                             </ul>

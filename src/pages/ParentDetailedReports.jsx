@@ -68,17 +68,48 @@ const ParentDetailedReports = () => {
   }, [])
 
   const subjectOptions = useMemo(() => {
-    const subjects = progress?.subject_progress || []
-    return subjects.map((s) => ({
-      id: String(s.subject_id),
-      name: s.subject_name,
-      accuracy: Math.round(s.accuracy || 0),
-      questions: s.total_questions || 0,
-      attempted: s.questions_attempted || 0,
-      correct: s.correct_answers || 0,
-      wrong: s.wrong_answers || 0,
-    }))
-  }, [progress])
+    const subjects = Array.isArray(progress?.subject_progress) ? progress.subject_progress : []
+
+    const normalizedFromProgress = subjects
+      .map((s) => {
+        const id = s?.subject_id ?? s?.subject ?? s?.id ?? null
+        if (!id) return null
+        return {
+          id: String(id),
+          name: s?.subject_name || s?.name || 'Subject',
+          accuracy: Math.round(Number(s?.accuracy || 0)),
+          questions: Number(s?.total_questions || 0),
+          attempted: Number(s?.questions_attempted || 0),
+          correct: Number(s?.correct_answers || 0),
+          wrong: Number(s?.wrong_answers || 0),
+        }
+      })
+      .filter(Boolean)
+
+    if (normalizedFromProgress.length > 0) return normalizedFromProgress
+
+    // Fallback for payloads where my-progress has no/changed subject_progress shape.
+    // Derive subjects from tests so subject-level API can still be called.
+    const bySubject = new Map()
+    tests.forEach((t) => {
+      const id = t?.subject ?? t?.subject_id ?? null
+      if (!id) return
+      const key = String(id)
+      if (!bySubject.has(key)) {
+        bySubject.set(key, {
+          id: key,
+          name: t?.subject_name || 'Subject',
+          accuracy: 0,
+          questions: 0,
+          attempted: 0,
+          correct: 0,
+          wrong: 0,
+        })
+      }
+    })
+
+    return [...bySubject.values()]
+  }, [progress, tests])
 
   const selectedSubject = useMemo(() => {
     if (!subjectOptions.length) return null

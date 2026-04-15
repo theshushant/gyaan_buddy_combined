@@ -21,6 +21,41 @@ const barColor = (accuracy = 0) => {
   return 'bg-red-400'
 }
 
+const toNumber = (value) => {
+  const num = Number(value)
+  return Number.isFinite(num) ? num : 0
+}
+
+const getTestAccuracy = (test) => {
+  const progress = test?.user_progress || {}
+  const explicitAccuracy = Number(progress.accuracy)
+  if (Number.isFinite(explicitAccuracy)) return explicitAccuracy
+
+  const attempted = toNumber(progress.questions_attempted)
+  const correct = toNumber(progress.correct_answers)
+  if (attempted > 0) return (correct / attempted) * 100
+
+  const fallbackScore = Number(progress.score)
+  if (Number.isFinite(fallbackScore)) return fallbackScore
+
+  return toNumber(progress.percentage)
+}
+
+const getTopicName = (topicLike) => {
+  if (!topicLike) return ''
+  if (typeof topicLike === 'string') return topicLike.trim()
+  if (typeof topicLike === 'object') {
+    return (
+      topicLike.topic_name ||
+      topicLike.chapter_name ||
+      topicLike.area_name ||
+      topicLike.name ||
+      ''
+    ).toString().trim()
+  }
+  return ''
+}
+
 const ParentDashboard = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -75,7 +110,7 @@ const ParentDashboard = () => {
         icon: CheckCircle2,
         iconClass: 'text-green-600 bg-green-100',
         title: `Completed '${t.subject_name || t.name || 'Test'}'`,
-        subtitle: `${new Date(t.test_datetime).toLocaleDateString()} • Score ${Math.round(t.user_progress?.percentage || 0)}%`,
+        subtitle: `${new Date(t.test_datetime).toLocaleDateString()} • Score ${Math.round(getTestAccuracy(t))}%`,
       }))
 
     activity.push(...completedTests)
@@ -105,12 +140,80 @@ const ParentDashboard = () => {
     return activity.slice(0, 3)
   }, [tests, answerTrends, leaderboard])
 
+  const stats = progress?.overall_stats || {}
+  const xp = progress?.exp_and_level?.total_exp || 0
+  const normalizedSubjectProgress = useMemo(() => {
+    // Canonical source for dashboard subject metrics: tests + user_progress.
+    const grouped = new Map()
+    tests.forEach((test) => {
+      const progressData = test?.user_progress
+      if (!progressData) return
+
+      const subjectId = test?.subject ?? test?.subject_id ?? null
+      const subjectName = test?.subject_name || 'Subject'
+      const key = subjectId ? String(subjectId) : subjectName
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          subject_id: key,
+          subject_name: subjectName,
+          attempted: 0,
+          total: 0,
+          correctWeighted: 0,
+          accuracyWeight: 0,
+        })
+      }
+
+      const current = grouped.get(key)
+      const attempted = toNumber(progressData.questions_attempted)
+      const total = toNumber(progressData.total_questions || test?.question_count)
+      const testAccuracy = getTestAccuracy(test)
+
+      current.attempted += attempted
+      current.total += total
+
+      if (attempted > 0) {
+        current.correctWeighted += (testAccuracy / 100) * attempted
+        current.accuracyWeight += attempted
+      } else {
+        current.correctWeighted += testAccuracy
+        current.accuracyWeight += 1
+      }
+    })
+
+    return [...grouped.values()].map((item) => ({
+      subject_id: item.subject_id,
+      subject_name: item.subject_name,
+      accuracy: item.accuracyWeight > 0 ? Math.max(0, Math.min(100, (item.correctWeighted / item.accuracyWeight) * 100)) : 0,
+      attempt_rate: item.total > 0 ? Math.max(0, Math.min(100, (item.attempted / item.total) * 100)) : 0,
+      questions_attempted: item.attempted,
+      total_questions: item.total,
+    }))
+  }, [tests])
+  const subjectProgress = normalizedSubjectProgress
+  const mastered = subjectProgress.filter((s) => (s.accuracy || 0) >= 70).length
+  const derivedOverallAccuracy = useMemo(() => {
+    const totals = subjectProgress.reduce(
+      (acc, s) => {
+        const attempted = toNumber(s.questions_attempted)
+        const accuracy = toNumber(s.accuracy)
+        acc.attempted += attempted
+        acc.correctWeighted += (accuracy / 100) * attempted
+        return acc
+      },
+      { attempted: 0, correctWeighted: 0 },
+    )
+
+    if (totals.attempted > 0) return (totals.correctWeighted / totals.attempted) * 100
+    const apiAccuracy = Number(stats?.accuracy)
+    return Number.isFinite(apiAccuracy) ? apiAccuracy : 0
+  }, [stats, subjectProgress])
+
   const generatedInsights = useMemo(() => {
     const insights = []
     const overallAcc = Math.round(progress?.overall_stats?.accuracy || 0)
-    const completedTests = tests.filter((t) => t?.user_progress?.percentage != null)
+    const completedTests = tests.filter((t) => t?.user_progress)
     const avgTest = completedTests.length
-      ? Math.round(completedTests.reduce((s, t) => s + (t.user_progress?.percentage || 0), 0) / completedTests.length)
+      ? Math.round(completedTests.reduce((s, t) => s + getTestAccuracy(t), 0) / completedTests.length)
       : null
 
     if (avgTest != null) {
@@ -128,7 +231,7 @@ const ParentDashboard = () => {
       }
     }
 
-    const weakest = (progress?.subject_progress || [])
+    const weakest = subjectProgress
       .slice()
       .sort((a, b) => (a.accuracy || 0) - (b.accuracy || 0))[0]
     if (weakest) {
@@ -152,7 +255,49 @@ const ParentDashboard = () => {
     }
 
     return insights.slice(0, 3)
-  }, [progress, tests, answerTrends])
+  }, [progress, tests, answerTrends, subjectProgress])
+
+  const studentName = progress?.student_name || 'Student'
+  const className = progress?.class_name || 'Class not assigned'
+  const strongTopicNames = useMemo(() => {
+    const direct = (Array.isArray(progress?.strong_topics) ? progress.strong_topics : [])
+      .map(getTopicName)
+      .filter(Boolean)
+
+    if (direct.length > 0) return direct.slice(0, 5)
+
+    const fromSubjects = subjectProgress
+      .slice()
+      .sort((a, b) => (b.accuracy || 0) - (a.accuracy || 0))
+      .map((s) => s.subject_name)
+      .filter(Boolean)
+    return fromSubjects.slice(0, 5)
+  }, [progress, subjectProgress])
+
+  const weakTopicNames = useMemo(() => {
+    const direct = (Array.isArray(progress?.weak_topics) ? progress.weak_topics : [])
+      .map(getTopicName)
+      .filter(Boolean)
+    if (direct.length > 0) return direct.slice(0, 5)
+
+    const fromWeakAreas = (Array.isArray(weakAreas) ? weakAreas : [])
+      .map((item) => getTopicName(item))
+      .filter(Boolean)
+    if (fromWeakAreas.length > 0) return fromWeakAreas.slice(0, 5)
+
+    const fromSubjects = subjectProgress
+      .slice()
+      .sort((a, b) => (a.accuracy || 0) - (b.accuracy || 0))
+      .map((s) => s.subject_name)
+      .filter(Boolean)
+    return fromSubjects.slice(0, 5)
+  }, [progress, weakAreas, subjectProgress])
+
+  const actionableInsights = useMemo(() => {
+    const direct = Array.isArray(progress?.actionable_insights) ? progress.actionable_insights : []
+    if (direct.length > 0) return direct
+    return generatedInsights
+  }, [progress, generatedInsights])
 
   if (loading) {
     return <div className="min-h-[50vh] flex items-center justify-center text-gray-500">Loading parent dashboard...</div>
@@ -161,20 +306,6 @@ const ParentDashboard = () => {
   if (error) {
     return <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4">{error}</div>
   }
-
-  const stats = progress?.overall_stats || {}
-  const xp = progress?.exp_and_level?.total_exp || 0
-  const subjectProgress = progress?.subject_progress || []
-  const mastered = subjectProgress.filter((s) => (s.accuracy || 0) >= 70).length
-  const studentName = progress?.student_name || 'Student'
-  const className = progress?.class_name || 'Class not assigned'
-  const strongTopicNames = (Array.isArray(progress?.strong_topics) ? progress.strong_topics : [])
-    .map((topic) => topic.topic_name)
-    .slice(0, 5)
-  const weakTopicNames = (Array.isArray(progress?.weak_topics) ? progress.weak_topics : [])
-    .map((topic) => topic.topic_name)
-    .slice(0, 5)
-  const actionableInsights = Array.isArray(progress?.actionable_insights) ? progress.actionable_insights : []
   const showRecentActivity = false
   const showUpcomingDeadlines = false
   const performanceChartData = {
@@ -231,7 +362,7 @@ const ParentDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white border border-gray-200 rounded-2xl p-6">
           <p className="text-gray-500 text-sm">Overall Accuracy</p>
-          <p className="text-5xl font-extrabold text-gray-900 mt-2">{Math.round(stats.accuracy || 0)}%</p>
+          <p className="text-5xl font-extrabold text-gray-900 mt-2">{Math.round(derivedOverallAccuracy || 0)}%</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-2xl p-6">
           <p className="text-gray-500 text-sm">Total XP Earned</p>
@@ -265,7 +396,7 @@ const ParentDashboard = () => {
               {subjectProgress.map((item) => {
                 const pct = Math.max(0, Math.min(100, Math.round(item.accuracy || 0)))
                 return (
-                  <div key={item.subject_id}>
+                  <div key={item.subject_id || item.subject_name}>
                     <div className="flex items-center justify-between text-sm mb-2">
                       <span className="font-semibold text-gray-800">{item.subject_name}</span>
                       <span className="font-bold text-gray-700">{pct}%</span>

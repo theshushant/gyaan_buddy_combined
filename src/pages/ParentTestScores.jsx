@@ -52,20 +52,20 @@ const ParentTestScores = () => {
 
   const scoredTests = useMemo(() => {
     return tests
-      .filter((t) => t?.user_progress?.percentage != null)
+      .filter((t) => t?.user_progress?.score != null)
       .sort((a, b) => new Date(b.test_datetime) - new Date(a.test_datetime))
   }, [tests])
 
   const avgScore = useMemo(() => {
     if (!scoredTests.length) return 0
-    const total = scoredTests.reduce((sum, t) => sum + Number(t.user_progress?.percentage || 0), 0)
+    const total = scoredTests.reduce((sum, t) => sum + Number(t.user_progress?.score || 0), 0)
     return Math.round(total / scoredTests.length)
   }, [scoredTests])
 
   const lastSixAvg = useMemo(() => {
     const recent = scoredTests.slice(0, 6)
     if (!recent.length) return null
-    const total = recent.reduce((sum, t) => sum + Number(t.user_progress?.percentage || 0), 0)
+    const total = recent.reduce((sum, t) => sum + Number(t.user_progress?.score || 0), 0)
     return Math.round(total / recent.length)
   }, [scoredTests])
 
@@ -80,7 +80,7 @@ const ParentTestScores = () => {
       .slice(-8)
       .map((t) => ({
         label: new Date(t.test_datetime).toLocaleDateString('en-US', { month: 'short' }),
-        score: Math.round(Number(t.user_progress?.percentage || 0)),
+        score: Math.round(Number(t.user_progress?.score || 0)),
       }))
 
     if (fromTests.length >= 4) return fromTests
@@ -117,7 +117,7 @@ const ParentTestScores = () => {
     scoredTests.forEach((t) => {
       const key = t.subject_name || 'Unknown'
       const current = map.get(key) || { sum: 0, count: 0 }
-      current.sum += Number(t.user_progress?.percentage || 0)
+      current.sum += Number(t.user_progress?.score || 0)
       current.count += 1
       map.set(key, current)
     })
@@ -206,8 +206,8 @@ const ParentTestScores = () => {
         <h2 className="text-4xl max-sm:text-2xl font-extrabold text-gray-900 mb-4">Recent Test Scores</h2>
         <div className="space-y-3">
           {scoredTests.map((test) => {
-            const pct = Math.round(Number(test.user_progress?.percentage || 0))
-            const badge = getBadge(pct)
+            const score = Math.round(Number(test.user_progress?.score || 0))
+            const badge = getBadge(score)
             const moduleCount = Array.isArray(test.module_chapters) ? test.module_chapters.length : 0
             const chapterCount = (Array.isArray(test.module_chapters) ? test.module_chapters : []).reduce(
               (sum, mod) => sum + (Array.isArray(mod.chapters) ? mod.chapters.length : 0),
@@ -232,7 +232,7 @@ const ParentTestScores = () => {
                   </div>
 
                   <div className="flex items-center gap-3 shrink-0">
-                    <p className="text-4xl max-sm:text-2xl font-extrabold text-gray-900">{pct}/100</p>
+                    <p className="text-4xl max-sm:text-2xl font-extrabold text-gray-900">{score}/100</p>
                     <span className={`text-xs font-semibold px-3 py-1 rounded-full ${badge.cls}`}>{badge.text}</span>
                   </div>
                 </div>

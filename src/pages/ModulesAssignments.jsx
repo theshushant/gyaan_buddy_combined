@@ -39,6 +39,15 @@ import CreateModuleModal from '../components/CreateModuleModal';
 import CreateTopicModal from '../components/CreateTopicModal';
 import SuccessModal from '../components/SuccessModal';
 
+const sortByOrderThenTitle = (items) => [...items].sort((a, b) => {
+  const aOrder = Number(a.order ?? a.order_number ?? Number.MAX_SAFE_INTEGER);
+  const bOrder = Number(b.order ?? b.order_number ?? Number.MAX_SAFE_INTEGER);
+  if (aOrder !== bOrder) return aOrder - bOrder;
+  return String(a.title || a.name || '').localeCompare(String(b.title || b.name || ''));
+});
+
+const cleanDisplayText = (value) => String(value || '').replace(/\bCompetancy\b/gi, 'Competency');
+
 const ModulesAssignments = () => {
   const [expandedChapters, setExpandedChapters] = useState([]);
   const [chapters, setChapters] = useState([]);
@@ -172,12 +181,13 @@ const ModulesAssignments = () => {
           if (m.id !== moduleId) return m;
           return {
             ...m,
-            modules: chaptersList.map((chapter, idx) => ({
+            modules: sortByOrderThenTitle(chaptersList.map((chapter, idx) => ({
               id: chapter.id,
-              title: chapter.title || `Assignment ${idx + 1}`,
+              title: cleanDisplayText(chapter.title || `Assignment ${idx + 1}`),
               isDue: chapter.is_due === true,
-              dueDate: chapter.due_date || null
-            }))
+              dueDate: chapter.due_date || null,
+              order: chapter.order ?? idx + 1
+            })))
           };
         });
       });
@@ -216,16 +226,16 @@ const ModulesAssignments = () => {
       const modulesData = modulesResponse.data || modulesResponse;
       const modulesList = Array.isArray(modulesData) ? modulesData : [];
 
-      const modulesWithoutChapters = modulesList.map((module) => ({
+      const modulesWithoutChapters = sortByOrderThenTitle(modulesList.map((module) => ({
         id: module.id,
         subjectId: module.subject || module.subject_id || module.subject?.id,
-        title: module.name || `Chapter ${module.order}`,
+        title: cleanDisplayText(module.name || `Chapter ${module.order}`),
         completionRate: module.total_chapter_count > 0
           ? Math.round((module.due_chapter_count / module.total_chapter_count) * 100)
           : 0,
         isDue: module.is_due === true || module.status === 'due',
         dueDate: module.due_date || null,
-        name: module.name,
+        name: cleanDisplayText(module.name),
         description: module.description || '',
         order: module.order || 1,
         is_active: module.is_active !== undefined ? module.is_active : true,
@@ -236,7 +246,7 @@ const ModulesAssignments = () => {
         total_chapter_count: module.total_chapter_count ?? module.chapter_count ?? 0,
         due_chapter_count: module.due_chapter_count ?? 0,
         modules: undefined
-      }));
+      })));
 
       setAllModulesData(modulesWithoutChapters);
     } catch (err) {
@@ -571,8 +581,9 @@ const ModulesAssignments = () => {
     }
   };
 
-  const handleViewQuestions = async (chapter) => {
+  const handleViewQuestions = async (chapter, parentModule = null) => {
     setSelectedChapterForQuestion(chapter);
+    setSelectedModuleForQuestion(parentModule);
     setLoadingQuestions(true);
     setChapterQuestions([]);
     setShowViewQuestionsModal(true);
@@ -731,12 +742,17 @@ const ModulesAssignments = () => {
           await handleViewQuestions(selectedChapterForQuestion);
         }
       } else {
+        const targetChapter = selectedChapterForQuestion;
         const questionResponse = await questionsService.createQuestion(dataToSend);
         const questionId = questionResponse.data?.id || questionResponse.id;
         const optionErrors = questionResponse.data?.option_errors;
 
         if (!questionId) {
           throw new Error('Failed to get question ID from response');
+        }
+
+        if (targetChapter?.id) {
+          await questionsService.addBankQuestionsToChapter(targetChapter.id, [questionId]);
         }
 
         setShowCreateQuestionModal(false);
@@ -748,6 +764,9 @@ const ModulesAssignments = () => {
             : 'Question has been created and added to the assignment successfully.'
         });
         setShowSuccessModal(true);
+        if (showViewQuestionsModal && targetChapter) {
+          await handleViewQuestions(targetChapter, selectedModuleForQuestion);
+        }
         await fetchAllModulesData();
       }
     } catch (err) {
@@ -1126,7 +1145,7 @@ const ModulesAssignments = () => {
                                   <span className="text-sm font-medium">Learn Mode</span>
                                 </button>
                                 <button
-                                  onClick={() => handleViewQuestions(module)}
+                                  onClick={() => handleViewQuestions(module, chapter)}
                                   className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 shadow-sm hover:shadow-md"
                                 >
                                   <Eye className="h-4 w-4" />
@@ -1337,6 +1356,7 @@ const ModulesAssignments = () => {
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => {
               setShowViewQuestionsModal(false);
               setSelectedChapterForQuestion(null);
+              setSelectedModuleForQuestion(null);
               setChapterQuestions([]);
             }} />
             <div className="flex min-h-screen items-center justify-center p-4">
@@ -1354,12 +1374,18 @@ const ModulesAssignments = () => {
                         <p className="text-sm text-purple-100 mt-0.5">
                           {selectedChapterForQuestion?.title || 'Assignment'}
                         </p>
+                        {!loadingQuestions && (
+                          <p className="text-xs text-purple-100 mt-1">
+                            {chapterQuestions.length} {chapterQuestions.length === 1 ? 'question' : 'questions'}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <button
                       onClick={() => {
                         setShowViewQuestionsModal(false);
                         setSelectedChapterForQuestion(null);
+                        setSelectedModuleForQuestion(null);
                         setChapterQuestions([]);
                         setEditingQuestion(null);
                       }}
@@ -1386,7 +1412,7 @@ const ModulesAssignments = () => {
                       <button
                         onClick={() => {
                           setShowViewQuestionsModal(false);
-                          handleCreateQuestion(selectedChapterForQuestion);
+                          handleCreateQuestion(selectedChapterForQuestion, selectedModuleForQuestion);
                         }}
                         className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                       >
@@ -1746,6 +1772,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
     const num = parseInt(numberOfQuestions, 10);
     if (isNaN(num) || num < 1 || num > 20) {
       setError('Please enter a valid number of questions (1–20).');
+      setGenerating(false);
       return;
     }
 
@@ -1929,7 +1956,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                   <h2 className="text-2xl font-bold text-white">
                     AI Question Generator
                   </h2>
-                  <p className="text-sm text-accent-500/50 mt-0.5">
+                  <p className="text-sm text-white/80 mt-0.5">
                     {chapter?.title || 'Assignment'}
                   </p>
                 </div>
@@ -2171,13 +2198,13 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                                       }`}>
                                         {String.fromCharCode(65 + optIdx)}
                                       </span>
-                                      <span className={`${
+                                      <span className={`flex-1 min-w-0 ${
                                         option.is_correct ? 'text-green-700 font-medium' : 'text-gray-700'
                                       }`}>
                                         {option.option_text}
                                       </span>
                                       {option.is_correct && (
-                                        <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto" />
+                                        <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto flex-shrink-0" />
                                       )}
                                     </div>
                                   ))}
@@ -3160,6 +3187,17 @@ const QuestionBankModal = ({ isOpen, onClose, chapterData, onSuccess }) => {
                           <p className="text-sm text-gray-900 font-medium leading-snug">
                             {idx + 1 + (pagination.page - 1) * 20}. {q.question_text}
                           </p>
+                          {q.image && (
+                            <div className="mt-3">
+                              <img
+                                src={q.image.startsWith('http') ? q.image : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${q.image}`}
+                                alt="Question"
+                                className="max-w-full max-h-48 rounded-lg border border-gray-200 object-contain bg-white"
+                                onClick={(e) => e.stopPropagation()}
+                                onError={(e) => { e.currentTarget.style.display = 'none' }}
+                              />
+                            </div>
+                          )}
                           {q.options?.length > 0 && (
                             <ul className="mt-2 space-y-1">
                               {q.options.map((opt, oi) => (

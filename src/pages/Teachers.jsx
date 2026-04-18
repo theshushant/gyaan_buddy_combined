@@ -12,6 +12,7 @@ import {
   createTeacher,
   updateTeacher,
   deleteTeacher,
+  fetchTeacherById,
   setFilters,
   clearError
 } from '../features/teachers/teachersSlice'
@@ -87,9 +88,10 @@ const Teachers = () => {
     await dispatch(createTeacher(teacherData)).unwrap()
     setShowAddModal(false)
     setEditingTeacher(null)
+    const teacherName = [teacherData.firstName, teacherData.lastName].filter(Boolean).join(' ')
     setSuccessData({
       title: 'Teacher Added Successfully',
-      message: `${teacherData.firstName} ${teacherData.lastName} has been added to the system.`
+      message: `${teacherName || 'Teacher'} has been added to the system.`
     })
     setShowSuccessModal(true)
   }
@@ -98,9 +100,10 @@ const Teachers = () => {
     await dispatch(updateTeacher({ teacherId: editingTeacher.id, teacherData })).unwrap()
     setEditingTeacher(null)
     setShowAddModal(false)
+    const teacherName = [teacherData.firstName, teacherData.lastName].filter(Boolean).join(' ')
     setSuccessData({
       title: 'Teacher Updated Successfully',
-      message: `${teacherData.firstName} ${teacherData.lastName} has been updated.`
+      message: `${teacherName || 'Teacher'} has been updated.`
     })
     setShowSuccessModal(true)
   }
@@ -136,8 +139,15 @@ const Teachers = () => {
     navigate(`/teachers/${teacherId}`)
   }
 
-  const handleEditTeacher = (teacher) => {
-    setEditingTeacher(teacher)
+  const handleEditTeacher = async (teacher) => {
+    let teacherForEdit = teacher
+    try {
+      const fullTeacher = await dispatch(fetchTeacherById(teacher.id)).unwrap()
+      teacherForEdit = fullTeacher?.data || fullTeacher || teacher
+    } catch (err) {
+      console.error('Failed to load full teacher details for edit:', err)
+    }
+    setEditingTeacher(teacherForEdit)
     setShowAddModal(true)
   }
 

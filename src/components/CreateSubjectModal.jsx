@@ -3,6 +3,13 @@ import { X, Upload, Image as ImageIcon } from 'lucide-react'
 import subjectsService from '../services/subjectsService'
 import classesService from '../services/classesService'
 
+const normalizeSubjectName = (value) => {
+  const trimmed = value.trim()
+  const normalized = trimmed.toLowerCase()
+  if (normalized === 'physics' || normalized === 'physic' || normalized === 'phy') return 'Physics'
+  return trimmed
+}
+
 const CreateSubjectModal = ({ 
   isOpen, 
   onClose, 
@@ -154,7 +161,7 @@ const CreateSubjectModal = ({
 
     try {
       const submitData = {
-        name: formData.name.trim(),
+        name: normalizeSubjectName(formData.name),
         code: formData.code.trim().toUpperCase(),
         description: formData.description.trim(),
         is_active: formData.is_active,
@@ -468,4 +475,3 @@ const CreateSubjectModal = ({
 }
 
 export default CreateSubjectModal
-

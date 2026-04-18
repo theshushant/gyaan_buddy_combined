@@ -73,7 +73,11 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
 
     let rawAssignments = []
 
-    if (teacher.teacher_assignments && teacher.teacher_assignments.length > 0) {
+    if (Array.isArray(teacher.assignments) && teacher.assignments.length > 0) {
+      rawAssignments = teacher.assignments
+    } else if (Array.isArray(teacher.class_assignment) && teacher.class_assignment.length > 0) {
+      rawAssignments = teacher.class_assignment
+    } else if (teacher.teacher_assignments && teacher.teacher_assignments.length > 0) {
       const classSubjectMap = {}
       teacher.teacher_assignments.forEach(ta => {
         const classId = ta.class?.id || ta.class_id || ta.class
@@ -93,8 +97,10 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
     if (rawAssignments.length === 0) return
 
     const normalized = rawAssignments.map(a => {
-      const classId = typeof a.class === 'object' ? (a.class?.id || a.class) : a.class
-      const subjectIds = (a.subjects || []).map(s => (typeof s === 'object' ? s?.id : s)).filter(Boolean)
+      const classValue = a.class ?? a.class_id
+      const classId = typeof classValue === 'object' ? (classValue?.id || classValue?.uuid) : classValue
+      const subjectSource = a.subjects ?? (a.subject ? [a.subject] : (a.subject_id ? [a.subject_id] : []))
+      const subjectIds = subjectSource.map(s => (typeof s === 'object' ? (s?.id || s?.uuid) : s)).filter(Boolean)
       return { class: String(classId), subjects: subjectIds.map(String) }
     }).filter(a => a.class && a.subjects.length > 0)
 
@@ -263,14 +269,13 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name <span className="text-gray-400 font-normal">(optional)</span></label>
                   <input
                     type="text"
                     value={formData.lastName}
                     onChange={e => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                    placeholder="Last name"
-                    required
+                    placeholder="Last name (optional)"
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -396,14 +401,14 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                       ) : (
                         <div className="grid grid-cols-2 gap-1">
                           {subjects.map(subject => (
-                            <label key={subject.id} className="flex items-center gap-1.5 cursor-pointer text-xs">
+                            <label key={subject.id} className="flex items-center gap-1.5 cursor-pointer text-xs min-w-0">
                               <input
                                 type="checkbox"
                                 checked={newAssignment.subjects.includes(String(subject.id))}
                                 onChange={() => handleAssignmentSubjectToggle(subject.id)}
-                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 flex-shrink-0"
                               />
-                              <span className="text-gray-700">{subject.name}</span>
+                              <span className="text-gray-700 min-w-0 break-words leading-snug">{subject.name}</span>
                             </label>
                           ))}
                         </div>
@@ -420,7 +425,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                   style={{ backgroundColor: '#00167a' }}
                 >
                   <Plus className="h-4 w-4 mr-1.5" />
-                  Add Assignment
+                  Add Class & Subjects
                 </button>
               </div>
             </div>

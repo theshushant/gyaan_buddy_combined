@@ -3,6 +3,13 @@ import { X, Upload } from 'lucide-react'
 import classesService from '../services/classesService'
 import subjectsService from '../services/subjectsService'
 
+const normalizeSubjectName = (value) => {
+  const trimmed = value.trim()
+  const normalized = trimmed.toLowerCase()
+  if (normalized === 'physics' || normalized === 'physic' || normalized === 'phy') return 'Physics'
+  return trimmed
+}
+
 const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'class' }) => {
   const [type, setType] = useState(initialType) // 'class' or 'subject'
   const [name, setName] = useState('')
@@ -120,8 +127,9 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
       if (type === 'class') {
         response = await classesService.createClass({ name: name.trim() })
       } else {
+        const subjectName = normalizeSubjectName(name)
         const subjectData = {
-          name: name.trim(),
+          name: subjectName,
           code: code.trim().toUpperCase(),
           description: description.trim(),
           is_active: isActive,
@@ -433,4 +441,3 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
 }
 
 export default CreateClassSubjectModal
-

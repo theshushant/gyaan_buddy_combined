@@ -48,10 +48,49 @@ const CARD_TOOLTIPS = {
   'Chapter Covered': 'Chapters completed by students / total chapters in the selected subject.',
 }
 
+const getId = (value) => {
+  if (!value) return ''
+  if (typeof value === 'object') return String(value.id ?? value.uuid ?? '')
+  return String(value)
+}
+
+const getTeacherAssignedIds = (user) => {
+  const classes = new Set()
+  const subjects = new Set()
+  const assignments = user?.teacher_assignments || user?.assignments || []
+
+  if (Array.isArray(assignments)) {
+    assignments.forEach((assignment) => {
+      const classId = getId(assignment.class ?? assignment.class_id ?? assignment.class_instance)
+      const subjectId = getId(assignment.subject ?? assignment.subject_id)
+      if (classId) classes.add(classId)
+      if (subjectId) subjects.add(subjectId)
+      if (Array.isArray(assignment.subjects)) {
+        assignment.subjects.forEach((subject) => {
+          const id = getId(subject)
+          if (id) subjects.add(id)
+        })
+      }
+    })
+  }
+
+  ;(user?.classes || user?.class_list || []).forEach((cls) => {
+    const id = getId(cls)
+    if (id) classes.add(id)
+  })
+
+  ;(user?.subjects || user?.subject_list || []).forEach((subject) => {
+    const id = getId(subject)
+    if (id) subjects.add(id)
+  })
+
+  return { classes, subjects }
+}
+
 const TeacherDashboard = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const { role } = useSelector(state => state.auth)
+  const { role, user } = useSelector(state => state.auth)
   const {
     progressTrends,
     subjectPerformance,
@@ -91,8 +130,15 @@ const TeacherDashboard = () => {
       ])
       const classesData = classesRes.data ?? classesRes ?? []
       const subjectsData = subjectsRes.data ?? subjectsRes ?? []
-      setClasses(Array.isArray(classesData) ? classesData : [])
-      setSubjects(Array.isArray(subjectsData) ? subjectsData : [])
+      const assigned = getTeacherAssignedIds(user)
+      const classesList = Array.isArray(classesData) ? classesData : []
+      const subjectsList = Array.isArray(subjectsData) ? subjectsData : []
+      setClasses(role === 'teacher' && assigned.classes.size > 0
+        ? classesList.filter((c) => assigned.classes.has(getId(c)))
+        : classesList)
+      setSubjects(role === 'teacher' && assigned.subjects.size > 0
+        ? subjectsList.filter((s) => assigned.subjects.has(getId(s)))
+        : subjectsList)
     } catch (err) {
       console.error('Error fetching filter options:', err)
       setClasses([])
@@ -100,7 +146,7 @@ const TeacherDashboard = () => {
     } finally {
       setLoadingOptions(false)
     }
-  }, [])
+  }, [role, user])
 
   useEffect(() => {
     fetchClassesAndSubjects()

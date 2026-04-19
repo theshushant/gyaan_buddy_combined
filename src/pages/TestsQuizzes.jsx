@@ -20,6 +20,18 @@ import testsService from '../services/testsService';
 import aiService from '../services/aiService';
 import questionsService from '../services/questionsService';
 
+const cleanDisplayText = (value) => String(value || '').replace(/\bCompetancy\b/gi, 'Competency');
+
+const dedupeByIdOrName = (items) => {
+  const seen = new Set();
+  return items.filter(item => {
+    const key = item.id ? `id:${item.id}` : `name:${String(item.name || item.title || '').trim().toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 const TestsQuizzes = () => {
   const [activeTab, setActiveTab] = useState('tests');
   const [classes, setClasses] = useState([]);
@@ -127,10 +139,10 @@ const TestsQuizzes = () => {
     try {
       const response = await subjectsService.getModules(subjectId);
       const modulesData = response.data || response || [];
-      const modulesList = modulesData.map(module => ({
+      const modulesList = dedupeByIdOrName(modulesData.map(module => ({
         id: module.id || module.uuid,
-        name: module.name || module
-      })).filter(module => module.id && module.name);
+        name: cleanDisplayText(module.name || module)
+      })).filter(module => module.id && module.name));
       setModules(modulesList);
     } catch (error) {
       console.error('Failed to fetch modules:', error);

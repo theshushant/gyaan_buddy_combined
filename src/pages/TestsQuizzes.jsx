@@ -1695,6 +1695,9 @@ const TestsQuizzes = () => {
                                 <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
                                   {question.question_type?.replace('_', ' ') || 'MCQ'}
                                 </span>
+                                <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
+                                  2 XP
+                                </span>
                               </div>
                             </div>
                             <p className="text-gray-800 mb-2">{question.question_text}</p>

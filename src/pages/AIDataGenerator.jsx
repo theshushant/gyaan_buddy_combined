@@ -732,7 +732,7 @@ const AIDataGenerator = () => {
                               </span>
                             )}
                             <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-md text-xs font-medium">
-                              {question.exp_points} XP
+                              2 XP
                             </span>
                           </div>
                           <p className="text-gray-900 font-medium leading-relaxed">

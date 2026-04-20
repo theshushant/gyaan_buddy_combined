@@ -28,7 +28,8 @@ import {
   Save,
   Check,
   Square,
-  CheckSquare
+  CheckSquare,
+  FileSpreadsheet
 } from 'lucide-react';
 import modulesService from '../services/modulesService';
 import subjectsService from '../services/subjectsService';
@@ -96,6 +97,14 @@ const ModulesAssignments = () => {
   const [pdfError, setPdfError] = useState(null);
   const pdfInputRef = useRef(null);
   const fetchCountRef = useRef(0);
+
+  // Excel import state
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importExcelUrl, setImportExcelUrl] = useState('');
+  const [importDryRun, setImportDryRun] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const [importError, setImportError] = useState(null);
 
   const toggleChapter = (chapterId) => {
     setExpandedChapters(prev => 
@@ -446,6 +455,31 @@ const ModulesAssignments = () => {
       setCreateChapterError(errorMessage);
     } finally {
       setCreatingChapter(false);
+    }
+  };
+
+  const handleImportFromExcel = async () => {
+    if (!selectedClass) {
+      setImportError('Please select a class before importing.');
+      return;
+    }
+    setImporting(true);
+    setImportError(null);
+    setImportResult(null);
+    try {
+      const res = await subjectsService.importFromExcel({
+        classId: selectedClass,
+        excelUrl: importExcelUrl.trim() || undefined,
+        dryRun: importDryRun,
+      });
+      setImportResult(res.data || res);
+      if (!importDryRun) {
+        fetchAllModulesData();
+      }
+    } catch (err) {
+      setImportError(err.message || 'Import failed.');
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -889,7 +923,22 @@ const ModulesAssignments = () => {
                 </div>
               </div>
             </div>
-            <div>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => {
+                  setImportResult(null);
+                  setImportError(null);
+                  setImportExcelUrl('');
+                  setImportDryRun(false);
+                  setShowImportModal(true);
+                }}
+                className="flex items-center space-x-2 px-5 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+                style={{ background: 'linear-gradient(135deg, #065f46 0%, #059669 100%)' }}
+                title="Import chapters from Excel"
+              >
+                <FileSpreadsheet className="h-5 w-5" />
+                <span>Import Excel</span>
+              </button>
               <button
                 onClick={() => {
                   if (!selectedSubject) {
@@ -1439,6 +1488,9 @@ const ModulesAssignments = () => {
                                 <span className="px-3 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full capitalize">
                                   {question.difficulty_level || 'Medium'}
                                 </span>
+                                <span className="px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded-full">
+                                  2 XP
+                                </span>
                               </div>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -1643,6 +1695,141 @@ const ModulesAssignments = () => {
               fetchAllModulesData();
             }}
           />
+        )}
+
+        {showImportModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 rounded-xl" style={{ background: 'linear-gradient(135deg, #065f46 0%, #059669 100%)' }}>
+                    <FileSpreadsheet className="h-5 w-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Import from Excel</h2>
+                </div>
+                <button
+                  onClick={() => { setShowImportModal(false); setImportResult(null); setImportError(null); }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="px-6 py-5 space-y-4">
+                <p className="text-sm text-gray-600">
+                  Imports subjects, modules, and chapters from a 3-column Excel file
+                  (Column A: Subject, Column B: Module, Column C: Chapter) into the selected class.
+                </p>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Selected class
+                  </label>
+                  <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
+                    {classes.find(c => c.id?.toString() === selectedClass?.toString())?.name || 'None selected'}
+                  </div>
+                  {!selectedClass && (
+                    <p className="text-xs text-red-500 mt-1">Please select a class in the filter above before importing.</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Excel URL <span className="text-gray-400 font-normal">(optional — leave blank to use default)</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={importExcelUrl}
+                    onChange={e => setImportExcelUrl(e.target.value)}
+                    placeholder="https://storage.googleapis.com/gyaanbuddy-media/Chapters.xlsx"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+
+                <label className="flex items-center space-x-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={importDryRun}
+                    onChange={e => { setImportDryRun(e.target.checked); setImportResult(null); }}
+                    className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Dry run — preview without saving</span>
+                </label>
+
+                {importError && (
+                  <div className="flex items-start space-x-2 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                    <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-700">{importError}</p>
+                  </div>
+                )}
+
+                {importResult && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 space-y-2">
+                    {importResult.dry_run ? (
+                      <>
+                        <p className="text-sm font-semibold text-green-800">Dry run preview ({importResult.total_rows} rows)</p>
+                        <div className="space-y-1 max-h-48 overflow-y-auto">
+                          {(importResult.preview || []).map((s, i) => (
+                            <div key={i} className="text-xs text-green-700">
+                              <span className="font-medium">{s.subject}</span>
+                              {s.modules.map((m, j) => (
+                                <span key={j}> → {m.module} ({m.chapter_count} ch)</span>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm font-semibold text-green-800">Import complete!</p>
+                        <div className="grid grid-cols-3 gap-2 text-xs text-green-700">
+                          <div className="bg-white rounded p-2 text-center border border-green-100">
+                            <div className="font-bold text-base text-green-900">{importResult.subjects?.created}</div>
+                            <div>Subjects created</div>
+                          </div>
+                          <div className="bg-white rounded p-2 text-center border border-green-100">
+                            <div className="font-bold text-base text-green-900">{importResult.modules?.created}</div>
+                            <div>Modules created</div>
+                          </div>
+                          <div className="bg-white rounded p-2 text-center border border-green-100">
+                            <div className="font-bold text-base text-green-900">{importResult.chapters?.created}</div>
+                            <div>Chapters created</div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-100">
+                <button
+                  onClick={() => { setShowImportModal(false); setImportResult(null); setImportError(null); }}
+                  className="px-5 py-2.5 text-gray-700 font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleImportFromExcel}
+                  disabled={importing || !selectedClass}
+                  className="flex items-center space-x-2 px-6 py-2.5 text-white font-semibold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ background: 'linear-gradient(135deg, #065f46 0%, #059669 100%)' }}
+                >
+                  {importing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Importing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileSpreadsheet className="h-4 w-4" />
+                      <span>{importDryRun ? 'Preview' : 'Import'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {dueDatePickerFor?.anchor && createPortal(
@@ -2162,7 +2349,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                                   </span>
                                 )}
                                 <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-md text-xs font-medium">
-                                  {question.exp_points} XP
+                                  2 XP
                                 </span>
                               </div>
                               <p className="text-gray-900 font-medium leading-relaxed text-sm">
@@ -3004,13 +3191,14 @@ const QuestionBankModal = ({ isOpen, onClose, chapterData, onSuccess }) => {
   const [pagination, setPagination] = useState({ count: 0, next: null, previous: null, page: 1 });
 
   const topic = chapter?.title || chapter?.name || '';
+  const moduleTitle = parentModule?.title || parentModule?.name || '';
 
   const fetchQuestions = useCallback(async (page = 1, level = '') => {
     if (!topic) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await questionsService.getQuestionBank({ topic, level: level || undefined, page, page_size: 20 });
+      const res = await questionsService.getQuestionBank({ topic, chapter: moduleTitle || undefined, level: level || undefined, page, page_size: 20 });
       const data = res?.data || [];
       const pg = res?.pagination || {};
       setQuestions(data);

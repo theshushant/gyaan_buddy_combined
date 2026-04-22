@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Plus, 
@@ -47,12 +47,14 @@ const TestsQuizzes = () => {
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedModulesChapters, setSelectedModulesChapters] = useState([]);
   const [chaptersLoadingFor, setChaptersLoadingFor] = useState(null);
+  const timeInputRef = useRef(null);
   const [formData, setFormData] = useState({
     testDate: '',
     testTime: '',
     duration: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [testDateError, setTestDateError] = useState('');
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const setSuccess = (val, msg = '') => setSuccessMessage(val ? msg : '');
@@ -294,10 +296,11 @@ const TestsQuizzes = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'testDate') {
+      const today = new Date().toISOString().split('T')[0];
+      setTestDateError(value && value < today ? 'Test date cannot be in the past.' : '');
+    }
   };
 
   const handleAIGenerationChange = (e) => {
@@ -333,6 +336,10 @@ const TestsQuizzes = () => {
     }
     if (!formData.testDate) {
       setError('Test date is required');
+      return;
+    }
+    if (!formData.testTime) {
+      setError('Test time is required');
       return;
     }
     if (!formData.duration || parseInt(formData.duration) <= 0) {
@@ -1327,19 +1334,25 @@ const TestsQuizzes = () => {
                       name="testDate"
                       value={formData.testDate}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
+                      min={new Date().toISOString().split('T')[0]}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white ${testDateError ? 'border-red-500' : 'border-gray-200'}`}
                       required
                     />
+                    {testDateError && (
+                      <p className="mt-1 text-sm text-red-600">{testDateError}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Test Time
+                      Test Time <span className="text-red-500">*</span>
                     </label>
                     <input
+                      ref={timeInputRef}
                       type="time"
                       name="testTime"
                       value={formData.testTime}
-                      onChange={handleInputChange}
+                      onChange={(e) => { handleInputChange(e); timeInputRef.current?.blur(); }}
+                      required
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
                     />
                   </div>
@@ -1451,7 +1464,7 @@ const TestsQuizzes = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || !!testDateError}
                   className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                   style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
                 >

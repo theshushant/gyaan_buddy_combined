@@ -885,7 +885,17 @@ const ModulesAssignments = () => {
               <div className="relative">
                 <select
                   value={selectedClass}
-                  onChange={(e) => setSelectedClass(e.target.value)}
+                  onChange={(e) => {
+                    const newClass = e.target.value;
+                    setSelectedClass(newClass);
+                    if (newClass && selectedSubject) {
+                      const subj = subjects.find((s) => String(s.id) === String(selectedSubject));
+                      const still = subj && (subj.class_list || []).some(
+                        (c) => String(c.class_instance__id ?? c.id) === String(newClass)
+                      );
+                      if (!still) setSelectedSubject('');
+                    }
+                  }}
                   className="w-56 px-4 py-3 pl-11 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white appearance-none cursor-pointer hover:border-gray-300"
                 >
                   <option value="">All Classes</option>
@@ -912,7 +922,14 @@ const ModulesAssignments = () => {
                   className="w-56 px-4 py-3 pl-11 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white appearance-none cursor-pointer hover:border-gray-300"
                 >
                   <option value="">Select Subject</option>
-                  {subjects.map((subject) => (
+                  {(selectedClass
+                    ? subjects.filter((s) =>
+                        (s.class_list || []).some(
+                          (c) => String(c.class_instance__id ?? c.id) === String(selectedClass)
+                        )
+                      )
+                    : subjects
+                  ).map((subject) => (
                     <option key={subject.id} value={subject.id}>
                       {subject.name}
                     </option>

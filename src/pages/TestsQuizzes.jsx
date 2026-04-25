@@ -658,23 +658,7 @@ const TestsQuizzes = () => {
     }
   };
 
-  const handleBackToForm = () => {
-    setShowQuestionGenerator(false);
-    setSelectedTest(null);
-    setGeneratedQuestions([]);
-    setSelectedGeneratedQuestionIds(new Set());
-    setGenerationError(null);
-    setSelectedSubject('');
-    setSelectedClasses([]);
-    setSelectedClass('');
-    setSelectedModulesChapters([]);
-    setQuestionAddMode('ai');
-    setShowCreateQuestionModal(false);
-    setShowBankModal(false);
-    setManualModeTestQuestions([]);
-  };
-
-  const openCreateQuestionModal = () => {
+const openCreateQuestionModal = () => {
     setManualQuestionForm({
       question_text: '',
       question_type: 'mcq_single',
@@ -1502,12 +1486,6 @@ const TestsQuizzes = () => {
                     : 'Create new questions or add existing ones from the question bank'}
             </p>
           </div>
-          <button
-                onClick={handleBackToForm}
-                className="text-white hover:text-gray-200 transition-colors"
-          >
-                <X className="h-6 w-6" />
-          </button>
         </div>
             <div className="flex gap-2 mt-4">
               <button
@@ -1781,14 +1759,7 @@ const TestsQuizzes = () => {
               </button>
             ) : (
               <>
-                <button
-                  type="button"
-                  onClick={handleBackToForm}
-                  className="px-8 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
-                >
-                  Back
-                </button>
-                <button
+<button
                   onClick={handleGenerateQuestions}
                   disabled={generatingQuestions || !selectedTest}
                   className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"

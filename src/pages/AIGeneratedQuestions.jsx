@@ -130,6 +130,9 @@ const AIGeneratedQuestions = () => {
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getDifficultyColor(question.difficulty)}`}>
                         {question.difficulty}
                       </span>
+                      <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                        2 XP
+                      </span>
                     </div>
                   </div>
                 </div>

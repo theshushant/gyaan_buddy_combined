@@ -28,7 +28,8 @@ import {
   Save,
   Check,
   Square,
-  CheckSquare
+  CheckSquare,
+  FileSpreadsheet
 } from 'lucide-react';
 import modulesService from '../services/modulesService';
 import subjectsService from '../services/subjectsService';
@@ -38,6 +39,15 @@ import aiService from '../services/aiService';
 import CreateModuleModal from '../components/CreateModuleModal';
 import CreateTopicModal from '../components/CreateTopicModal';
 import SuccessModal from '../components/SuccessModal';
+
+const sortByOrderThenTitle = (items) => [...items].sort((a, b) => {
+  const aOrder = Number(a.order ?? a.order_number ?? Number.MAX_SAFE_INTEGER);
+  const bOrder = Number(b.order ?? b.order_number ?? Number.MAX_SAFE_INTEGER);
+  if (aOrder !== bOrder) return aOrder - bOrder;
+  return String(a.title || a.name || '').localeCompare(String(b.title || b.name || ''));
+});
+
+const cleanDisplayText = (value) => String(value || '').replace(/\bCompetancy\b/gi, 'Competency');
 
 const ModulesAssignments = () => {
   const [expandedChapters, setExpandedChapters] = useState([]);
@@ -87,6 +97,14 @@ const ModulesAssignments = () => {
   const [pdfError, setPdfError] = useState(null);
   const pdfInputRef = useRef(null);
   const fetchCountRef = useRef(0);
+
+  // Excel import state
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importExcelUrl, setImportExcelUrl] = useState('');
+  const [importDryRun, setImportDryRun] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const [importError, setImportError] = useState(null);
 
   const toggleChapter = (chapterId) => {
     setExpandedChapters(prev => 
@@ -172,12 +190,13 @@ const ModulesAssignments = () => {
           if (m.id !== moduleId) return m;
           return {
             ...m,
-            modules: chaptersList.map((chapter, idx) => ({
+            modules: sortByOrderThenTitle(chaptersList.map((chapter, idx) => ({
               id: chapter.id,
-              title: chapter.title || `Assignment ${idx + 1}`,
+              title: cleanDisplayText(chapter.title || `Assignment ${idx + 1}`),
               isDue: chapter.is_due === true,
-              dueDate: chapter.due_date || null
-            }))
+              dueDate: chapter.due_date || null,
+              order: chapter.order ?? idx + 1
+            })))
           };
         });
       });
@@ -216,16 +235,16 @@ const ModulesAssignments = () => {
       const modulesData = modulesResponse.data || modulesResponse;
       const modulesList = Array.isArray(modulesData) ? modulesData : [];
 
-      const modulesWithoutChapters = modulesList.map((module) => ({
+      const modulesWithoutChapters = sortByOrderThenTitle(modulesList.map((module) => ({
         id: module.id,
         subjectId: module.subject || module.subject_id || module.subject?.id,
-        title: module.name || `Chapter ${module.order}`,
+        title: cleanDisplayText(module.name || `Chapter ${module.order}`),
         completionRate: module.total_chapter_count > 0
           ? Math.round((module.due_chapter_count / module.total_chapter_count) * 100)
           : 0,
         isDue: module.is_due === true || module.status === 'due',
         dueDate: module.due_date || null,
-        name: module.name,
+        name: cleanDisplayText(module.name),
         description: module.description || '',
         order: module.order || 1,
         is_active: module.is_active !== undefined ? module.is_active : true,
@@ -236,7 +255,7 @@ const ModulesAssignments = () => {
         total_chapter_count: module.total_chapter_count ?? module.chapter_count ?? 0,
         due_chapter_count: module.due_chapter_count ?? 0,
         modules: undefined
-      }));
+      })));
 
       setAllModulesData(modulesWithoutChapters);
     } catch (err) {
@@ -439,6 +458,31 @@ const ModulesAssignments = () => {
     }
   };
 
+  const handleImportFromExcel = async () => {
+    if (!selectedClass) {
+      setImportError('Please select a class before importing.');
+      return;
+    }
+    setImporting(true);
+    setImportError(null);
+    setImportResult(null);
+    try {
+      const res = await subjectsService.importFromExcel({
+        classId: selectedClass,
+        excelUrl: importExcelUrl.trim() || undefined,
+        dryRun: importDryRun,
+      });
+      setImportResult(res.data || res);
+      if (!importDryRun) {
+        fetchAllModulesData();
+      }
+    } catch (err) {
+      setImportError(err.message || 'Import failed.');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const handleAddChapter = (module) => {
     setSelectedModuleForChapter(module);
     setEditingChapter(null);
@@ -571,8 +615,9 @@ const ModulesAssignments = () => {
     }
   };
 
-  const handleViewQuestions = async (chapter) => {
+  const handleViewQuestions = async (chapter, parentModule = null) => {
     setSelectedChapterForQuestion(chapter);
+    setSelectedModuleForQuestion(parentModule);
     setLoadingQuestions(true);
     setChapterQuestions([]);
     setShowViewQuestionsModal(true);
@@ -731,12 +776,17 @@ const ModulesAssignments = () => {
           await handleViewQuestions(selectedChapterForQuestion);
         }
       } else {
+        const targetChapter = selectedChapterForQuestion;
         const questionResponse = await questionsService.createQuestion(dataToSend);
         const questionId = questionResponse.data?.id || questionResponse.id;
         const optionErrors = questionResponse.data?.option_errors;
 
         if (!questionId) {
           throw new Error('Failed to get question ID from response');
+        }
+
+        if (targetChapter?.id) {
+          await questionsService.addBankQuestionsToChapter(targetChapter.id, [questionId]);
         }
 
         setShowCreateQuestionModal(false);
@@ -748,6 +798,9 @@ const ModulesAssignments = () => {
             : 'Question has been created and added to the assignment successfully.'
         });
         setShowSuccessModal(true);
+        if (showViewQuestionsModal && targetChapter) {
+          await handleViewQuestions(targetChapter, selectedModuleForQuestion);
+        }
         await fetchAllModulesData();
       }
     } catch (err) {
@@ -832,7 +885,17 @@ const ModulesAssignments = () => {
               <div className="relative">
                 <select
                   value={selectedClass}
-                  onChange={(e) => setSelectedClass(e.target.value)}
+                  onChange={(e) => {
+                    const newClass = e.target.value;
+                    setSelectedClass(newClass);
+                    if (newClass && selectedSubject) {
+                      const subj = subjects.find((s) => String(s.id) === String(selectedSubject));
+                      const still = subj && (subj.class_list || []).some(
+                        (c) => String(c.class_instance__id ?? c.id) === String(newClass)
+                      );
+                      if (!still) setSelectedSubject('');
+                    }
+                  }}
                   className="w-56 px-4 py-3 pl-11 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white appearance-none cursor-pointer hover:border-gray-300"
                 >
                   <option value="">All Classes</option>
@@ -859,7 +922,14 @@ const ModulesAssignments = () => {
                   className="w-56 px-4 py-3 pl-11 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white appearance-none cursor-pointer hover:border-gray-300"
                 >
                   <option value="">Select Subject</option>
-                  {subjects.map((subject) => (
+                  {(selectedClass
+                    ? subjects.filter((s) =>
+                        (s.class_list || []).some(
+                          (c) => String(c.class_instance__id ?? c.id) === String(selectedClass)
+                        )
+                      )
+                    : subjects
+                  ).map((subject) => (
                     <option key={subject.id} value={subject.id}>
                       {subject.name}
                     </option>
@@ -870,7 +940,22 @@ const ModulesAssignments = () => {
                 </div>
               </div>
             </div>
-            <div>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => {
+                  setImportResult(null);
+                  setImportError(null);
+                  setImportExcelUrl('');
+                  setImportDryRun(false);
+                  setShowImportModal(true);
+                }}
+                className="flex items-center space-x-2 px-5 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+                style={{ background: 'linear-gradient(135deg, #065f46 0%, #059669 100%)' }}
+                title="Import chapters from Excel"
+              >
+                <FileSpreadsheet className="h-5 w-5" />
+                <span>Import Excel</span>
+              </button>
               <button
                 onClick={() => {
                   if (!selectedSubject) {
@@ -1126,7 +1211,7 @@ const ModulesAssignments = () => {
                                   <span className="text-sm font-medium">Learn Mode</span>
                                 </button>
                                 <button
-                                  onClick={() => handleViewQuestions(module)}
+                                  onClick={() => handleViewQuestions(module, chapter)}
                                   className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 shadow-sm hover:shadow-md"
                                 >
                                   <Eye className="h-4 w-4" />
@@ -1337,6 +1422,7 @@ const ModulesAssignments = () => {
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => {
               setShowViewQuestionsModal(false);
               setSelectedChapterForQuestion(null);
+              setSelectedModuleForQuestion(null);
               setChapterQuestions([]);
             }} />
             <div className="flex min-h-screen items-center justify-center p-4">
@@ -1354,12 +1440,18 @@ const ModulesAssignments = () => {
                         <p className="text-sm text-purple-100 mt-0.5">
                           {selectedChapterForQuestion?.title || 'Assignment'}
                         </p>
+                        {!loadingQuestions && (
+                          <p className="text-xs text-purple-100 mt-1">
+                            {chapterQuestions.length} {chapterQuestions.length === 1 ? 'question' : 'questions'}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <button
                       onClick={() => {
                         setShowViewQuestionsModal(false);
                         setSelectedChapterForQuestion(null);
+                        setSelectedModuleForQuestion(null);
                         setChapterQuestions([]);
                         setEditingQuestion(null);
                       }}
@@ -1386,7 +1478,7 @@ const ModulesAssignments = () => {
                       <button
                         onClick={() => {
                           setShowViewQuestionsModal(false);
-                          handleCreateQuestion(selectedChapterForQuestion);
+                          handleCreateQuestion(selectedChapterForQuestion, selectedModuleForQuestion);
                         }}
                         className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                       >
@@ -1412,6 +1504,9 @@ const ModulesAssignments = () => {
                                 </span>
                                 <span className="px-3 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full capitalize">
                                   {question.difficulty_level || 'Medium'}
+                                </span>
+                                <span className="px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded-full">
+                                  2 XP
                                 </span>
                               </div>
                             </div>
@@ -1619,6 +1714,141 @@ const ModulesAssignments = () => {
           />
         )}
 
+        {showImportModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 rounded-xl" style={{ background: 'linear-gradient(135deg, #065f46 0%, #059669 100%)' }}>
+                    <FileSpreadsheet className="h-5 w-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Import from Excel</h2>
+                </div>
+                <button
+                  onClick={() => { setShowImportModal(false); setImportResult(null); setImportError(null); }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="px-6 py-5 space-y-4">
+                <p className="text-sm text-gray-600">
+                  Imports subjects, modules, and chapters from a 3-column Excel file
+                  (Column A: Subject, Column B: Module, Column C: Chapter) into the selected class.
+                </p>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Selected class
+                  </label>
+                  <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
+                    {classes.find(c => c.id?.toString() === selectedClass?.toString())?.name || 'None selected'}
+                  </div>
+                  {!selectedClass && (
+                    <p className="text-xs text-red-500 mt-1">Please select a class in the filter above before importing.</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Excel URL <span className="text-gray-400 font-normal">(optional — leave blank to use default)</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={importExcelUrl}
+                    onChange={e => setImportExcelUrl(e.target.value)}
+                    placeholder="https://storage.googleapis.com/gyaanbuddy-media/Chapters.xlsx"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+
+                <label className="flex items-center space-x-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={importDryRun}
+                    onChange={e => { setImportDryRun(e.target.checked); setImportResult(null); }}
+                    className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Dry run — preview without saving</span>
+                </label>
+
+                {importError && (
+                  <div className="flex items-start space-x-2 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                    <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-700">{importError}</p>
+                  </div>
+                )}
+
+                {importResult && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 space-y-2">
+                    {importResult.dry_run ? (
+                      <>
+                        <p className="text-sm font-semibold text-green-800">Dry run preview ({importResult.total_rows} rows)</p>
+                        <div className="space-y-1 max-h-48 overflow-y-auto">
+                          {(importResult.preview || []).map((s, i) => (
+                            <div key={i} className="text-xs text-green-700">
+                              <span className="font-medium">{s.subject}</span>
+                              {s.modules.map((m, j) => (
+                                <span key={j}> → {m.module} ({m.chapter_count} ch)</span>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm font-semibold text-green-800">Import complete!</p>
+                        <div className="grid grid-cols-3 gap-2 text-xs text-green-700">
+                          <div className="bg-white rounded p-2 text-center border border-green-100">
+                            <div className="font-bold text-base text-green-900">{importResult.subjects?.created}</div>
+                            <div>Subjects created</div>
+                          </div>
+                          <div className="bg-white rounded p-2 text-center border border-green-100">
+                            <div className="font-bold text-base text-green-900">{importResult.modules?.created}</div>
+                            <div>Modules created</div>
+                          </div>
+                          <div className="bg-white rounded p-2 text-center border border-green-100">
+                            <div className="font-bold text-base text-green-900">{importResult.chapters?.created}</div>
+                            <div>Chapters created</div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-100">
+                <button
+                  onClick={() => { setShowImportModal(false); setImportResult(null); setImportError(null); }}
+                  className="px-5 py-2.5 text-gray-700 font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleImportFromExcel}
+                  disabled={importing || !selectedClass}
+                  className="flex items-center space-x-2 px-6 py-2.5 text-white font-semibold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ background: 'linear-gradient(135deg, #065f46 0%, #059669 100%)' }}
+                >
+                  {importing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Importing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileSpreadsheet className="h-4 w-4" />
+                      <span>{importDryRun ? 'Preview' : 'Import'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {dueDatePickerFor?.anchor && createPortal(
           <div
             className="fixed inset-0 z-[100]"
@@ -1746,6 +1976,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
     const num = parseInt(numberOfQuestions, 10);
     if (isNaN(num) || num < 1 || num > 20) {
       setError('Please enter a valid number of questions (1–20).');
+      setGenerating(false);
       return;
     }
 
@@ -1929,7 +2160,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                   <h2 className="text-2xl font-bold text-white">
                     AI Question Generator
                   </h2>
-                  <p className="text-sm text-accent-500/50 mt-0.5">
+                  <p className="text-sm text-white/80 mt-0.5">
                     {chapter?.title || 'Assignment'}
                   </p>
                 </div>
@@ -2135,7 +2366,7 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                                   </span>
                                 )}
                                 <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-md text-xs font-medium">
-                                  {question.exp_points} XP
+                                  2 XP
                                 </span>
                               </div>
                               <p className="text-gray-900 font-medium leading-relaxed text-sm">
@@ -2171,13 +2402,13 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                                       }`}>
                                         {String.fromCharCode(65 + optIdx)}
                                       </span>
-                                      <span className={`${
+                                      <span className={`flex-1 min-w-0 ${
                                         option.is_correct ? 'text-green-700 font-medium' : 'text-gray-700'
                                       }`}>
                                         {option.option_text}
                                       </span>
                                       {option.is_correct && (
-                                        <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto" />
+                                        <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto flex-shrink-0" />
                                       )}
                                     </div>
                                   ))}
@@ -2977,13 +3208,14 @@ const QuestionBankModal = ({ isOpen, onClose, chapterData, onSuccess }) => {
   const [pagination, setPagination] = useState({ count: 0, next: null, previous: null, page: 1 });
 
   const topic = chapter?.title || chapter?.name || '';
+  const moduleTitle = parentModule?.title || parentModule?.name || '';
 
   const fetchQuestions = useCallback(async (page = 1, level = '') => {
     if (!topic) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await questionsService.getQuestionBank({ topic, level: level || undefined, page, page_size: 20 });
+      const res = await questionsService.getQuestionBank({ topic, chapter: moduleTitle || undefined, level: level || undefined, page, page_size: 20 });
       const data = res?.data || [];
       const pg = res?.pagination || {};
       setQuestions(data);
@@ -3160,6 +3392,17 @@ const QuestionBankModal = ({ isOpen, onClose, chapterData, onSuccess }) => {
                           <p className="text-sm text-gray-900 font-medium leading-snug">
                             {idx + 1 + (pagination.page - 1) * 20}. {q.question_text}
                           </p>
+                          {q.image && (
+                            <div className="mt-3">
+                              <img
+                                src={q.image.startsWith('http') ? q.image : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${q.image}`}
+                                alt="Question"
+                                className="max-w-full max-h-48 rounded-lg border border-gray-200 object-contain bg-white"
+                                onClick={(e) => e.stopPropagation()}
+                                onError={(e) => { e.currentTarget.style.display = 'none' }}
+                              />
+                            </div>
+                          )}
                           {q.options?.length > 0 && (
                             <ul className="mt-2 space-y-1">
                               {q.options.map((opt, oi) => (

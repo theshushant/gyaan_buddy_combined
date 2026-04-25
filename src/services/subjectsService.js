@@ -143,6 +143,16 @@ class SubjectsService {
     }
   }
 
+  async importFromExcel({ classId, excelUrl, dryRun = false }) {
+    try {
+      const payload = { class_id: classId, dry_run: dryRun };
+      if (excelUrl) payload.excel_url = excelUrl;
+      return await apiService.post('/subjects/import_from_excel/', payload);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async getModules(subjectId, filters = {}) {
     try {
       const queryParams = new URLSearchParams();

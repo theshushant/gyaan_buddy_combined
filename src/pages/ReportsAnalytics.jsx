@@ -106,7 +106,7 @@ const ReportsAnalytics = () => {
     subjectsService.getSubjects({}).then((res) => {
       const data = res?.data ?? res;
       const list = Array.isArray(data) ? data : (data?.subjects ?? data?.results ?? []);
-      setSubjectOptions(list.map((s) => ({ id: String(s.id), name: s.name })));
+      setSubjectOptions(list.map((s) => ({ id: String(s.id), name: s.name, class_list: s.class_list || [] })));
     }).catch(() => {});
   }, []);
 
@@ -235,7 +235,14 @@ const ReportsAnalytics = () => {
   ];
 
   const classesList = Array.isArray(filterOptions.classes) ? filterOptions.classes : [];
-  const subjectsList = subjectOptions.length > 0 ? subjectOptions : normalizeOptions(filterOptions.subjects);
+  const rawSubjects = subjectOptions.length > 0 ? subjectOptions : normalizeOptions(filterOptions.subjects);
+  const subjectsList = reportClass
+    ? rawSubjects.filter((s) =>
+        (s.class_list || []).some(
+          (c) => String(c.class_instance__id ?? c.id) === String(reportClass)
+        )
+      )
+    : rawSubjects;
   const modulesList = normalizeOptions(filterOptions.modules);
   const chaptersList = normalizeOptions(filterOptions.chapters);
 

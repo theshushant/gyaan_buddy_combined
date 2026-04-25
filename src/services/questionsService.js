@@ -126,6 +126,7 @@ class QuestionsService {
     try {
       const queryParams = new URLSearchParams();
       if (filters.topic) queryParams.append('topic', filters.topic);
+      if (filters.chapter) queryParams.append('chapter', filters.chapter);
       if (filters.level) queryParams.append('level', filters.level);
       if (filters.page) queryParams.append('page', filters.page);
       if (filters.page_size) queryParams.append('page_size', filters.page_size);

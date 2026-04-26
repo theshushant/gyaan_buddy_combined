@@ -55,13 +55,20 @@ const TestsQuizzes = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [testDateError, setTestDateError] = useState('');
-  const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState('');
-  const setSuccess = (val, msg = '') => setSuccessMessage(val ? msg : '');
+  const [snackbar, setSnackbar] = useState(null);
+
+  const setError = (msg) => {
+    if (msg) setSnackbar({ type: 'error', message: msg });
+  };
+  const setSuccess = (val, msg = '') => {
+    if (val && msg) setSnackbar({ type: 'success', message: msg });
+  };
   const [selectedTest, setSelectedTest] = useState(null);
   const [showQuestionGenerator, setShowQuestionGenerator] = useState(false);
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
-  const [generationError, setGenerationError] = useState(null);
+  const setGenerationError = (msg) => {
+    if (msg) setSnackbar({ type: 'error', message: msg });
+  };
   const [generatedQuestions, setGeneratedQuestions] = useState([]);
   const [selectedGeneratedQuestionIds, setSelectedGeneratedQuestionIds] = useState(new Set());
   const [editingTest, setEditingTest] = useState(null);
@@ -89,6 +96,8 @@ const TestsQuizzes = () => {
   const [manualModeTestQuestions, setManualModeTestQuestions] = useState([]);
   const [loadingManualModeQuestions, setLoadingManualModeQuestions] = useState(false);
   const [deletingTestId, setDeletingTestId] = useState(null);
+  const [showLeaveGeneratorModal, setShowLeaveGeneratorModal] = useState(false);
+  const [pendingLeaveAction, setPendingLeaveAction] = useState(null);
 
   const [aiFormData, setAiFormData] = useState({
     number_of_questions: 10,
@@ -188,6 +197,22 @@ const TestsQuizzes = () => {
       fetchTests();
     }
   }, [activeTab, fetchTests]);
+
+  useEffect(() => {
+    if (!showQuestionGenerator) return;
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [showQuestionGenerator]);
+
+  useEffect(() => {
+    if (!snackbar) return;
+    const t = setTimeout(() => setSnackbar(null), 4000);
+    return () => clearTimeout(t);
+  }, [snackbar]);
 
   useEffect(() => {
     if (activeTab === 'create' || isEditMode) {
@@ -918,6 +943,20 @@ const openCreateQuestionModal = () => {
           <nav className="-mb-px flex space-x-8 px-6">
             <button
               onClick={() => {
+                if (showQuestionGenerator) {
+                  setPendingLeaveAction(() => () => {
+                    if (isEditMode) handleCancelEdit();
+                    setSuccess(false);
+                    setActiveTab('tests');
+                    setShowQuestionGenerator(false);
+                    setSelectedTest(null);
+                    setGeneratedQuestions([]);
+                    setSelectedGeneratedQuestionIds(new Set());
+                    setGenerationError(null);
+                  });
+                  setShowLeaveGeneratorModal(true);
+                  return;
+                }
                 if (isEditMode) {
                   handleCancelEdit();
                 }
@@ -959,34 +998,6 @@ const openCreateQuestionModal = () => {
 
       {activeTab === 'tests' && (
         <div className="space-y-6">
-          {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-start justify-between space-x-3">
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-red-800">Error</p>
-                  <p className="text-sm text-red-700 mt-1">{error}</p>
-                </div>
-              </div>
-              <button type="button" onClick={() => setError(null)} className="text-red-600 hover:text-red-800 p-1">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-          {successMessage && (
-            <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 flex items-start justify-between space-x-3">
-              <div className="flex items-start space-x-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-green-800">Success</p>
-                  <p className="text-sm text-green-700 mt-1">{successMessage}</p>
-                </div>
-              </div>
-              <button type="button" onClick={() => setSuccess(false)} className="text-green-600 hover:text-green-800 p-1">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          )}
           {loadingTests ? (
             <div className="text-center py-12 bg-white rounded-lg shadow-sm">
               <Loader2 className="h-8 w-8 animate-spin text-primary-500 mx-auto mb-4" />
@@ -1123,25 +1134,6 @@ const openCreateQuestionModal = () => {
               </div>
             ) : (
             <form onSubmit={handleSubmit} className="space-y-8">
-              {error && (
-                <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-start space-x-3 animate-slide-down">
-                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-red-800">Error</p>
-                    <p className="text-sm text-red-700 mt-1">{error}</p>
-                  </div>
-                </div>
-              )}
-              {successMessage && (
-                <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 flex items-start space-x-3 animate-slide-down">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-green-800">Success!</p>
-                    <p className="text-sm text-green-700 mt-1">{successMessage}</p>
-                  </div>
-                </div>
-              )}
-
               <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
                   <span className="text-primary-500">📚</span>
@@ -1514,26 +1506,6 @@ const openCreateQuestionModal = () => {
                 <p className="text-sm text-red-700">{manualQuestionError}</p>
               </div>
             )}
-            {questionAddMode === 'ai' && generationError && (
-              <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-start space-x-3 mb-6">
-                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-red-800">Error</p>
-                  <p className="text-sm text-red-700 mt-1">{generationError}</p>
-          </div>
-          </div>
-            )}
-
-            {questionAddMode === 'ai' && successMessage && generatedQuestions.length > 0 && (
-              <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 flex items-start space-x-3 mb-6">
-                <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <div>
-                  <p className="text-sm font-semibold text-green-800">Success!</p>
-                  <p className="text-sm text-green-700 mt-1">{successMessage}</p>
-              </div>
-            </div>
-          )}
-
             {questionAddMode === 'ai' && (
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200 mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
@@ -1969,6 +1941,53 @@ const openCreateQuestionModal = () => {
                   {addingBankToTest ? <><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Adding...</> : 'Add selected to test'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {snackbar && (
+        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl text-white max-w-sm transition-all duration-300 ${snackbar.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
+          {snackbar.type === 'success'
+            ? <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+            : <AlertCircle className="h-5 w-5 flex-shrink-0" />}
+          <p className="text-sm font-medium flex-1">{snackbar.message}</p>
+          <button onClick={() => setSnackbar(null)} className="opacity-70 hover:opacity-100 transition-opacity ml-1">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {showLeaveGeneratorModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800">Leave without adding questions?</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              An empty test without questions will be created. You can add questions later from the test list.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowLeaveGeneratorModal(false)}
+                className="px-5 py-2 border-2 border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-all"
+              >
+                Stay
+              </button>
+              <button
+                onClick={() => {
+                  setShowLeaveGeneratorModal(false);
+                  if (pendingLeaveAction) pendingLeaveAction();
+                  setPendingLeaveAction(null);
+                }}
+                className="px-5 py-2 text-white font-medium rounded-xl transition-all"
+                style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
+              >
+                Leave anyway
+              </button>
             </div>
           </div>
         </div>

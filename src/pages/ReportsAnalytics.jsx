@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Users, TrendingUp, Target, ChevronDown, ChevronRight, GraduationCap, BookOpen, Layers, FileText, Search, Loader2 } from 'lucide-react';
+import { Users, TrendingUp, Target, ChevronDown, ChevronRight, GraduationCap, BookOpen, Layers, FileText, Search } from 'lucide-react';
 import reportsService from '../services/reportsService';
-import subjectsService from '../services/subjectsService';
 
 const PERIOD_MAP = {
   'Last 7 days': 7,
@@ -36,6 +35,7 @@ const ReportsAnalytics = () => {
   const [showStudentTable, setShowStudentTable] = useState(false);
   const studentTableRef = useRef(null);
   const [expandedModules, setExpandedModules] = useState({ 1: true });
+  const [expandedChapters, setExpandedChapters] = useState({});
 
   const [loading, setLoading] = useState(true);
   const [filterLoading, setFilterLoading] = useState(false);
@@ -52,7 +52,6 @@ const ReportsAnalytics = () => {
     recentActivity: [],
   });
   const [studentProficiencyData, setStudentProficiencyData] = useState([]);
-  const [subjectOptions, setSubjectOptions] = useState([]);
 
   const fetchReportsAnalytics = useCallback(async (opts = {}) => {
     const isFilterUpdate = opts._isFilterUpdate ?? false;
@@ -102,14 +101,6 @@ const ReportsAnalytics = () => {
     fetchReportsAnalytics();
   }, [selectedPeriod, selectedClass]);
 
-  useEffect(() => {
-    subjectsService.getSubjects({}).then((res) => {
-      const data = res?.data ?? res;
-      const list = Array.isArray(data) ? data : (data?.subjects ?? data?.results ?? []);
-      setSubjectOptions(list.map((s) => ({ id: String(s.id), name: s.name, class_list: s.class_list || [] })));
-    }).catch(() => {});
-  }, []);
-
   const handleReportClassChange = (e) => {
     const val = e.target.value;
     setReportClass(val);
@@ -156,6 +147,10 @@ const ReportsAnalytics = () => {
       setError(err.message || 'Failed to load student proficiency');
     }
   }, [selectedPeriod, studentClass, studentSubject, studentModule, studentChapter]);
+
+  const handleChapterRowClick = useCallback((chapterId) => {
+    setExpandedChapters(prev => ({ ...prev, [chapterId]: !prev[chapterId] }));
+  }, []);
 
   const handleStudentClassChange = (e) => {
     const val = e.target.value;
@@ -235,14 +230,7 @@ const ReportsAnalytics = () => {
   ];
 
   const classesList = Array.isArray(filterOptions.classes) ? filterOptions.classes : [];
-  const rawSubjects = subjectOptions.length > 0 ? subjectOptions : normalizeOptions(filterOptions.subjects);
-  const subjectsList = reportClass
-    ? rawSubjects.filter((s) =>
-        (s.class_list || []).some(
-          (c) => String(c.class_instance__id ?? c.id) === String(reportClass)
-        )
-      )
-    : rawSubjects;
+  const subjectsList = normalizeOptions(filterOptions.subjects);
   const modulesList = normalizeOptions(filterOptions.modules);
   const chaptersList = normalizeOptions(filterOptions.chapters);
 
@@ -663,45 +651,96 @@ const ReportsAnalytics = () => {
                       {expandedModules[mod.id] && mod.chapters.map((ch, ci) => {
                         const status = getTopicStatus(ch.proficiency);
                         const chWeakLevels = getWeakLevels(ch.proficiency);
+                        const chKey = ch.id ?? `${mod.id}-${ci}`;
+                        const isChExpanded = !!expandedChapters[chKey];
+                        const chStudents = ch.students ?? [];
                         return (
-                        <tr key={`${mod.id}-${ci}`} className="bg-white border-l-4 border-blue-600 hover:bg-blue-50/30 transition-colors duration-150">
-                          <td className="px-6 py-3 pl-12">
-                            <div className="flex items-center gap-2 text-gray-600">
-                              <span className="text-gray-300 text-xs">└</span>
-                              <span className="text-sm font-medium">{ch.name}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-32 bg-gray-200 rounded-full h-2">
-                                <div className="h-2 rounded-full" style={{ width: `${ch.proficiency}%`, backgroundColor: getProficiencyColor(ch.proficiency) }}></div>
+                        <React.Fragment key={`${mod.id}-${ci}`}>
+                          <tr
+                            className="bg-white border-l-4 border-blue-600 hover:bg-blue-50/50 cursor-pointer transition-colors duration-150"
+                            onClick={() => ch.id && handleChapterRowClick(ch.id)}
+                          >
+                            <td className="px-6 py-3 pl-12">
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <span className="text-gray-300 text-xs">└</span>
+                                {ch.id && (
+                                  <span className="text-gray-400">
+                                    {isChExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                                  </span>
+                                )}
+                                <span className="text-sm font-medium">{ch.name}</span>
                               </div>
-                              <span className="text-sm font-semibold" style={{ color: getProficiencyColor(ch.proficiency) }}>{ch.proficiency}%</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-3">
-                            <span className="text-sm font-semibold text-blue-600">{ch.attemptRate ?? 0}%</span>
-                          </td>
-                          <td className="px-6 py-3">
-                            <span className="text-gray-400 text-sm">—</span>
-                          </td>
-                          <td className="px-6 py-3">
-                            {ch.proficiency === 0
-                              ? <span className="text-gray-400 text-sm">—</span>
-                              : <div className="flex gap-1">{chWeakLevels.map((l) => <span key={l} className="w-6 h-6 flex items-center justify-center text-xs font-medium border border-red-300 text-red-600 rounded">{l}</span>)}</div>
-                            }
-                          </td>
-                          <td className="px-6 py-3">
-                            {ch.proficiency === 0
-                              ? <span className="text-gray-400 text-sm">—</span>
-                              : status === 'go'
-                              ? <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-green-50 text-green-600 border border-green-200"><span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>GO</span>
-                              : status === 'watch'
-                              ? <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block"></span>WATCH</span>
-                              : <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-200"><span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>STOP</span>
-                            }
-                          </td>
-                        </tr>
+                            </td>
+                            <td className="px-6 py-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-32 bg-gray-200 rounded-full h-2">
+                                  <div className="h-2 rounded-full" style={{ width: `${ch.proficiency}%`, backgroundColor: getProficiencyColor(ch.proficiency) }}></div>
+                                </div>
+                                <span className="text-sm font-semibold" style={{ color: getProficiencyColor(ch.proficiency) }}>{ch.proficiency}%</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-3">
+                              <span className="text-sm font-semibold text-blue-600">{ch.attemptRate ?? 0}%</span>
+                            </td>
+                            <td className="px-6 py-3">
+                              <span className="text-gray-400 text-sm">—</span>
+                            </td>
+                            <td className="px-6 py-3">
+                              {ch.proficiency === 0
+                                ? <span className="text-gray-400 text-sm">—</span>
+                                : <div className="flex gap-1">{chWeakLevels.map((l) => <span key={l} className="w-6 h-6 flex items-center justify-center text-xs font-medium border border-red-300 text-red-600 rounded">{l}</span>)}</div>
+                              }
+                            </td>
+                            <td className="px-6 py-3">
+                              {ch.proficiency === 0
+                                ? <span className="text-gray-400 text-sm">—</span>
+                                : status === 'go'
+                                ? <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-green-50 text-green-600 border border-green-200"><span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>GO</span>
+                                : status === 'watch'
+                                ? <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block"></span>WATCH</span>
+                                : <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-200"><span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>STOP</span>
+                              }
+                            </td>
+                          </tr>
+
+                          {/* Student proficiency sub-rows for this chapter */}
+                          {isChExpanded && (
+                            chStudents.length === 0 ? (
+                              <tr className="bg-blue-50/20 border-l-4 border-blue-300">
+                                <td colSpan={6} className="px-6 py-3 pl-20 text-sm text-gray-400 italic">No student data for this topic.</td>
+                              </tr>
+                            ) : (
+                              chStudents.map((stu, si) => (
+                                <tr key={`${chKey}-stu-${stu.id}`} className="bg-blue-50/20 border-l-4 border-blue-300 hover:bg-blue-50/40 transition-colors duration-150">
+                                  <td className="px-6 py-2 pl-20">
+                                    <div className="flex items-center gap-2 text-gray-600">
+                                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                        {stu.name.charAt(0)}
+                                      </div>
+                                      <span className="text-sm text-gray-700">{stu.name}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-2" colSpan={4}>
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-28 bg-gray-200 rounded-full h-2 overflow-hidden">
+                                        <div
+                                          className="h-2 rounded-full transition-all duration-500"
+                                          style={{ width: `${stu.proficient}%`, backgroundColor: getProficiencyColor(stu.proficient) }}
+                                        ></div>
+                                      </div>
+                                      <span className="text-sm font-semibold" style={{ color: getProficiencyColor(stu.proficient) }}>
+                                        {stu.proficient}%
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-2">
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">#{si + 1}</span>
+                                  </td>
+                                </tr>
+                              ))
+                            )
+                          )}
+                        </React.Fragment>
                         );
                       })}
                     </>

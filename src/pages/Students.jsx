@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Search, Filter, Plus, Eye, Trash2, AlertTriangle, Upload } from 'lucide-react'
+import { Search, RefreshCw, Plus, Eye, Trash2, AlertTriangle, Upload } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import studentsService from '../services/studentsService'
 import AddStudentModal from '../components/AddStudentModal'
@@ -8,7 +8,6 @@ import SuccessModal from '../components/SuccessModal'
 import Modal from '../components/Modal'
 import {
   fetchStudents,
-  fetchStudentStats,
   fetchStudentById,
   createStudent,
   updateStudent,
@@ -25,7 +24,6 @@ const Students = () => {
   
   const {
     students,
-    studentStats,
     summary,
     loading,
     error,
@@ -44,16 +42,29 @@ const Students = () => {
   const [bulkImporting, setBulkImporting] = useState(false)
   const [showBulkResultModal, setShowBulkResultModal] = useState(false)
   const [bulkResult, setBulkResult] = useState(null)
+  const [studentAttemptRates, setStudentAttemptRates] = useState({})
+  const [attemptRateLoading, setAttemptRateLoading] = useState(false)
+  const [summaryAttemptRate, setSummaryAttemptRate] = useState(0)
   const bulkFileRef = useRef(null)
+  const didInitRef = useRef(false)
 
-  // On mount: load supporting data and students for whatever class is already selected
+  const getStudentXp = (student) => {
+    const xp = Number(student?.total_exp ?? student?.total_XP ?? student?.xp ?? 0)
+    return Number.isFinite(xp) ? xp : 0
+  }
+
+  const getStudentClassName = (student) => student?.class_name || student?.className || 'N/A'
+
+  // On mount: load supporting data and unfiltered students
   useEffect(() => {
+    if (didInitRef.current) return
+    didInitRef.current = true
+
     const fetchData = async () => {
       try {
         await Promise.all([
-          dispatch(fetchStudentStats()),
           dispatch(fetchClasses({})),
-          dispatch(fetchSubjects({}))
+          dispatch(fetchStudents({}))
         ])
       } catch (err) {
         console.error('Error fetching students data:', err)
@@ -63,32 +74,14 @@ const Students = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch])
 
-  // Pre-select the first class (first visit) OR re-fetch students when returning to page
-  useEffect(() => {
-    if (classes.length === 0) return
-
-    if (!filters.class) {
-      // First visit: auto-select first class and fetch its students
-      const firstId = (classes[0].id ?? classes[0].uuid ?? '').toString()
-      if (firstId) {
-        dispatch(setFilters({ class: firstId }))
-        dispatch(fetchStudents({ class: firstId }))
-      }
-    } else {
-      // Returning to page with a previously selected class: re-fetch students
-      dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
-    }
-  // Run when classes finish loading (length goes from 0 → N); not on every filter change
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classes.length, dispatch])
-
   const handleSearch = (value) => {
     dispatch(setFilters({ search: value }))
   }
 
   const handleClassFilter = (value) => {
-    dispatch(setFilters({ class: value }))
-    dispatch(fetchStudents({ class: value, subject: filters.subject }))
+    dispatch(setFilters({ class: value, subject: '' }))
+    dispatch(fetchSubjects(value ? { class: value } : {}))
+    dispatch(fetchStudents({ class: value, subject: '' }))
   }
 
   const handleSubjectFilter = (value) => {
@@ -96,14 +89,16 @@ const Students = () => {
     dispatch(fetchStudents({ class: filters.class, subject: value }))
   }
 
+  const handleRefresh = () => {
+    dispatch(fetchSubjects(filters.class ? { class: filters.class } : {}))
+    dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
+  }
+
   const handleAddStudent = async (studentData) => {
     try {
       await dispatch(createStudent(studentData)).unwrap()
       setShowAddModal(false)
-      await Promise.all([
-        dispatch(fetchStudents({ class: filters.class, subject: filters.subject })),
-        dispatch(fetchStudentStats())
-      ])
+      await dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
       setSuccessData({
         title: 'Student Added Successfully',
         message: `${studentData.firstName} ${studentData.lastName} has been added to the system.`
@@ -119,10 +114,7 @@ const Students = () => {
       await dispatch(updateStudent({ studentId: editingStudent.id, studentData })).unwrap()
       setEditingStudent(null)
       setShowAddModal(false)
-      await Promise.all([
-        dispatch(fetchStudents({ class: filters.class, subject: filters.subject })),
-        dispatch(fetchStudentStats())
-      ])
+      await dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
       setSuccessData({
         title: 'Student Updated Successfully',
         message: `${studentData.first_name} ${studentData.last_name} has been updated.`
@@ -143,10 +135,7 @@ const Students = () => {
 
     try {
       await dispatch(deleteStudent(studentToDelete.id)).unwrap()
-      await Promise.all([
-        dispatch(fetchStudents({ class: filters.class, subject: filters.subject })),
-        dispatch(fetchStudentStats())
-      ])
+      await dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
       setSuccessData({
         title: 'Student Deleted Successfully',
         message: `${studentToDelete.first_name || ''} ${studentToDelete.last_name || ''} has been removed from the system.`
@@ -191,9 +180,7 @@ const Students = () => {
       const data = response?.data ?? response
       setBulkResult(data)
       setShowBulkResultModal(true)
-      // Refresh list with current filters after import
       dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
-      dispatch(fetchStudentStats())
     } catch (err) {
       setBulkResult({ error: err.message })
       setShowBulkResultModal(true)
@@ -202,29 +189,112 @@ const Students = () => {
     }
   }
 
-  const clearFilters = () => {
-    const firstClassId = classes.length > 0 ? (classes[0].id ?? classes[0].uuid ?? '').toString() : ''
-    dispatch(setFilters({ search: '', class: firstClassId, subject: '' }))
-    dispatch(fetchStudents({ class: firstClassId }))
-  }
-
   // Class and subject filtering is done server-side; only apply local search for instant feedback
-  const filteredStudents = (students || []).filter(student => {
-    if (!filters.search) return true
-    const firstName = (student.first_name || student.firstName || '').toLowerCase()
-    const lastName = (student.last_name || student.lastName || '').toLowerCase()
-    const fullName = `${firstName} ${lastName}`.trim()
-    return fullName.includes(filters.search.toLowerCase())
-  })
+  const filteredStudents = useMemo(() => {
+    return (students || []).filter(student => {
+      if (!filters.search) return true
+      const firstName = (student.first_name || student.firstName || '').toLowerCase()
+      const lastName = (student.last_name || student.lastName || '').toLowerCase()
+      const fullName = `${firstName} ${lastName}`.trim()
+      return fullName.includes(filters.search.toLowerCase())
+    })
+  }, [students, filters.search])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    const loadAttemptRates = async () => {
+      const scopedStudents = Array.isArray(students) ? students : []
+
+      if (scopedStudents.length === 0) {
+        if (!isCancelled) {
+          setStudentAttemptRates({})
+          setAttemptRateLoading(false)
+        }
+        return
+      }
+
+      setAttemptRateLoading(true)
+
+      try {
+        const response = await studentsService.getAttemptRates({
+          class: filters.class || '',
+          subject: filters.subject || '',
+        })
+        const attemptRateMap = response?.students && typeof response.students === 'object'
+          ? response.students
+          : {}
+        const nextAttemptRates = scopedStudents.reduce((acc, student) => {
+          const studentId = String(student.id)
+          const attemptRate = Number(attemptRateMap[studentId] ?? 0)
+          acc[studentId] = Number.isFinite(attemptRate) ? attemptRate : 0
+          return acc
+        }, {})
+        const resolvedSummaryAttemptRate = Number(response?.overall_attempt_rate ?? 0) || 0
+
+        if (!isCancelled) {
+          setStudentAttemptRates(nextAttemptRates)
+          setSummaryAttemptRate(resolvedSummaryAttemptRate)
+        }
+      } catch (err) {
+        console.error('Error loading student attempt rates:', err)
+        if (!isCancelled) {
+          setStudentAttemptRates({})
+          setSummaryAttemptRate(0)
+        }
+      } finally {
+        if (!isCancelled) {
+          setAttemptRateLoading(false)
+        }
+      }
+    }
+
+    loadAttemptRates()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [students, filters.class, filters.subject])
+
+  const studentsSummary = useMemo(() => {
+    const totalStudents = filteredStudents.length
+
+    if (totalStudents === 0) {
+      return {
+        totalStudents: 0,
+        attemptRate: 0,
+        topPerformer: 'N/A',
+        topPerformerXp: null
+      }
+    }
+
+    const topStudent = filteredStudents.reduce((best, student) => {
+      if (!best) return student
+      return getStudentXp(student) > getStudentXp(best) ? student : best
+    }, null)
+
+    const topStudentName = [topStudent?.first_name, topStudent?.last_name].filter(Boolean).join(' ').trim() || 'N/A'
+    const topStudentXp = getStudentXp(topStudent)
+    return {
+      totalStudents,
+      attemptRate: summaryAttemptRate,
+      topPerformer: topStudentName,
+      topPerformerXp: topStudent && topStudentName !== 'N/A' ? topStudentXp : null
+    }
+  }, [filteredStudents, summaryAttemptRate])
 
   const summaryCards = [
-    { label: 'Total Students', value: (studentStats?.totalStudents ?? studentStats?.total_students ?? 0).toString() },
-    { label: 'Average Score', value: `${studentStats?.averageScore ?? studentStats?.average_score ?? 0}%` },
-    { label: 'Top Performer', value: summary?.topPerformer || 'N/A' }
+    { label: 'Total Students', value: studentsSummary.totalStudents.toString() },
+    { label: 'Attempt Rate', value: `${studentsSummary.attemptRate}%` },
+    {
+      label: 'Top Performer',
+      value: studentsSummary.topPerformer || summary?.topPerformer || 'N/A',
+      secondary: studentsSummary.topPerformerXp != null ? `${studentsSummary.topPerformerXp} XP` : null
+    }
   ]
 
-  const isLoading = loading.students || loading.stats
-  const hasError = error.students || error.stats
+  const isLoading = loading.students || attemptRateLoading
+  const hasError = error.students
 
   if (isLoading) {
     return (
@@ -250,13 +320,13 @@ const Students = () => {
   }
 
   return (
-    <div className="flex flex-col gap-6 h-full">
-      <div className="flex-shrink-0">
+    <div className="space-y-6">
+      <div>
         <h1 className="text-3xl font-bold text-gray-900">Student Overview</h1>
         <p className="text-gray-600 mt-2">Filter and view student performance data.</p>
       </div>
 
-      <div className="flex-shrink-0 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
@@ -277,7 +347,7 @@ const Students = () => {
               onChange={(e) => handleClassFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
-              <option value="">Select Class</option>
+              <option value="">All Classes</option>
               {Array.isArray(classes) && classes.map((classItem) => {
                 const className = classItem.name || classItem.class_name || `${classItem.id}`
                 const classValue = classItem.id?.toString() || classItem.name || classItem.class_name || ''
@@ -292,9 +362,10 @@ const Students = () => {
             <select
               value={filters.subject}
               onChange={(e) => handleSubjectFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              disabled={!filters.class}
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
             >
-              <option value="">Select Subject</option>
+              <option value="">{filters.class ? 'All Subjects' : 'Subject'}</option>
               {Array.isArray(subjects) && subjects.map((subject) => {
                 const subjectName = subject.name || subject.subject_name || `${subject.id}`
                 const subjectValue = subject.id?.toString() || subject.name || subject.subject_name || ''
@@ -307,22 +378,26 @@ const Students = () => {
             </select>
             
             <button
-              onClick={clearFilters}
+              onClick={handleRefresh}
               className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition-colors"
+              title="Refresh students"
             >
-              <Filter className="h-4 w-4" />
+              <RefreshCw className="h-4 w-4" />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="flex-shrink-0 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {summaryCards.map((card, index) => (
           <div key={index} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">{card.label}</p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">{card.value}</p>
+                {card.secondary && (
+                  <p className="text-sm font-medium text-gray-500 mt-1">{card.secondary}</p>
+                )}
               </div>
               <div className="h-12 w-12 bg-primary-50 rounded-lg flex items-center justify-center">
                 <Eye className="h-6 w-6 text-primary-500" />
@@ -332,8 +407,8 @@ const Students = () => {
         ))}
       </div>
 
-      <div className="flex flex-col flex-1 min-h-0 bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-900">Students</h2>
           <div className="flex items-center gap-3">
             {/* Hidden file input for bulk import */}
@@ -368,13 +443,13 @@ const Students = () => {
           </div>
         </div>
         
-        <div className="flex-1 min-h-0 overflow-auto">
+        <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Average Score</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attempt Rate</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total EXP</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
@@ -396,9 +471,11 @@ const Students = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.class_name || 'N/A'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.averageScore || 0}%</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.total_exp || student.total_XP || student.xp || 0}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getStudentClassName(student)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {`${studentAttemptRates[String(student.id)] ?? 0}%`}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getStudentXp(student)}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <button

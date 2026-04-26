@@ -706,38 +706,47 @@ const ReportsAnalytics = () => {
                           {/* Student proficiency sub-rows for this chapter */}
                           {isChExpanded && (
                             chStudents.length === 0 ? (
-                              <tr className="bg-blue-50/20 border-l-4 border-blue-300">
+                              <tr className="bg-indigo-50/30 border-l-4 border-indigo-200">
                                 <td colSpan={6} className="px-6 py-3 pl-20 text-sm text-gray-400 italic">No student data for this topic.</td>
                               </tr>
                             ) : (
-                              chStudents.map((stu, si) => (
-                                <tr key={`${chKey}-stu-${stu.id}`} className="bg-blue-50/20 border-l-4 border-blue-300 hover:bg-blue-50/40 transition-colors duration-150">
+                              <>
+                                <tr className="bg-indigo-50/50 border-l-4 border-indigo-300">
                                   <td className="px-6 py-2 pl-20">
-                                    <div className="flex items-center gap-2 text-gray-600">
-                                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                                        {stu.name.charAt(0)}
-                                      </div>
-                                      <span className="text-sm text-gray-700">{stu.name}</span>
-                                    </div>
+                                    <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Student</span>
                                   </td>
                                   <td className="px-6 py-2" colSpan={4}>
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-28 bg-gray-200 rounded-full h-2 overflow-hidden">
-                                        <div
-                                          className="h-2 rounded-full transition-all duration-500"
-                                          style={{ width: `${stu.proficient}%`, backgroundColor: getProficiencyColor(stu.proficient) }}
-                                        ></div>
-                                      </div>
-                                      <span className="text-sm font-semibold" style={{ color: getProficiencyColor(stu.proficient) }}>
-                                        {stu.proficient}%
-                                      </span>
-                                    </div>
+                                    <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Proficiency</span>
                                   </td>
-                                  <td className="px-6 py-2">
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">#{si + 1}</span>
-                                  </td>
+                                  <td className="px-6 py-2" />
                                 </tr>
-                              ))
+                                {chStudents.map((stu) => (
+                                  <tr key={`${chKey}-stu-${stu.id}`} className="bg-indigo-50/20 border-l-4 border-indigo-200 hover:bg-indigo-50/40 transition-colors duration-150">
+                                    <td className="px-6 py-2 pl-20">
+                                      <div className="flex items-center gap-2 text-gray-600">
+                                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                          {stu.name.charAt(0)}
+                                        </div>
+                                        <span className="text-sm text-gray-700">{stu.name}</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-2" colSpan={4}>
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-28 bg-gray-200 rounded-full h-2 overflow-hidden">
+                                          <div
+                                            className="h-2 rounded-full transition-all duration-500"
+                                            style={{ width: `${stu.proficient}%`, backgroundColor: getProficiencyColor(stu.proficient) }}
+                                          ></div>
+                                        </div>
+                                        <span className="text-sm font-semibold" style={{ color: getProficiencyColor(stu.proficient) }}>
+                                          {stu.proficient}%
+                                        </span>
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-2" />
+                                  </tr>
+                                ))}
+                              </>
                             )
                           )}
                         </React.Fragment>

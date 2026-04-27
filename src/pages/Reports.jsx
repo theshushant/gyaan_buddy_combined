@@ -24,6 +24,7 @@ const EMPTY_DATA = {
 const EXCLUDED_TOPIC_LABELS = new Set([
   'previous knowledge testing',
   'competency based questions',
+  'competancy based questions',
   'competency-based questions',
   'summary',
 ])

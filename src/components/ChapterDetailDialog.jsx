@@ -246,8 +246,11 @@ const ChapterDetailDialog = ({ chapter, classFilter, selectedPeriod, onClose }) 
                                       </div>
                                     </div>
                                     <div>
-                                      <p className="text-sm font-semibold text-gray-800 mb-3">All questions in this topic</p>
-                                      <div className="overflow-x-auto rounded-lg border border-gray-200">
+                                      <p className="text-sm font-semibold text-gray-800 mb-3">Attempted questions</p>
+                                      {student.answers.length === 0 && (
+                                        <p className="text-sm text-gray-400 py-2">No questions attempted yet.</p>
+                                      )}
+                                      {student.answers.length > 0 && <div className="overflow-x-auto rounded-lg border border-gray-200">
                                         <table className="w-full min-w-[400px] text-sm">
                                           <thead>
                                             <tr className="bg-gray-50 border-b border-gray-200">
@@ -276,7 +279,7 @@ const ChapterDetailDialog = ({ chapter, classFilter, selectedPeriod, onClose }) 
                                             ))}
                                           </tbody>
                                         </table>
-                                      </div>
+                                      </div>}
                                     </div>
                                   </div>
                                 </td>

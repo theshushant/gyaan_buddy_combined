@@ -100,6 +100,8 @@ const MyStudents = () => {
     };
   };
 
+  const hasActiveFilters = searchTerm || selectedClass !== 'All Classes' || selectedSubject !== 'All Subjects';
+
   const filteredStudents = (students || []).map(transformStudent).filter(student => {
     const matchesSearch = !searchTerm || 
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -185,7 +187,7 @@ const MyStudents = () => {
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.4s'}}>
           <div className="text-center">
             <div className="text-3xl font-bold text-primary-500 mb-2 animate-count-up">
-              {loading.stats ? '...' : (studentStats?.totalStudents || studentStats?.total_students || filteredStudents.length || 0)}
+              {loading.stats ? '...' : (hasActiveFilters ? filteredStudents.length : (studentStats?.totalStudents || studentStats?.total_students || filteredStudents.length || 0))}
             </div>
             <div className="text-sm text-gray-600">Total Students</div>
           </div>
@@ -203,7 +205,7 @@ const MyStudents = () => {
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.6s'}}>
           <div className="text-center">
             <div className="text-3xl font-bold text-yellow-600 mb-2 animate-count-up">
-              {loading.stats ? '...' : (studentStats?.pendingAssignment || studentStats?.pending_assignments || studentStats?.pendingAssignments || filteredStudents.reduce((sum, s) => sum + (s.pendingAssignments || 0), 0) || 0)}
+              {loading.stats ? '...' : (hasActiveFilters ? filteredStudents.reduce((sum, s) => sum + (s.pendingAssignments || 0), 0) : (studentStats?.pendingAssignment || studentStats?.pending_assignments || studentStats?.pendingAssignments || filteredStudents.reduce((sum, s) => sum + (s.pendingAssignments || 0), 0) || 0))}
             </div>
             <div className="text-sm text-gray-600">Pending Assignments</div>
           </div>
@@ -213,13 +215,17 @@ const MyStudents = () => {
           <div className="text-center">
             <div className="text-3xl font-bold text-purple-600 mb-2 animate-count-up">
               {loading.stats ? '...' : (
-                studentStats?.averageScore !== undefined 
-                  ? Math.round(studentStats.averageScore)
-                  : (studentStats?.average_score !== undefined 
-                      ? Math.round(studentStats.average_score)
-                      : (filteredStudents.length > 0 
-                          ? Math.round(filteredStudents.reduce((sum, s) => sum + (s.averageScore || 0), 0) / filteredStudents.length)
-                          : 0))
+                hasActiveFilters
+                  ? (filteredStudents.length > 0
+                      ? Math.round(filteredStudents.reduce((sum, s) => sum + (s.averageScore || 0), 0) / filteredStudents.length)
+                      : 0)
+                  : (studentStats?.averageScore !== undefined
+                      ? Math.round(studentStats.averageScore)
+                      : (studentStats?.average_score !== undefined
+                          ? Math.round(studentStats.average_score)
+                          : (filteredStudents.length > 0
+                              ? Math.round(filteredStudents.reduce((sum, s) => sum + (s.averageScore || 0), 0) / filteredStudents.length)
+                              : 0)))
               )}
             </div>
             <div className="text-sm text-gray-600">Average XP</div>

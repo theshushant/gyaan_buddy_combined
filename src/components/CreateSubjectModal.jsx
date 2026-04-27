@@ -22,6 +22,7 @@ const CreateSubjectModal = ({
     code: '',
     description: '',
     is_active: true,
+    color: '#0DA6F2',
     classes: []
   })
   
@@ -46,6 +47,7 @@ const CreateSubjectModal = ({
         code: subject.code || '',
         description: subject.description || '',
         is_active: subject.is_active !== undefined ? subject.is_active : true,
+        color: subject.color ? `#${subject.color.replace('#', '')}` : '#0DA6F2',
         classes: subject.classes || []
       })
       
@@ -63,6 +65,7 @@ const CreateSubjectModal = ({
         code: '',
         description: '',
         is_active: true,
+        color: '#0DA6F2',
         classes: []
       })
       setLogoFile(null)
@@ -165,6 +168,7 @@ const CreateSubjectModal = ({
         code: formData.code.trim().toUpperCase(),
         description: formData.description.trim(),
         is_active: formData.is_active,
+        color: formData.color.replace('#', ''),
         classes: formData.classes
       }
 
@@ -183,6 +187,7 @@ const CreateSubjectModal = ({
         code: '',
         description: '',
         is_active: true,
+        color: '#0DA6F2',
         classes: []
       })
       setLogoFile(null)
@@ -343,6 +348,20 @@ const CreateSubjectModal = ({
                 {errors.description && (
                   <p className="mt-1 text-sm text-red-600">{errors.description}</p>
                 )}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-md font-semibold text-gray-900 mb-4">Color</h4>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={formData.color}
+                  onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                  className="h-10 w-14 p-0.5 border border-gray-300 rounded-lg cursor-pointer"
+                  disabled={loading}
+                />
+                <span className="text-sm text-gray-600 font-mono">{formData.color.toUpperCase()}</span>
               </div>
             </div>
 

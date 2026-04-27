@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, TrendingUp, Target, ChevronDown, ChevronRight, GraduationCap, BookOpen, Layers, FileText, Search, Loader2 } from 'lucide-react';
 import reportsService from '../services/reportsService';
-import subjectsService from '../services/subjectsService';
+import ChapterDetailDialog from '../components/ChapterDetailDialog';
 
 const PERIOD_MAP = {
   'Last 7 days': 7,
@@ -36,6 +36,7 @@ const ReportsAnalytics = () => {
   const [showStudentTable, setShowStudentTable] = useState(false);
   const studentTableRef = useRef(null);
   const [expandedModules, setExpandedModules] = useState({ 1: true });
+  const [dialogChapter, setDialogChapter] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [filterLoading, setFilterLoading] = useState(false);
@@ -52,7 +53,6 @@ const ReportsAnalytics = () => {
     recentActivity: [],
   });
   const [studentProficiencyData, setStudentProficiencyData] = useState([]);
-  const [subjectOptions, setSubjectOptions] = useState([]);
 
   const fetchReportsAnalytics = useCallback(async (opts = {}) => {
     const isFilterUpdate = opts._isFilterUpdate ?? false;
@@ -102,14 +102,6 @@ const ReportsAnalytics = () => {
     fetchReportsAnalytics();
   }, [selectedPeriod, selectedClass]);
 
-  useEffect(() => {
-    subjectsService.getSubjects({}).then((res) => {
-      const data = res?.data ?? res;
-      const list = Array.isArray(data) ? data : (data?.subjects ?? data?.results ?? []);
-      setSubjectOptions(list.map((s) => ({ id: String(s.id), name: s.name, class_list: s.class_list || [] })));
-    }).catch(() => {});
-  }, []);
-
   const handleReportClassChange = (e) => {
     const val = e.target.value;
     setReportClass(val);
@@ -156,6 +148,7 @@ const ReportsAnalytics = () => {
       setError(err.message || 'Failed to load student proficiency');
     }
   }, [selectedPeriod, studentClass, studentSubject, studentModule, studentChapter]);
+
 
   const handleStudentClassChange = (e) => {
     const val = e.target.value;
@@ -235,14 +228,7 @@ const ReportsAnalytics = () => {
   ];
 
   const classesList = Array.isArray(filterOptions.classes) ? filterOptions.classes : [];
-  const rawSubjects = subjectOptions.length > 0 ? subjectOptions : normalizeOptions(filterOptions.subjects);
-  const subjectsList = reportClass
-    ? rawSubjects.filter((s) =>
-        (s.class_list || []).some(
-          (c) => String(c.class_instance__id ?? c.id) === String(reportClass)
-        )
-      )
-    : rawSubjects;
+  const subjectsList = normalizeOptions(filterOptions.subjects);
   const modulesList = normalizeOptions(filterOptions.modules);
   const chaptersList = normalizeOptions(filterOptions.chapters);
 
@@ -576,7 +562,7 @@ const ReportsAnalytics = () => {
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">Chapter-wise Student Performance</h3>
-                <p className="text-sm text-gray-500 mt-1">First-attempt accuracy by chapter and topic — click a chapter to expand topics</p>
+                <p className="text-sm text-gray-500 mt-1">First-attempt accuracy by chapter and topic — click a topic row to view student details</p>
               </div>
               <div className="flex items-center gap-5 text-sm">
                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500 inline-block"></span>≥75% Performing</span>
@@ -664,7 +650,11 @@ const ReportsAnalytics = () => {
                         const status = getTopicStatus(ch.proficiency);
                         const chWeakLevels = getWeakLevels(ch.proficiency);
                         return (
-                        <tr key={`${mod.id}-${ci}`} className="bg-white border-l-4 border-blue-600 hover:bg-blue-50/30 transition-colors duration-150">
+                        <tr
+                          key={`${mod.id}-${ci}`}
+                          className="bg-white border-l-4 border-blue-600 hover:bg-blue-50/50 cursor-pointer transition-colors duration-150"
+                          onClick={() => ch.id && setDialogChapter({ id: ch.id, name: ch.name })}
+                        >
                           <td className="px-6 py-3 pl-12">
                             <div className="flex items-center gap-2 text-gray-600">
                               <span className="text-gray-300 text-xs">└</span>
@@ -890,6 +880,15 @@ const ReportsAnalytics = () => {
         </>
       )}
       </>
+      )}
+
+      {dialogChapter && (
+        <ChapterDetailDialog
+          chapter={dialogChapter}
+          classFilter={reportClass}
+          selectedPeriod={selectedPeriod}
+          onClose={() => setDialogChapter(null)}
+        />
       )}
     </div>
   );

@@ -330,9 +330,9 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     const newSubjectIds = formData.subjectIds.some(id => String(id) === sidStr)
       ? formData.subjectIds.filter(id => String(id) !== sidStr)
       : [...formData.subjectIds, sidStr]
-    
+
     setFormData(prev => ({ ...prev, subjectIds: newSubjectIds }))
-    
+
     setTouched(prev => ({ ...prev, subjectIds: true }))
     const error = validateField('subjectIds', newSubjectIds)
     if (error) {
@@ -340,6 +340,16 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     } else {
       setErrors(prev => ({ ...prev, subjectIds: '' }))
     }
+  }
+
+  const handleSelectAllSubjects = () => {
+    const allIds = subjects.map(s => String(s.id || s.uuid))
+    const allSelected = allIds.every(id => formData.subjectIds.some(sel => String(sel) === id))
+    const newSubjectIds = allSelected ? [] : allIds
+    setFormData(prev => ({ ...prev, subjectIds: newSubjectIds }))
+    setTouched(prev => ({ ...prev, subjectIds: true }))
+    const error = validateField('subjectIds', newSubjectIds)
+    setErrors(prev => ({ ...prev, subjectIds: error || '' }))
   }
 
   return (
@@ -473,6 +483,15 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                       <div className="text-center text-sm text-gray-500 py-4">No subjects available</div>
                     ) : (
                       <>
+                        <label className="flex items-center space-x-2 cursor-pointer pb-2 mb-2 border-b border-gray-200">
+                          <input
+                            type="checkbox"
+                            checked={subjects.length > 0 && subjects.every(s => formData.subjectIds.some(id => String(id) === String(s.id || s.uuid)))}
+                            onChange={handleSelectAllSubjects}
+                            className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                          />
+                          <span className="text-sm font-medium text-gray-700">Select All</span>
+                        </label>
                         <div className="space-y-2">
                           {subjects.map(subject => {
                             const sid = subject.id || subject.uuid

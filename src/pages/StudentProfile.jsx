@@ -275,13 +275,13 @@ const StudentProfile = () => {
                       </div>
                     </div>
                   )}
-                  <div className="flex items-center hover:bg-gray-50 p-2 rounded transition-colors duration-200">
+                  {/* <div className="flex items-center hover:bg-gray-50 p-2 rounded transition-colors duration-200">
                     <Phone className="h-5 w-5 text-gray-400 mr-3" />
                     <div>
                       <p className="text-sm text-gray-600">Contact</p>
                       <p className="font-medium text-gray-900">{studentData.parentContact}</p>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>
@@ -376,7 +376,7 @@ const StudentProfile = () => {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chapter</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chapter</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Topic</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Accessed</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>

@@ -232,13 +232,14 @@ class StudentsService {
     }
   }
 
-  async bulkImportStudents(file) {
+  async bulkImportStudents(file, dryRun = false) {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      return await apiService.post('/students/bulk-import/', formData, { timeout: 300000 }); // 5 min for large files
+      if (dryRun) formData.append('dry_run', 'true');
+      return await apiService.post('/students/bulk-import/', formData, { timeout: 300000 });
     } catch (error) {
-      throw new Error(`Failed to import students: ${error.message}`);
+      throw error;
     }
   }
 

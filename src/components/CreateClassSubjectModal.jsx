@@ -21,6 +21,7 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
   const [loadingClasses, setLoadingClasses] = useState(false)
   const [logoFile, setLogoFile] = useState(null)
   const [logoPreview, setLogoPreview] = useState(null)
+  const [color, setColor] = useState('#0DA6F2')
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
 
@@ -45,6 +46,7 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
     setSelectedClasses([])
     setLogoFile(null)
     setLogoPreview(null)
+    setColor('#0DA6F2')
     setErrors({})
   }
 
@@ -133,6 +135,7 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
           code: code.trim().toUpperCase(),
           description: description.trim(),
           is_active: isActive,
+          color: color.replace('#', ''),
           classes: selectedClasses
         }
         response = await subjectsService.createSubject(subjectData, logoFile)
@@ -317,6 +320,22 @@ const CreateClassSubjectModal = ({ isOpen, onClose, onSuccess, initialType = 'cl
                   {errors.description && (
                     <p className="mt-1 text-sm text-red-600">{errors.description}</p>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Color
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={color}
+                      onChange={(e) => setColor(e.target.value)}
+                      className="h-10 w-14 p-0.5 border border-gray-300 rounded-lg cursor-pointer"
+                      disabled={loading}
+                    />
+                    <span className="text-sm text-gray-600 font-mono">{color.toUpperCase()}</span>
+                  </div>
                 </div>
 
                 <div>

@@ -184,17 +184,19 @@ class ModulesService {
         if (chapterData.logo) payload.append('logo', chapterData.logo);
         if (chapterData.is_enabled !== undefined) payload.append('is_enabled', chapterData.is_enabled);
         if (chapterData.is_important !== undefined) payload.append('is_important', chapterData.is_important);
+        if (chapterData.due_date) payload.append('due_date', chapterData.due_date);
       } else {
         payload = {
           module: moduleId,
           title: chapterData.title,
         };
-        
+
         if (chapterData.description) payload.description = chapterData.description;
         if (chapterData.order !== undefined) payload.order = chapterData.order;
         if (chapterData.logo) payload.logo = chapterData.logo;
         if (chapterData.is_enabled !== undefined) payload.is_enabled = chapterData.is_enabled;
         if (chapterData.is_important !== undefined) payload.is_important = chapterData.is_important;
+        if (chapterData.due_date !== undefined) payload.due_date = chapterData.due_date || null;
       }
       
       const response = await apiService.post('/module_chapters/', payload, { isFormData: hasFile, timeout: 120000 });
@@ -221,9 +223,10 @@ class ModulesService {
         if (chapterData.is_enabled !== undefined) payload.append('is_enabled', chapterData.is_enabled);
         if (chapterData.is_important !== undefined) payload.append('is_important', chapterData.is_important);
         if (chapterData.is_due !== undefined) payload.append('is_due', chapterData.is_due);
+        if (chapterData.due_date) payload.append('due_date', chapterData.due_date);
       } else {
         payload = {};
-        
+
         if (chapterData.title) payload.title = chapterData.title;
         if (chapterData.module) payload.module = chapterData.module;
         if (chapterData.description !== undefined) payload.description = chapterData.description;
@@ -232,6 +235,7 @@ class ModulesService {
         if (chapterData.is_enabled !== undefined) payload.is_enabled = chapterData.is_enabled;
         if (chapterData.is_important !== undefined) payload.is_important = chapterData.is_important;
         if (chapterData.is_due !== undefined) payload.is_due = chapterData.is_due;
+        if (chapterData.due_date !== undefined) payload.due_date = chapterData.due_date || null;
       }
       
       return await apiService.put(`/module_chapters/${chapterId}/`, payload, { isFormData: hasFile, timeout: 120000 });

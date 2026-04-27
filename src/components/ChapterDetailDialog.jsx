@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import reportsService from '../services/reportsService';
 
 const PERIOD_MAP = {
@@ -48,7 +49,7 @@ const ChapterDetailDialog = ({ chapter, classFilter, selectedPeriod, onClose }) 
     .filter(q => (q.correct_percentage ?? 0) < 50)
     .sort((a, b) => a.correct_percentage - b.correct_percentage);
 
-  return (
+  return ReactDOM.createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
@@ -292,7 +293,8 @@ const ChapterDetailDialog = ({ chapter, classFilter, selectedPeriod, onClose }) 
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

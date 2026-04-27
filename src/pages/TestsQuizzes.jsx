@@ -1685,15 +1685,15 @@ const openCreateQuestionModal = () => {
                               </div>
                             )}
                             {question.hint && (
-                              <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                              <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded-lg overflow-hidden">
                                 <p className="text-xs font-semibold text-amber-700 mb-0.5">Hint</p>
-                                <p className="text-xs text-amber-800">{question.hint}</p>
+                                <p className="text-xs text-amber-800 break-words whitespace-pre-wrap">{question.hint}</p>
                               </div>
                             )}
                             {question.explanation && (
-                              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg overflow-hidden">
                                 <p className="text-xs font-semibold text-blue-700 mb-0.5">Explanation</p>
-                                <p className="text-xs text-blue-800">{question.explanation}</p>
+                                <p className="text-xs text-blue-800 break-words whitespace-pre-wrap">{question.explanation}</p>
                               </div>
                             )}
                           </div>

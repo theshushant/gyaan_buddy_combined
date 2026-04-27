@@ -1107,7 +1107,7 @@ const ModulesAssignments = () => {
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
-                        <div className="flex items-center space-x-2">
+                        {/* <div className="flex items-center space-x-2">
                           <div className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg">
                             <span className="text-sm text-gray-600">Due</span>
                             <button
@@ -1135,7 +1135,7 @@ const ModulesAssignments = () => {
                               )}
                             </button>
                           </div>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   </div>
@@ -2415,15 +2415,15 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
                                 </div>
                               )}
                               {question.hint && (
-                                <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                                <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded-lg overflow-hidden">
                                   <p className="text-xs font-semibold text-amber-700 mb-0.5">Hint</p>
-                                  <p className="text-xs text-amber-800">{question.hint}</p>
+                                  <p className="text-xs text-amber-800 break-words whitespace-pre-wrap">{question.hint}</p>
                                 </div>
                               )}
                               {question.explanation && (
-                                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg overflow-hidden">
                                   <p className="text-xs font-semibold text-blue-700 mb-0.5">Explanation</p>
-                                  <p className="text-xs text-blue-800">{question.explanation}</p>
+                                  <p className="text-xs text-blue-800 break-words whitespace-pre-wrap">{question.explanation}</p>
                                 </div>
                               )}
 
@@ -2991,7 +2991,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
+        {/* <div className="bg-white rounded-xl p-6 border border-gray-200">
           <label className="block text-sm font-semibold text-gray-700 mb-3">
             Experience Points
           </label>
@@ -3003,7 +3003,7 @@ const CreateQuestionForm = ({ onSave, onCancel, loading, error, initialData }) =
             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
             disabled={loading}
           />
-        </div>
+        </div> */}
 
         <div className="bg-white rounded-xl p-6 border border-gray-200">
           <label className="block text-sm font-semibold text-gray-700 mb-3">

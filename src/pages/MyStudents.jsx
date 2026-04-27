@@ -102,7 +102,9 @@ const MyStudents = () => {
 
   const hasActiveFilters = searchTerm || selectedClass !== 'All Classes' || selectedSubject !== 'All Subjects';
 
-  const filteredStudents = (students || []).map(transformStudent).filter(student => {
+  const filteredStudents = (students || []).map(transformStudent).sort((a, b) =>
+    a.firstName.localeCompare(b.firstName)
+  ).filter(student => {
     const matchesSearch = !searchTerm || 
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (student.email && student.email.toLowerCase().includes(searchTerm.toLowerCase()));

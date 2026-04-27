@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, TrendingUp, Target, ChevronDown, ChevronRight, GraduationCap, BookOpen, Layers, FileText, Search, Loader2 } from 'lucide-react';
 import reportsService from '../services/reportsService';
+import ChapterDetailDialog from '../components/ChapterDetailDialog';
 
 const PERIOD_MAP = {
   'Last 7 days': 7,
@@ -35,7 +36,7 @@ const ReportsAnalytics = () => {
   const [showStudentTable, setShowStudentTable] = useState(false);
   const studentTableRef = useRef(null);
   const [expandedModules, setExpandedModules] = useState({ 1: true });
-  const [expandedChapters, setExpandedChapters] = useState({});
+  const [dialogChapter, setDialogChapter] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [filterLoading, setFilterLoading] = useState(false);
@@ -148,9 +149,6 @@ const ReportsAnalytics = () => {
     }
   }, [selectedPeriod, studentClass, studentSubject, studentModule, studentChapter]);
 
-  const handleChapterRowClick = useCallback((chapterId) => {
-    setExpandedChapters(prev => ({ ...prev, [chapterId]: !prev[chapterId] }));
-  }, []);
 
   const handleStudentClassChange = (e) => {
     const val = e.target.value;
@@ -564,7 +562,7 @@ const ReportsAnalytics = () => {
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">Chapter-wise Student Performance</h3>
-                <p className="text-sm text-gray-500 mt-1">First-attempt accuracy by chapter and topic — click a chapter to expand topics</p>
+                <p className="text-sm text-gray-500 mt-1">First-attempt accuracy by chapter and topic — click a topic row to view student details</p>
               </div>
               <div className="flex items-center gap-5 text-sm">
                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500 inline-block"></span>≥75% Performing</span>
@@ -651,105 +649,49 @@ const ReportsAnalytics = () => {
                       {expandedModules[mod.id] && mod.chapters.map((ch, ci) => {
                         const status = getTopicStatus(ch.proficiency);
                         const chWeakLevels = getWeakLevels(ch.proficiency);
-                        const chKey = ch.id ?? `${mod.id}-${ci}`;
-                        const isChExpanded = !!expandedChapters[chKey];
-                        const chStudents = ch.students ?? [];
                         return (
-                        <React.Fragment key={`${mod.id}-${ci}`}>
-                          <tr
-                            className="bg-white border-l-4 border-blue-600 hover:bg-blue-50/50 cursor-pointer transition-colors duration-150"
-                            onClick={() => ch.id && handleChapterRowClick(ch.id)}
-                          >
-                            <td className="px-6 py-3 pl-12">
-                              <div className="flex items-center gap-2 text-gray-600">
-                                <span className="text-gray-300 text-xs">└</span>
-                                {ch.id && (
-                                  <span className="text-gray-400">
-                                    {isChExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                                  </span>
-                                )}
-                                <span className="text-sm font-medium">{ch.name}</span>
+                        <tr
+                          key={`${mod.id}-${ci}`}
+                          className="bg-white border-l-4 border-blue-600 hover:bg-blue-50/50 cursor-pointer transition-colors duration-150"
+                          onClick={() => ch.id && setDialogChapter({ id: ch.id, name: ch.name })}
+                        >
+                          <td className="px-6 py-3 pl-12">
+                            <div className="flex items-center gap-2 text-gray-600">
+                              <span className="text-gray-300 text-xs">└</span>
+                              <span className="text-sm font-medium">{ch.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-32 bg-gray-200 rounded-full h-2">
+                                <div className="h-2 rounded-full" style={{ width: `${ch.proficiency}%`, backgroundColor: getProficiencyColor(ch.proficiency) }}></div>
                               </div>
-                            </td>
-                            <td className="px-6 py-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-32 bg-gray-200 rounded-full h-2">
-                                  <div className="h-2 rounded-full" style={{ width: `${ch.proficiency}%`, backgroundColor: getProficiencyColor(ch.proficiency) }}></div>
-                                </div>
-                                <span className="text-sm font-semibold" style={{ color: getProficiencyColor(ch.proficiency) }}>{ch.proficiency}%</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-3">
-                              <span className="text-sm font-semibold text-blue-600">{ch.attemptRate ?? 0}%</span>
-                            </td>
-                            <td className="px-6 py-3">
-                              <span className="text-gray-400 text-sm">—</span>
-                            </td>
-                            <td className="px-6 py-3">
-                              {ch.proficiency === 0
-                                ? <span className="text-gray-400 text-sm">—</span>
-                                : <div className="flex gap-1">{chWeakLevels.map((l) => <span key={l} className="w-6 h-6 flex items-center justify-center text-xs font-medium border border-red-300 text-red-600 rounded">{l}</span>)}</div>
-                              }
-                            </td>
-                            <td className="px-6 py-3">
-                              {ch.proficiency === 0
-                                ? <span className="text-gray-400 text-sm">—</span>
-                                : status === 'go'
-                                ? <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-green-50 text-green-600 border border-green-200"><span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>GO</span>
-                                : status === 'watch'
-                                ? <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block"></span>WATCH</span>
-                                : <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-200"><span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>STOP</span>
-                              }
-                            </td>
-                          </tr>
-
-                          {/* Student proficiency sub-rows for this chapter */}
-                          {isChExpanded && (
-                            chStudents.length === 0 ? (
-                              <tr className="bg-indigo-50/30 border-l-4 border-indigo-200">
-                                <td colSpan={6} className="px-6 py-3 pl-20 text-sm text-gray-400 italic">No student data for this topic.</td>
-                              </tr>
-                            ) : (
-                              <>
-                                <tr className="bg-indigo-50/50 border-l-4 border-indigo-300">
-                                  <td className="px-6 py-2 pl-20">
-                                    <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Student</span>
-                                  </td>
-                                  <td className="px-6 py-2" colSpan={4}>
-                                    <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Proficiency</span>
-                                  </td>
-                                  <td className="px-6 py-2" />
-                                </tr>
-                                {chStudents.map((stu) => (
-                                  <tr key={`${chKey}-stu-${stu.id}`} className="bg-indigo-50/20 border-l-4 border-indigo-200 hover:bg-indigo-50/40 transition-colors duration-150">
-                                    <td className="px-6 py-2 pl-20">
-                                      <div className="flex items-center gap-2 text-gray-600">
-                                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                                          {stu.name.charAt(0)}
-                                        </div>
-                                        <span className="text-sm text-gray-700">{stu.name}</span>
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-2" colSpan={4}>
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-28 bg-gray-200 rounded-full h-2 overflow-hidden">
-                                          <div
-                                            className="h-2 rounded-full transition-all duration-500"
-                                            style={{ width: `${stu.proficient}%`, backgroundColor: getProficiencyColor(stu.proficient) }}
-                                          ></div>
-                                        </div>
-                                        <span className="text-sm font-semibold" style={{ color: getProficiencyColor(stu.proficient) }}>
-                                          {stu.proficient}%
-                                        </span>
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-2" />
-                                  </tr>
-                                ))}
-                              </>
-                            )
-                          )}
-                        </React.Fragment>
+                              <span className="text-sm font-semibold" style={{ color: getProficiencyColor(ch.proficiency) }}>{ch.proficiency}%</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3">
+                            <span className="text-sm font-semibold text-blue-600">{ch.attemptRate ?? 0}%</span>
+                          </td>
+                          <td className="px-6 py-3">
+                            <span className="text-gray-400 text-sm">—</span>
+                          </td>
+                          <td className="px-6 py-3">
+                            {ch.proficiency === 0
+                              ? <span className="text-gray-400 text-sm">—</span>
+                              : <div className="flex gap-1">{chWeakLevels.map((l) => <span key={l} className="w-6 h-6 flex items-center justify-center text-xs font-medium border border-red-300 text-red-600 rounded">{l}</span>)}</div>
+                            }
+                          </td>
+                          <td className="px-6 py-3">
+                            {ch.proficiency === 0
+                              ? <span className="text-gray-400 text-sm">—</span>
+                              : status === 'go'
+                              ? <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-green-50 text-green-600 border border-green-200"><span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>GO</span>
+                              : status === 'watch'
+                              ? <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block"></span>WATCH</span>
+                              : <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-200"><span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>STOP</span>
+                            }
+                          </td>
+                        </tr>
                         );
                       })}
                     </>
@@ -938,6 +880,15 @@ const ReportsAnalytics = () => {
         </>
       )}
       </>
+      )}
+
+      {dialogChapter && (
+        <ChapterDetailDialog
+          chapter={dialogChapter}
+          classFilter={reportClass}
+          selectedPeriod={selectedPeriod}
+          onClose={() => setDialogChapter(null)}
+        />
       )}
     </div>
   );

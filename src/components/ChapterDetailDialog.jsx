@@ -51,10 +51,10 @@ const ChapterDetailDialog = ({ chapter, classFilter, selectedPeriod, onClose }) 
 
   return ReactDOM.createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 overflow-y-auto p-4 pt-10"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-fade-in">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col animate-fade-in mb-10">
         {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100 flex items-start justify-between bg-gradient-to-r from-primary-50 to-blue-50 flex-shrink-0">
           <div>
@@ -74,7 +74,7 @@ const ChapterDetailDialog = ({ chapter, classFilter, selectedPeriod, onClose }) 
         </div>
 
         {/* Body */}
-        <div className="overflow-y-auto flex-1 p-6">
+        <div className="p-6">
           {loading && (
             <div className="flex flex-col items-center justify-center py-20">
               <div className="w-10 h-10 rounded-full border-4 border-primary-100 border-t-primary-500 animate-spin mb-3" />

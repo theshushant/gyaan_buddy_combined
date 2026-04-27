@@ -11,18 +11,40 @@ const EMPTY_DATA = {
   filterOptions: {
     classes: [],
     subjects: [],
+    modules: [],
     chapters: [],
   },
   sectionWisePerformance: [],
+  moduleProficiencyData: [],
+  reportsData: {
+    chapterProficiency: [],
+  },
+}
+
+const EXCLUDED_TOPIC_LABELS = new Set([
+  'previous knowledge testing',
+  'competency based questions',
+  'competency-based questions',
+  'summary',
+])
+
+const normalizeTopicLabel = (topic) => String(topic || '').trim().replace(/\s+/g, ' ')
+const isDisplayableTopicLabel = (topic) => {
+  const normalized = normalizeTopicLabel(topic)
+  return Boolean(normalized) && !EXCLUDED_TOPIC_LABELS.has(normalized.toLowerCase())
 }
 
 const renderTopicTags = (topics, colorClass) => {
-  if (!Array.isArray(topics) || topics.length === 0) {
+  const filteredTopics = Array.isArray(topics)
+    ? topics.map(normalizeTopicLabel).filter(isDisplayableTopicLabel)
+    : []
+
+  if (filteredTopics.length === 0) {
     return <span className="text-sm text-gray-400">-</span>
   }
   return (
     <div className="flex flex-wrap gap-1.5">
-      {topics.map((topic, index) => (
+      {filteredTopics.map((topic, index) => (
         <span key={`${topic}-${index}`} className={`px-2 py-0.5 text-xs rounded border ${colorClass}`}>
           {topic}
         </span>
@@ -60,9 +82,14 @@ const Reports = () => {
         filterOptions: {
           classes: response.filterOptions?.classes || [],
           subjects: response.filterOptions?.subjects || [],
+          modules: response.filterOptions?.modules || [],
           chapters: response.filterOptions?.chapters || [],
         },
         sectionWisePerformance: response.sectionWisePerformance || [],
+        moduleProficiencyData: response.moduleProficiencyData || [],
+        reportsData: {
+          chapterProficiency: response.reportsData?.chapterProficiency || [],
+        },
       })
     } catch (err) {
       setError(err.message || 'Failed to load reports')
@@ -100,16 +127,21 @@ const Reports = () => {
         period: '30',
         class: filters.class ?? diffClass,
         subject: filters.subject ?? diffSubject,
-        chapter: filters.topic ?? diffTopic,
+        chapter: filters.chapter ?? diffTopic,
       })
       setDiffData({
         summary: response.summary || EMPTY_DATA.summary,
         filterOptions: {
           classes: response.filterOptions?.classes || [],
           subjects: response.filterOptions?.subjects || [],
+          modules: response.filterOptions?.modules || [],
           chapters: response.filterOptions?.chapters || [],
         },
         sectionWisePerformance: response.sectionWisePerformance || [],
+        moduleProficiencyData: response.moduleProficiencyData || [],
+        reportsData: {
+          chapterProficiency: response.reportsData?.chapterProficiency || [],
+        },
       })
     } finally {
       setTopicDiffLoading(false)
@@ -124,12 +156,12 @@ const Reports = () => {
   const handleDiffSubjectChange = (value) => {
     setDiffSubject(value)
     setDiffTopic('')
-    fetchTopicDiffData({ subject: value, topic: '' })
+    fetchTopicDiffData({ subject: value, chapter: '' })
   }
 
   const handleDiffTopicChange = (value) => {
     setDiffTopic(value)
-    fetchTopicDiffData({ topic: value })
+    fetchTopicDiffData({ chapter: value })
   }
 
   const sectionRows = useMemo(() => {
@@ -137,23 +169,69 @@ const Reports = () => {
     return data.sectionWisePerformance
   }, [data.sectionWisePerformance])
 
+  const sectionSummary = useMemo(() => {
+    if (!sectionRows.length) {
+      return {
+        totalStudents: data.summary.totalStudents || 0,
+        averageScore: data.summary.averageScore || 0,
+        attemptRate: 0,
+      }
+    }
+
+    const totalStudents = sectionRows.reduce((sum, row) => sum + (row.students || 0), 0)
+
+    if (!totalStudents) {
+      return {
+        totalStudents: 0,
+        averageScore: 0,
+        attemptRate: 0,
+      }
+    }
+
+    const averageScore = Math.round(
+      sectionRows.reduce((sum, row) => sum + ((row.averageScore || 0) * (row.students || 0)), 0) / totalStudents
+    )
+
+    const attemptRate = Math.round(
+      sectionRows.reduce((sum, row) => sum + ((row.attemptRate || row.completionRate || 0) * (row.students || 0)), 0) / totalStudents
+    )
+
+    return {
+      totalStudents,
+      averageScore,
+      attemptRate,
+    }
+  }, [sectionRows, data.summary.totalStudents, data.summary.averageScore])
+
   const topicDifferenceSummary = useMemo(() => {
-    const rows = Array.isArray(diffData.sectionWisePerformance) ? diffData.sectionWisePerformance : []
+    const moduleRows = Array.isArray(diffData.moduleProficiencyData) ? diffData.moduleProficiencyData : []
     const goodSet = new Set()
     const weakSet = new Set()
-    rows.forEach((row) => {
-      ;(row.goodTopics || []).forEach((topic) => {
-        goodSet.add(topic)
+
+    moduleRows.forEach((moduleRow) => {
+      const backendWeakTopics = Array.isArray(moduleRow.weakSubtopics) ? moduleRow.weakSubtopics : []
+
+      backendWeakTopics.forEach((topicName) => {
+        const normalized = normalizeTopicLabel(topicName)
+        if (isDisplayableTopicLabel(normalized)) weakSet.add(normalized)
       })
-      ;(row.strugglingTopics || []).forEach((topic) => {
-        weakSet.add(topic)
+
+      ;(moduleRow.chapters || []).forEach((chapter) => {
+        const topicName = normalizeTopicLabel(chapter.name || chapter.chapterName)
+        const proficiency = Number(chapter.proficiency ?? chapter.proficient ?? 0)
+        if (!isDisplayableTopicLabel(topicName)) return
+
+        if (proficiency > 50) {
+          goodSet.add(topicName)
+        }
       })
     })
+
     return {
       goodTopics: [...goodSet],
       weakTopics: [...weakSet],
     }
-  }, [diffData.sectionWisePerformance, diffTopic])
+  }, [diffData.moduleProficiencyData, diffTopic])
 
   if (loading) {
     return (
@@ -183,7 +261,7 @@ const Reports = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Reports Dashboard</h1>
-        <p className="text-gray-600 mt-1">Live section-wise performance with class, subject, and topic filters.</p>
+        <p className="text-gray-600 mt-1">Live section-wise performance with class, subject, and chapter filters.</p>
       </div>
 
       <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
@@ -217,14 +295,14 @@ const Reports = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Topic</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Chapter</label>
             <select
               value={selectedTopic}
               onChange={(e) => handleTopicChange(e.target.value)}
               disabled={!selectedSubject}
               className={`px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 ${!selectedSubject ? 'text-gray-400 cursor-not-allowed' : 'text-gray-900'}`}
             >
-              <option value="">All Topics</option>
+              <option value="">All Chapters</option>
               {data.filterOptions.chapters.map((chapter) => (
                 <option key={chapter.id} value={chapter.id}>{chapter.name}</option>
               ))}
@@ -236,17 +314,17 @@ const Reports = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Students</p>
-          <p className="text-3xl font-bold mt-2" style={{ color: '#00167a' }}>{data.summary.totalStudents}</p>
+          <p className="text-3xl font-bold mt-2" style={{ color: '#00167a' }}>{sectionSummary.totalStudents}</p>
         </div>
 
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Average Score</p>
-          <p className="text-3xl font-bold mt-2" style={{ color: '#1fb7eb' }}>{data.summary.averageScore}%</p>
+          <p className="text-3xl font-bold mt-2" style={{ color: '#1fb7eb' }}>{sectionSummary.averageScore}%</p>
         </div>
 
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Attempt Rate</p>
-          <p className="text-3xl font-bold mt-2 text-green-600">{data.summary.completionRate}%</p>
+          <p className="text-3xl font-bold mt-2 text-green-600">{sectionSummary.attemptRate}%</p>
         </div>
       </div>
 
@@ -260,6 +338,7 @@ const Reports = () => {
             <thead>
               <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 <th className="px-6 py-3">Section</th>
+                <th className="px-6 py-3">Teacher</th>
                 <th className="px-6 py-3">Students</th>
                 <th className="px-6 py-3">Proficiency</th>
                 <th className="px-6 py-3">Attempt Rate</th>
@@ -272,6 +351,7 @@ const Reports = () => {
                 sectionRows.map((row, index) => (
                   <tr key={`${row.className}-${index}`} className="border-t border-gray-200">
                     <td className="px-6 py-4 text-sm font-semibold text-gray-900">{row.className || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-700">{row.teacherName || '-'}</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{row.students ?? 0}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -288,7 +368,7 @@ const Reports = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                     No section-wise data available for current filters.
                   </td>
                 </tr>
@@ -300,7 +380,7 @@ const Reports = () => {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Topic Difference Table</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Topic Analyzer</h2>
         </div>
 
         <div className="p-5 border-b border-gray-100">
@@ -334,14 +414,14 @@ const Reports = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Topic</label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Chapter</label>
               <select
                 value={diffTopic}
                 onChange={(e) => handleDiffTopicChange(e.target.value)}
                 disabled={!diffSubject}
                 className={`px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 ${!diffSubject ? 'text-gray-400 cursor-not-allowed' : 'text-gray-900'}`}
               >
-                <option value="">All Topics</option>
+                <option value="">All Chapters</option>
                 {diffData.filterOptions.chapters.map((chapter) => (
                   <option key={chapter.id} value={chapter.id}>{chapter.name}</option>
                 ))}

@@ -19,6 +19,21 @@ class StudentsService {
     }
   }
 
+  async getAttemptRates(filters = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+
+      if (filters.class) queryParams.append('class', filters.class);
+      if (filters.subject) queryParams.append('subject', filters.subject);
+
+      const endpoint = `/students/attempt-rates/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await apiService.get(endpoint);
+      return response.data || response;
+    } catch (error) {
+      throw new Error(`Failed to fetch student attempt rates: ${error.message}`);
+    }
+  }
+
   async getStudentById(studentId) {
     try {
       const response = await apiService.get(`/users/${studentId}/`);

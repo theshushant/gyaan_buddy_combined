@@ -147,6 +147,17 @@ class QuestionsService {
       throw new Error(`Failed to add questions to assignment: ${error.message}`);
     }
   }
+
+  async deactivateAIQuestions(moduleChapterId, questionIds) {
+    try {
+      return await apiService.post('/questions/ai/deactivate-questions/', {
+        module_chapter_id: moduleChapterId,
+        question_ids: questionIds,
+      });
+    } catch (error) {
+      throw new Error(`Failed to deactivate AI questions: ${error.message}`);
+    }
+  }
 }
 
 export default new QuestionsService();

@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import questionsService from '../services/questionsService';
 
 const AIGeneratedQuestions = () => {
+  const location = useLocation();
+  const moduleChapterId = location.state?.module_chapter_id;
+
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveResult, setSaveResult] = useState(null);
 
   const questions = [
     {
@@ -58,6 +64,24 @@ const AIGeneratedQuestions = () => {
       setSelectedQuestions(questions.map(q => q.id));
     }
     setSelectAll(!selectAll);
+  };
+
+  const handleAddSelectedToBank = async () => {
+    const uncheckedIds = questions.map(q => q.id).filter(id => !selectedQuestions.includes(id));
+    if (!moduleChapterId) {
+      alert('module_chapter_id is missing. Navigate here from a chapter context.');
+      return;
+    }
+    setSaving(true);
+    setSaveResult(null);
+    try {
+      const result = await questionsService.deactivateAIQuestions(moduleChapterId, uncheckedIds);
+      setSaveResult({ success: true, count: result?.data?.deactivated_count ?? uncheckedIds.length });
+    } catch (err) {
+      setSaveResult({ success: false, message: err.message });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const getDifficultyColor = (difficulty) => {
@@ -161,21 +185,30 @@ const AIGeneratedQuestions = () => {
         </div>
       </div>
 
-      <div className="mt-8 flex justify-end space-x-4">
+      {saveResult && (
+        <div className={`mt-4 p-3 rounded-lg text-sm ${saveResult.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          {saveResult.success
+            ? `${saveResult.count} question(s) deactivated. Selected questions saved to bank.`
+            : `Error: ${saveResult.message}`}
+        </div>
+      )}
+
+      <div className="mt-4 flex justify-end space-x-4">
         <button className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
           <span>Generate More</span>
         </button>
-        
-        <button 
-          className="px-6 py-2 bg-primary-500/10 text-primary-500 rounded-lg hover:bg-primary-500/20 transition-colors"
-          disabled={selectedQuestions.length === 0}
+
+        <button
+          className="px-6 py-2 bg-primary-500/10 text-primary-500 rounded-lg hover:bg-primary-500/20 transition-colors disabled:opacity-50"
+          disabled={selectedQuestions.length === 0 || saving}
+          onClick={handleAddSelectedToBank}
         >
-          Add Selected to Bank ({selectedQuestions.length})
+          {saving ? 'Saving...' : `Add Selected to Bank (${selectedQuestions.length})`}
         </button>
-        
+
         <button className="px-6 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}>
           Add All to Bank
         </button>

@@ -2,52 +2,52 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import questionsService from '../services/questionsService';
 
+const questions = [
+  {
+    id: 1,
+    text: "Kya Bharat ki rajdhani Delhi hai?",
+    englishText: "(Is the capital of India Delhi?)",
+    type: "Single Choice",
+    difficulty: "Easy"
+  },
+  {
+    id: 2,
+    text: "Prakash sanshleshan ki prakriya samjhaayein.",
+    englishText: "(Explain the process of photosynthesis.)",
+    type: "Short Answer",
+    difficulty: "Medium"
+  },
+  {
+    id: 3,
+    text: "Inmein se kaunsi abhajya sankhyayein hain? (Sabhi lagu vikalp chunein)",
+    englishText: "(Which of the following are prime numbers? Select all that apply)",
+    type: "Multiple Choice",
+    difficulty: "Medium"
+  },
+  {
+    id: 4,
+    text: "Jalvayu parivartan ke karan aur prabhavon ka varnan karein.",
+    englishText: "(Describe the causes and effects of climate change.)",
+    type: "Short Answer",
+    difficulty: "Hard"
+  },
+  {
+    id: 5,
+    text: "Mughal samrajya ke pahle samrat kaun the?",
+    englishText: "(Who was the first emperor of the Mughal Empire?)",
+    type: "Single Choice",
+    difficulty: "Easy"
+  }
+];
+
 const AIGeneratedQuestions = () => {
   const location = useLocation();
   const moduleChapterId = location.state?.module_chapter_id;
 
-  const [selectedQuestions, setSelectedQuestions] = useState([]);
-  const [selectAll, setSelectAll] = useState(false);
+  const [selectedQuestions, setSelectedQuestions] = useState(questions.map(q => q.id));
+  const [selectAll, setSelectAll] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
-
-  const questions = [
-    {
-      id: 1,
-      text: "Kya Bharat ki rajdhani Delhi hai?",
-      englishText: "(Is the capital of India Delhi?)",
-      type: "Single Choice",
-      difficulty: "Easy"
-    },
-    {
-      id: 2,
-      text: "Prakash sanshleshan ki prakriya samjhaayein.",
-      englishText: "(Explain the process of photosynthesis.)",
-      type: "Short Answer",
-      difficulty: "Medium"
-    },
-    {
-      id: 3,
-      text: "Inmein se kaunsi abhajya sankhyayein hain? (Sabhi lagu vikalp chunein)",
-      englishText: "(Which of the following are prime numbers? Select all that apply)",
-      type: "Multiple Choice",
-      difficulty: "Medium"
-    },
-    {
-      id: 4,
-      text: "Jalvayu parivartan ke karan aur prabhavon ka varnan karein.",
-      englishText: "(Describe the causes and effects of climate change.)",
-      type: "Short Answer",
-      difficulty: "Hard"
-    },
-    {
-      id: 5,
-      text: "Mughal samrajya ke pahle samrat kaun the?",
-      englishText: "(Who was the first emperor of the Mughal Empire?)",
-      type: "Single Choice",
-      difficulty: "Easy"
-    }
-  ];
 
   const toggleQuestion = (questionId) => {
     setSelectedQuestions(prev => 

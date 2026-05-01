@@ -126,6 +126,7 @@ class QuestionsService {
     try {
       const queryParams = new URLSearchParams();
       if (filters.topic) queryParams.append('topic', filters.topic);
+      if (filters.chapter) queryParams.append('chapter', filters.chapter);
       if (filters.level) queryParams.append('level', filters.level);
       if (filters.page) queryParams.append('page', filters.page);
       if (filters.page_size) queryParams.append('page_size', filters.page_size);
@@ -144,6 +145,17 @@ class QuestionsService {
       });
     } catch (error) {
       throw new Error(`Failed to add questions to assignment: ${error.message}`);
+    }
+  }
+
+  async deactivateAIQuestions(moduleChapterId, questionIds) {
+    try {
+      return await apiService.post('/questions/ai/deactivate-questions/', {
+        module_chapter_id: moduleChapterId,
+        question_ids: questionIds,
+      });
+    } catch (error) {
+      throw new Error(`Failed to deactivate AI questions: ${error.message}`);
     }
   }
 }

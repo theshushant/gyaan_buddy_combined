@@ -265,9 +265,8 @@ const AIDataGenerator = () => {
     setError(null);
 
     try {
-      const questionIdsToKeep = Array.from(selectedQuestionIds);
-      
-      const response = await aiService.deactivateAIQuestions(questionIdsToKeep, chapterId);
+      const uncheckedIds = generatedQuestions.map(q => q.id).filter(id => !selectedQuestionIds.has(id));
+      const response = await aiService.deactivateAIQuestions(uncheckedIds, chapterId);
       
       const result = response.data || response;
       
@@ -732,7 +731,7 @@ const AIDataGenerator = () => {
                               </span>
                             )}
                             <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-md text-xs font-medium">
-                              {question.exp_points} XP
+                              2 XP
                             </span>
                           </div>
                           <p className="text-gray-900 font-medium leading-relaxed">

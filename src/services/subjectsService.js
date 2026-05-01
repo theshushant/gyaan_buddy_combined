@@ -46,11 +46,14 @@ class SubjectsService {
         }
         const isActive = subjectData.is_active !== undefined ? subjectData.is_active : true
         payload.append('is_active', isActive ? 'True' : 'False')
-        
+        if (subjectData.color) {
+          payload.append('color', String(subjectData.color))
+        }
+
         if (logoFile instanceof File) {
           payload.append('logo', logoFile)
         }
-        
+
         if (subjectData.classes && Array.isArray(subjectData.classes) && subjectData.classes.length > 0) {
           subjectData.classes.forEach(classId => {
             payload.append('classes', String(classId))
@@ -61,14 +64,15 @@ class SubjectsService {
           name: subjectData.name,
           code: subjectData.code,
           description: subjectData.description || '',
-          is_active: subjectData.is_active !== undefined ? subjectData.is_active : true
+          is_active: subjectData.is_active !== undefined ? subjectData.is_active : true,
+          ...(subjectData.color && { color: subjectData.color })
         }
-        
+
         if (subjectData.classes && Array.isArray(subjectData.classes) && subjectData.classes.length > 0) {
           payload.classes = subjectData.classes
         }
       }
-      
+
       const response = await apiService.post('/subjects/', payload, {
         isFormData: hasFile
       })
@@ -101,11 +105,14 @@ class SubjectsService {
         }
         const isActive = subjectData.is_active !== undefined ? subjectData.is_active : true
         payload.append('is_active', isActive ? 'True' : 'False')
-        
+        if (subjectData.color) {
+          payload.append('color', String(subjectData.color))
+        }
+
         if (logoFile instanceof File) {
           payload.append('logo', logoFile)
         }
-        
+
         if (subjectData.classes && Array.isArray(subjectData.classes) && subjectData.classes.length > 0) {
           subjectData.classes.forEach(classId => {
             payload.append('classes', String(classId))
@@ -116,14 +123,15 @@ class SubjectsService {
           name: subjectData.name,
           code: subjectData.code,
           description: subjectData.description || '',
-          is_active: subjectData.is_active !== undefined ? subjectData.is_active : true
+          is_active: subjectData.is_active !== undefined ? subjectData.is_active : true,
+          ...(subjectData.color && { color: subjectData.color })
         }
-        
+
         if (subjectData.classes && Array.isArray(subjectData.classes) && subjectData.classes.length > 0) {
           payload.classes = subjectData.classes
         }
       }
-      
+
       const response = await apiService.put(`/subjects/${subjectId}/`, payload, {
         isFormData: hasFile
       })
@@ -140,6 +148,16 @@ class SubjectsService {
       return await apiService.delete(`/subjects/${subjectId}/`)
     } catch (error) {
       throw new Error(`Failed to delete subject: ${error.message}`)
+    }
+  }
+
+  async importFromExcel({ classId, excelUrl, dryRun = false }) {
+    try {
+      const payload = { class_id: classId, dry_run: dryRun };
+      if (excelUrl) payload.excel_url = excelUrl;
+      return await apiService.post('/subjects/import_from_excel/', payload);
+    } catch (error) {
+      throw error;
     }
   }
 

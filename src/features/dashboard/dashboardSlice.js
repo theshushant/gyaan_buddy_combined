@@ -107,6 +107,7 @@ const initialState = {
     teacherProficiency: [],
     weakTopicCount: [],
     classes: [],
+    subjects: [],
   },
   loading: {
     metrics: false,
@@ -194,6 +195,7 @@ const dashboardSlice = createSlice({
         teacherProficiency: [],
         weakTopicCount: [],
         classes: [],
+        subjects: [],
       }
       state.lastUpdated = null
     }
@@ -226,6 +228,7 @@ const dashboardSlice = createSlice({
             teacherProficiency: Array.isArray(response.principalCharts.teacherProficiency) ? response.principalCharts.teacherProficiency : [],
             weakTopicCount: Array.isArray(response.principalCharts.weakTopicCount) ? response.principalCharts.weakTopicCount : [],
             classes: Array.isArray(response.principalCharts.classes) ? response.principalCharts.classes : [],
+            subjects: Array.isArray(response.principalCharts.subjects) ? response.principalCharts.subjects : [],
           }
         }
         state.lastUpdated = new Date().toISOString()

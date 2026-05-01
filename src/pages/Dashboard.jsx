@@ -38,6 +38,7 @@ const Dashboard = () => {
   const dispatch = useDispatch()
   const { role } = useSelector((state) => state.auth)
   const [selectedClass, setSelectedClass] = useState('all')
+  const [allClassOptions, setAllClassOptions] = useState([])
   const {
     loading,
     error,
@@ -62,6 +63,19 @@ const Dashboard = () => {
   useEffect(() => {
     fetchDashboardData().catch((err) => console.error('Error fetching dashboard data:', err))
   }, [dispatch, dashboardRole, dashboardFilters])
+
+  useEffect(() => {
+    if (!Array.isArray(principalCharts?.classes) || principalCharts.classes.length === 0) return
+    setAllClassOptions((prev) => {
+      const merged = [...prev]
+      principalCharts.classes.forEach((className) => {
+        if (className && !merged.includes(className)) {
+          merged.push(className)
+        }
+      })
+      return merged
+    })
+  }, [principalCharts?.classes])
 
   const hasError = Object.values(error).some((err) => err !== null)
   const isLoading = Object.values(loading).some((load) => load === true)
@@ -150,7 +164,7 @@ const Dashboard = () => {
         grid: { color: 'rgba(0,0,0,0.05)' },
       },
       x: {
-        ticks: { color: '#6b7280', font: { size: 11 } },
+        ticks: { color: '#6b7280', font: { size: 11 }, align: 'center' },
         grid: { display: false },
       },
     },
@@ -189,17 +203,37 @@ const Dashboard = () => {
         : [],
       backgroundColor: 'rgba(31, 183, 235, 1)',
       borderRadius: 4,
+      categoryPercentage: Array.isArray(principalCharts?.teacherProficiency) && principalCharts.teacherProficiency.length <= 2 ? 0.45 : 0.8,
+      barPercentage: Array.isArray(principalCharts?.teacherProficiency) && principalCharts.teacherProficiency.length <= 2 ? 0.7 : 0.9,
+      maxBarThickness: 80,
     }],
   }
 
-  const classOptions = Array.isArray(principalCharts?.classes) ? principalCharts.classes : []
+  const classOptions = allClassOptions
+  const hasFewTeacherBars = teacherProficiencyData.labels.length > 0 && teacherProficiencyData.labels.length <= 2
 
   return (
     <div className="space-y-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">
-          {role === 'teacher' ? 'Teacher Dashboard' : role === 'principal' ? 'Principal Dashboard' : 'Dashboard'}
-        </h1>
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {role === 'teacher' ? 'Teacher Dashboard' : role === 'principal' ? 'Principal Dashboard' : 'Dashboard'}
+          </h1>
+        </div>
+
+        <div className="min-w-[220px] lg:ml-6">
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Class</label>
+          <select
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+          >
+            <option value="all">All Classes</option>
+            {classOptions.map((className) => (
+              <option key={className} value={className}>{className}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -212,20 +246,6 @@ const Dashboard = () => {
             <p className="text-4xl font-bold text-gray-900 mb-2">{metric.value}</p>
           </div>
         ))}
-      </div>
-
-      <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-        <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Class</label>
-        <select
-          value={selectedClass}
-          onChange={(e) => setSelectedClass(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-        >
-          <option value="all">All Classes</option>
-          {classOptions.map((className) => (
-            <option key={className} value={className}>{className}</option>
-          ))}
-        </select>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -243,10 +263,12 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 lg:col-span-2">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Teacher Proficiency</h2>
-          <div className="h-56">
-            <Bar data={teacherProficiencyData} options={chartOptions} />
+        <div className="lg:col-span-2 flex justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 w-full lg:max-w-[calc(50%-0.75rem)]">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Teacher Proficiency</h2>
+            <div className={`h-56 ${hasFewTeacherBars ? 'mx-auto w-full max-w-3xl' : ''}`}>
+              <Bar data={teacherProficiencyData} options={chartOptions} />
+            </div>
           </div>
         </div>
       </div>

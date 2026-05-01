@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Plus, 
@@ -47,19 +47,28 @@ const TestsQuizzes = () => {
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedModulesChapters, setSelectedModulesChapters] = useState([]);
   const [chaptersLoadingFor, setChaptersLoadingFor] = useState(null);
+  const timeInputRef = useRef(null);
   const [formData, setFormData] = useState({
     testDate: '',
     testTime: '',
     duration: '',
   });
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState('');
-  const setSuccess = (val, msg = '') => setSuccessMessage(val ? msg : '');
+  const [testDateError, setTestDateError] = useState('');
+  const [snackbar, setSnackbar] = useState(null);
+
+  const setError = (msg) => {
+    if (msg) setSnackbar({ type: 'error', message: msg });
+  };
+  const setSuccess = (val, msg = '') => {
+    if (val && msg) setSnackbar({ type: 'success', message: msg });
+  };
   const [selectedTest, setSelectedTest] = useState(null);
   const [showQuestionGenerator, setShowQuestionGenerator] = useState(false);
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
-  const [generationError, setGenerationError] = useState(null);
+  const setGenerationError = (msg) => {
+    if (msg) setSnackbar({ type: 'error', message: msg });
+  };
   const [generatedQuestions, setGeneratedQuestions] = useState([]);
   const [selectedGeneratedQuestionIds, setSelectedGeneratedQuestionIds] = useState(new Set());
   const [editingTest, setEditingTest] = useState(null);
@@ -87,6 +96,8 @@ const TestsQuizzes = () => {
   const [manualModeTestQuestions, setManualModeTestQuestions] = useState([]);
   const [loadingManualModeQuestions, setLoadingManualModeQuestions] = useState(false);
   const [deletingTestId, setDeletingTestId] = useState(null);
+  const [showLeaveGeneratorModal, setShowLeaveGeneratorModal] = useState(false);
+  const [pendingLeaveAction, setPendingLeaveAction] = useState(null);
 
   const [aiFormData, setAiFormData] = useState({
     number_of_questions: 10,
@@ -186,6 +197,22 @@ const TestsQuizzes = () => {
       fetchTests();
     }
   }, [activeTab, fetchTests]);
+
+  useEffect(() => {
+    if (!showQuestionGenerator) return;
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [showQuestionGenerator]);
+
+  useEffect(() => {
+    if (!snackbar) return;
+    const t = setTimeout(() => setSnackbar(null), 4000);
+    return () => clearTimeout(t);
+  }, [snackbar]);
 
   useEffect(() => {
     if (activeTab === 'create' || isEditMode) {
@@ -294,10 +321,11 @@ const TestsQuizzes = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'testDate') {
+      const today = new Date().toISOString().split('T')[0];
+      setTestDateError(value && value < today ? 'Test date cannot be in the past.' : '');
+    }
   };
 
   const handleAIGenerationChange = (e) => {
@@ -333,6 +361,10 @@ const TestsQuizzes = () => {
     }
     if (!formData.testDate) {
       setError('Test date is required');
+      return;
+    }
+    if (!formData.testTime) {
+      setError('Test time is required');
       return;
     }
     if (!formData.duration || parseInt(formData.duration) <= 0) {
@@ -651,23 +683,7 @@ const TestsQuizzes = () => {
     }
   };
 
-  const handleBackToForm = () => {
-    setShowQuestionGenerator(false);
-    setSelectedTest(null);
-    setGeneratedQuestions([]);
-    setSelectedGeneratedQuestionIds(new Set());
-    setGenerationError(null);
-    setSelectedSubject('');
-    setSelectedClasses([]);
-    setSelectedClass('');
-    setSelectedModulesChapters([]);
-    setQuestionAddMode('ai');
-    setShowCreateQuestionModal(false);
-    setShowBankModal(false);
-    setManualModeTestQuestions([]);
-  };
-
-  const openCreateQuestionModal = () => {
+const openCreateQuestionModal = () => {
     setManualQuestionForm({
       question_text: '',
       question_type: 'mcq_single',
@@ -927,6 +943,20 @@ const TestsQuizzes = () => {
           <nav className="-mb-px flex space-x-8 px-6">
             <button
               onClick={() => {
+                if (showQuestionGenerator) {
+                  setPendingLeaveAction(() => () => {
+                    if (isEditMode) handleCancelEdit();
+                    setSuccess(false);
+                    setActiveTab('tests');
+                    setShowQuestionGenerator(false);
+                    setSelectedTest(null);
+                    setGeneratedQuestions([]);
+                    setSelectedGeneratedQuestionIds(new Set());
+                    setGenerationError(null);
+                  });
+                  setShowLeaveGeneratorModal(true);
+                  return;
+                }
                 if (isEditMode) {
                   handleCancelEdit();
                 }
@@ -968,34 +998,6 @@ const TestsQuizzes = () => {
 
       {activeTab === 'tests' && (
         <div className="space-y-6">
-          {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-start justify-between space-x-3">
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-red-800">Error</p>
-                  <p className="text-sm text-red-700 mt-1">{error}</p>
-                </div>
-              </div>
-              <button type="button" onClick={() => setError(null)} className="text-red-600 hover:text-red-800 p-1">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-          {successMessage && (
-            <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 flex items-start justify-between space-x-3">
-              <div className="flex items-start space-x-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-green-800">Success</p>
-                  <p className="text-sm text-green-700 mt-1">{successMessage}</p>
-                </div>
-              </div>
-              <button type="button" onClick={() => setSuccess(false)} className="text-green-600 hover:text-green-800 p-1">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          )}
           {loadingTests ? (
             <div className="text-center py-12 bg-white rounded-lg shadow-sm">
               <Loader2 className="h-8 w-8 animate-spin text-primary-500 mx-auto mb-4" />
@@ -1132,25 +1134,6 @@ const TestsQuizzes = () => {
               </div>
             ) : (
             <form onSubmit={handleSubmit} className="space-y-8">
-              {error && (
-                <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-start space-x-3 animate-slide-down">
-                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-red-800">Error</p>
-                    <p className="text-sm text-red-700 mt-1">{error}</p>
-                  </div>
-                </div>
-              )}
-              {successMessage && (
-                <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 flex items-start space-x-3 animate-slide-down">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-green-800">Success!</p>
-                    <p className="text-sm text-green-700 mt-1">{successMessage}</p>
-                  </div>
-                </div>
-              )}
-
               <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
                   <span className="text-primary-500">📚</span>
@@ -1327,19 +1310,25 @@ const TestsQuizzes = () => {
                       name="testDate"
                       value={formData.testDate}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
+                      min={new Date().toISOString().split('T')[0]}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white ${testDateError ? 'border-red-500' : 'border-gray-200'}`}
                       required
                     />
+                    {testDateError && (
+                      <p className="mt-1 text-sm text-red-600">{testDateError}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Test Time
+                      Test Time <span className="text-red-500">*</span>
                     </label>
                     <input
+                      ref={timeInputRef}
                       type="time"
                       name="testTime"
                       value={formData.testTime}
-                      onChange={handleInputChange}
+                      onChange={(e) => { handleInputChange(e); timeInputRef.current?.blur(); }}
+                      required
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
                     />
                   </div>
@@ -1451,7 +1440,7 @@ const TestsQuizzes = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || !!testDateError}
                   className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                   style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
                 >
@@ -1489,12 +1478,6 @@ const TestsQuizzes = () => {
                     : 'Create new questions or add existing ones from the question bank'}
             </p>
           </div>
-          <button
-                onClick={handleBackToForm}
-                className="text-white hover:text-gray-200 transition-colors"
-          >
-                <X className="h-6 w-6" />
-          </button>
         </div>
             <div className="flex gap-2 mt-4">
               <button
@@ -1523,26 +1506,6 @@ const TestsQuizzes = () => {
                 <p className="text-sm text-red-700">{manualQuestionError}</p>
               </div>
             )}
-            {questionAddMode === 'ai' && generationError && (
-              <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-start space-x-3 mb-6">
-                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-red-800">Error</p>
-                  <p className="text-sm text-red-700 mt-1">{generationError}</p>
-          </div>
-          </div>
-            )}
-
-            {questionAddMode === 'ai' && successMessage && generatedQuestions.length > 0 && (
-              <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 flex items-start space-x-3 mb-6">
-                <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <div>
-                  <p className="text-sm font-semibold text-green-800">Success!</p>
-                  <p className="text-sm text-green-700 mt-1">{successMessage}</p>
-              </div>
-            </div>
-          )}
-
             {questionAddMode === 'ai' && (
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200 mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
@@ -1695,6 +1658,9 @@ const TestsQuizzes = () => {
                                 <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
                                   {question.question_type?.replace('_', ' ') || 'MCQ'}
                                 </span>
+                                <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
+                                  2 XP
+                                </span>
                               </div>
                             </div>
                             <p className="text-gray-800 mb-2">{question.question_text}</p>
@@ -1719,15 +1685,15 @@ const TestsQuizzes = () => {
                               </div>
                             )}
                             {question.hint && (
-                              <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                              <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded-lg overflow-hidden">
                                 <p className="text-xs font-semibold text-amber-700 mb-0.5">Hint</p>
-                                <p className="text-xs text-amber-800">{question.hint}</p>
+                                <p className="text-xs text-amber-800 break-words whitespace-pre-wrap">{question.hint}</p>
                               </div>
                             )}
                             {question.explanation && (
-                              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg overflow-hidden">
                                 <p className="text-xs font-semibold text-blue-700 mb-0.5">Explanation</p>
-                                <p className="text-xs text-blue-800">{question.explanation}</p>
+                                <p className="text-xs text-blue-800 break-words whitespace-pre-wrap">{question.explanation}</p>
                               </div>
                             )}
                           </div>
@@ -1765,14 +1731,7 @@ const TestsQuizzes = () => {
               </button>
             ) : (
               <>
-                <button
-                  type="button"
-                  onClick={handleBackToForm}
-                  className="px-8 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
-                >
-                  Back
-                </button>
-                <button
+<button
                   onClick={handleGenerateQuestions}
                   disabled={generatingQuestions || !selectedTest}
                   className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
@@ -1982,6 +1941,53 @@ const TestsQuizzes = () => {
                   {addingBankToTest ? <><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Adding...</> : 'Add selected to test'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {snackbar && (
+        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl text-white max-w-sm transition-all duration-300 ${snackbar.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
+          {snackbar.type === 'success'
+            ? <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+            : <AlertCircle className="h-5 w-5 flex-shrink-0" />}
+          <p className="text-sm font-medium flex-1">{snackbar.message}</p>
+          <button onClick={() => setSnackbar(null)} className="opacity-70 hover:opacity-100 transition-opacity ml-1">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {showLeaveGeneratorModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800">Leave without adding questions?</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              An empty test without questions will be created. You can add questions later from the test list.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowLeaveGeneratorModal(false)}
+                className="px-5 py-2 border-2 border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-all"
+              >
+                Stay
+              </button>
+              <button
+                onClick={() => {
+                  setShowLeaveGeneratorModal(false);
+                  if (pendingLeaveAction) pendingLeaveAction();
+                  setPendingLeaveAction(null);
+                }}
+                className="px-5 py-2 text-white font-medium rounded-xl transition-all"
+                style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
+              >
+                Leave anyway
+              </button>
             </div>
           </div>
         </div>

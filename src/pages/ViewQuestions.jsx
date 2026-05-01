@@ -135,6 +135,9 @@ const ViewQuestions = () => {
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getDifficultyColor(question.difficulty)}`}>
                         {question.difficulty}
                       </span>
+                      <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                        2 XP
+                      </span>
                       <div className="flex items-center space-x-2">
                         <span className={`text-sm font-medium ${getSuccessRateColor(question.successRate)}`}>
                           {question.successRate}%

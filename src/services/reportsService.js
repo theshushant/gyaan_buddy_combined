@@ -106,6 +106,38 @@ class ReportsService {
     }
   }
 
+  /**
+   * Get per-student proficiency for a specific module chapter.
+   * @param {Object} filters - { chapter_id (required), period, class }
+   */
+  async getChapterStudentProficiency(filters = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      if (filters.chapter_id) queryParams.append('chapter_id', filters.chapter_id);
+      if (filters.period != null && filters.period !== '') queryParams.append('period', filters.period);
+      if (filters.class) queryParams.append('class', filters.class);
+      const endpoint = `/reports/chapter-student-proficiency${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await apiService.get(endpoint);
+      return response.data ?? response;
+    } catch (error) {
+      throw new Error(`Failed to fetch chapter student proficiency: ${error.message}`);
+    }
+  }
+
+  async getChapterStudentDetails(filters = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      if (filters.chapter_id) queryParams.append('chapter_id', filters.chapter_id);
+      if (filters.period != null && filters.period !== '') queryParams.append('period', filters.period);
+      if (filters.class) queryParams.append('class', filters.class);
+      const endpoint = `/reports/chapter-student-details${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await apiService.get(endpoint);
+      return response.data ?? response;
+    } catch (error) {
+      throw new Error(`Failed to fetch chapter student details: ${error.message}`);
+    }
+  }
+
   async generateCustomReport(reportConfig) {
     try {
       const response = await apiService.post('/reports/generate', reportConfig);

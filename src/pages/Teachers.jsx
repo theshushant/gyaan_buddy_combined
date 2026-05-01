@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Search, Plus, Upload, ChevronDown, AlertTriangle, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -12,6 +12,7 @@ import {
   createTeacher,
   updateTeacher,
   deleteTeacher,
+  fetchTeacherById,
   setFilters,
   clearError
 } from '../features/teachers/teachersSlice'
@@ -49,7 +50,7 @@ const Teachers = () => {
     const fetchData = async () => {
       try {
         await Promise.all([
-          dispatch(fetchTeachers(filters)),
+          dispatch(fetchTeachers({})),
           dispatch(fetchTeacherStats()),
           dispatch(fetchSubjects({}))
         ])
@@ -61,20 +62,6 @@ const Teachers = () => {
     fetchData()
   }, [dispatch, error.teachers, error.stats])
 
-  useEffect(() => {
-    const hasError = error.teachers !== null
-    if (hasError) {
-      return // Don't retry if there's already an error
-    }
-
-    const newFilters = {
-      search: filters.search,
-      subject: filters.subject
-    }
-    
-    dispatch(fetchTeachers(newFilters))
-  }, [dispatch, filters.search, filters.subject, error.teachers])
-
   const handleSearch = (value) => {
     dispatch(setFilters({ search: value }))
   }
@@ -85,22 +72,26 @@ const Teachers = () => {
 
   const handleAddTeacher = async (teacherData) => {
     await dispatch(createTeacher(teacherData)).unwrap()
+    await dispatch(fetchTeachers({}))
     setShowAddModal(false)
     setEditingTeacher(null)
+    const teacherName = [teacherData.firstName, teacherData.lastName].filter(Boolean).join(' ')
     setSuccessData({
       title: 'Teacher Added Successfully',
-      message: `${teacherData.firstName} ${teacherData.lastName} has been added to the system.`
+      message: `${teacherName || 'Teacher'} has been added to the system.`
     })
     setShowSuccessModal(true)
   }
 
   const handleUpdateTeacher = async (teacherData) => {
     await dispatch(updateTeacher({ teacherId: editingTeacher.id, teacherData })).unwrap()
+    await dispatch(fetchTeachers({}))
     setEditingTeacher(null)
     setShowAddModal(false)
+    const teacherName = [teacherData.firstName, teacherData.lastName].filter(Boolean).join(' ')
     setSuccessData({
       title: 'Teacher Updated Successfully',
-      message: `${teacherData.firstName} ${teacherData.lastName} has been updated.`
+      message: `${teacherName || 'Teacher'} has been updated.`
     })
     setShowSuccessModal(true)
   }
@@ -136,8 +127,15 @@ const Teachers = () => {
     navigate(`/teachers/${teacherId}`)
   }
 
-  const handleEditTeacher = (teacher) => {
-    setEditingTeacher(teacher)
+  const handleEditTeacher = async (teacher) => {
+    let teacherForEdit = teacher
+    try {
+      const fullTeacher = await dispatch(fetchTeacherById(teacher.id)).unwrap()
+      teacherForEdit = fullTeacher?.data || fullTeacher || teacher
+    } catch (err) {
+      console.error('Failed to load full teacher details for edit:', err)
+    }
+    setEditingTeacher(teacherForEdit)
     setShowAddModal(true)
   }
 
@@ -160,37 +158,131 @@ const Teachers = () => {
     }
   }
   
-  const formatClasses = (classes) => {
-    if (!Array.isArray(classes) || classes.length === 0) {
-      return 'No classes assigned'
+  const formatList = (items, emptyLabel) => {
+    if (!Array.isArray(items) || items.length === 0) {
+      return emptyLabel
     }
-    return classes.map(cls => {
-      if (typeof cls === 'string') return cls
-      return cls.name || cls.class_name || cls.toString()
-    }).join(', ')
+    return items.join(', ')
   }
-  
-  const getTeacherSubject = (teacher) => {
-    if (Array.isArray(teacher.subjects) && teacher.subjects.length > 0) {
-      const firstSubject = teacher.subjects[0]
-      if (typeof firstSubject === 'object' && firstSubject !== null) {
-        return firstSubject.name || firstSubject.subject_name || 'N/A'
-      } else if (typeof firstSubject === 'string') {
-        return firstSubject
-      } else if (typeof firstSubject === 'number') {
-        const subject = subjects.find(s => s.id === firstSubject)
-        return subject?.name || subject?.subject_name || 'N/A'
-      }
+
+  const getTeacherSubjectNames = (teacher) => {
+    const subjectNames = new Set()
+
+    if (Array.isArray(teacher.subject_list)) {
+      teacher.subject_list.forEach((subjectName) => {
+        if (subjectName) subjectNames.add(String(subjectName))
+      })
     }
-    if (teacher.subject) {
+
+    if (Array.isArray(teacher.subjects)) {
+      teacher.subjects.forEach((subjectItem) => {
+        if (typeof subjectItem === 'string') {
+          subjectNames.add(subjectItem)
+          return
+        }
+
+        if (typeof subjectItem === 'number') {
+          const matchedSubject = subjects.find((subject) => String(subject.id) === String(subjectItem))
+          const resolvedName = matchedSubject?.name || matchedSubject?.subject_name
+          if (resolvedName) subjectNames.add(resolvedName)
+          return
+        }
+
+        if (subjectItem && typeof subjectItem === 'object') {
+          const resolvedName = subjectItem.name || subjectItem.subject_name
+          if (resolvedName) subjectNames.add(resolvedName)
+        }
+      })
+    }
+
+    if (subjectNames.size === 0 && teacher.subject) {
       if (typeof teacher.subject === 'string') {
-        return teacher.subject
-      } else if (typeof teacher.subject === 'object' && teacher.subject !== null) {
-        return teacher.subject.name || teacher.subject.subject_name || 'N/A'
+        subjectNames.add(teacher.subject)
+      } else if (teacher.subject && typeof teacher.subject === 'object') {
+        const resolvedName = teacher.subject.name || teacher.subject.subject_name
+        if (resolvedName) subjectNames.add(resolvedName)
       }
     }
-    return 'N/A'
+
+    return [...subjectNames]
   }
+
+  const getTeacherClassNames = (teacher) => {
+    const classNames = new Set()
+
+    if (Array.isArray(teacher.class_list)) {
+      teacher.class_list.forEach((className) => {
+        if (className) classNames.add(String(className))
+      })
+    }
+
+    if (Array.isArray(teacher.classes)) {
+      teacher.classes.forEach((classItem) => {
+        if (typeof classItem === 'string') {
+          classNames.add(classItem)
+          return
+        }
+
+        if (classItem && typeof classItem === 'object') {
+          const resolvedName = classItem.name || classItem.class_name
+          if (resolvedName) classNames.add(resolvedName)
+        }
+      })
+    }
+
+    if (Array.isArray(teacher.subjects)) {
+      teacher.subjects.forEach((subjectItem) => {
+        if (subjectItem && typeof subjectItem === 'object') {
+          if (Array.isArray(subjectItem.classes)) {
+            subjectItem.classes.forEach((classItem) => {
+              const resolvedName = classItem?.name || classItem?.class_name || classItem
+              if (resolvedName) classNames.add(String(resolvedName))
+            })
+          }
+
+          const resolvedSingleClass = subjectItem.class?.name || subjectItem.class?.class_name
+          if (resolvedSingleClass) classNames.add(String(resolvedSingleClass))
+        }
+      })
+    }
+
+    if (teacher.class_name) {
+      classNames.add(String(teacher.class_name))
+    }
+
+    return [...classNames]
+  }
+
+  const filteredTeachers = useMemo(() => {
+    const searchValue = String(filters.search || '').trim().toLowerCase()
+    const subjectFilter = String(filters.subject || '')
+    const selectedSubjectName = subjects.find((subject) => String(subject.id) === subjectFilter)?.name
+      || subjects.find((subject) => String(subject.id) === subjectFilter)?.subject_name
+      || ''
+
+    return (Array.isArray(teachers) ? teachers : []).filter((teacher) => {
+      const teacherSubjects = getTeacherSubjectNames(teacher)
+      const teacherClasses = getTeacherClassNames(teacher)
+
+      const matchesSearch = !searchValue || [
+        teacher.firstName,
+        teacher.lastName,
+        teacher.email,
+        teacher.username,
+        ...teacherSubjects,
+        ...teacherClasses,
+      ].filter(Boolean).some((value) => String(value).toLowerCase().includes(searchValue))
+
+      const matchesSubject = !subjectFilter || (Array.isArray(teacher.subjects) && teacher.subjects.some((subjectItem) => {
+        if (subjectItem && typeof subjectItem === 'object') {
+          return String(subjectItem.id || '') === subjectFilter
+        }
+        return false
+      })) || (!!selectedSubjectName && teacherSubjects.includes(selectedSubjectName))
+
+      return matchesSearch && matchesSubject
+    })
+  }, [teachers, filters.search, filters.subject, subjects])
 
   const isLoading = loading.teachers || loading.stats
   const hasError = error.teachers || error.stats
@@ -297,10 +389,7 @@ const Teachers = () => {
                   Classes
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Dashboard Usage
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Overall Mastery
+                  Attempt Rate
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Action
@@ -308,8 +397,8 @@ const Teachers = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {Array.isArray(teachers) && teachers.length > 0 ? (
-                teachers.map((teacher) => (
+              {filteredTeachers.length > 0 ? (
+                filteredTeachers.map((teacher) => (
                   <tr key={teacher.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -327,12 +416,12 @@ const Teachers = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {getTeacherSubject(teacher)}
+                        {formatList(getTeacherSubjectNames(teacher), 'N/A')}
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">
-                        {teacher.class_name?? "No class assigned"}
+                        {formatList(getTeacherClassNames(teacher), 'No classes assigned')}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -340,28 +429,13 @@ const Teachers = () => {
                         <div className="flex-1">
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
-                              className={`h-2 rounded-full transition-all duration-500 ${getProgressBarColor(teacher.dashboardUsage || 0, 'usage')}`}
-                              style={{ width: `${teacher.dashboardUsage || 0}%` }}
+                              className={`h-2 rounded-full transition-all duration-500 ${getProgressBarColor(teacher.attempt_rate || teacher.attemptRate || 0, 'usage')}`}
+                              style={{ width: `${teacher.attempt_rate || teacher.attemptRate || 0}%` }}
                             ></div>
                           </div>
                         </div>
                         <div className="text-sm font-medium text-gray-900 w-12 text-right">
-                          {teacher.dashboardUsage || 0}%
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-1">
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className={`h-2 rounded-full transition-all duration-500 ${getProgressBarColor(teacher.overallMastery || 0, 'mastery')}`}
-                              style={{ width: `${teacher.overallMastery || 0}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                        <div className="text-sm font-medium text-gray-900 w-12 text-right">
-                          {teacher.overallMastery || 0}%
+                          {teacher.attempt_rate || teacher.attemptRate || 0}%
                         </div>
                       </div>
                     </td>
@@ -389,7 +463,7 @@ const Teachers = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
                     No teachers found
                   </td>
                 </tr>
@@ -403,7 +477,7 @@ const Teachers = () => {
         isOpen={showBulkImportModal}
         onClose={() => setShowBulkImportModal(false)}
         onSuccess={() => {
-          dispatch(fetchTeachers(filters))
+          dispatch(fetchTeachers({}))
           setSuccessData({ title: 'Import Successful', message: 'Teachers have been imported successfully.' })
           setShowSuccessModal(true)
         }}

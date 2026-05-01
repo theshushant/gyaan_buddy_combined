@@ -3,6 +3,13 @@ import { X, Upload, Image as ImageIcon } from 'lucide-react'
 import subjectsService from '../services/subjectsService'
 import classesService from '../services/classesService'
 
+const normalizeSubjectName = (value) => {
+  const trimmed = value.trim()
+  const normalized = trimmed.toLowerCase()
+  if (normalized === 'physics' || normalized === 'physic' || normalized === 'phy') return 'Physics'
+  return trimmed
+}
+
 const CreateSubjectModal = ({ 
   isOpen, 
   onClose, 
@@ -15,6 +22,7 @@ const CreateSubjectModal = ({
     code: '',
     description: '',
     is_active: true,
+    color: '#0DA6F2',
     classes: []
   })
   
@@ -39,6 +47,7 @@ const CreateSubjectModal = ({
         code: subject.code || '',
         description: subject.description || '',
         is_active: subject.is_active !== undefined ? subject.is_active : true,
+        color: subject.color ? `#${subject.color.replace('#', '')}` : '#0DA6F2',
         classes: subject.classes || []
       })
       
@@ -56,6 +65,7 @@ const CreateSubjectModal = ({
         code: '',
         description: '',
         is_active: true,
+        color: '#0DA6F2',
         classes: []
       })
       setLogoFile(null)
@@ -154,10 +164,11 @@ const CreateSubjectModal = ({
 
     try {
       const submitData = {
-        name: formData.name.trim(),
+        name: normalizeSubjectName(formData.name),
         code: formData.code.trim().toUpperCase(),
         description: formData.description.trim(),
         is_active: formData.is_active,
+        color: formData.color.replace('#', ''),
         classes: formData.classes
       }
 
@@ -176,6 +187,7 @@ const CreateSubjectModal = ({
         code: '',
         description: '',
         is_active: true,
+        color: '#0DA6F2',
         classes: []
       })
       setLogoFile(null)
@@ -340,6 +352,20 @@ const CreateSubjectModal = ({
             </div>
 
             <div>
+              <h4 className="text-md font-semibold text-gray-900 mb-4">Color</h4>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={formData.color}
+                  onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                  className="h-10 w-14 p-0.5 border border-gray-300 rounded-lg cursor-pointer"
+                  disabled={loading}
+                />
+                <span className="text-sm text-gray-600 font-mono">{formData.color.toUpperCase()}</span>
+              </div>
+            </div>
+
+            <div>
               <h4 className="text-md font-semibold text-gray-900 mb-4">Logo</h4>
               <div className="space-y-4">
                 {logoPreview && (
@@ -468,4 +494,3 @@ const CreateSubjectModal = ({
 }
 
 export default CreateSubjectModal
-

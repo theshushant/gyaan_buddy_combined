@@ -254,8 +254,22 @@ const TeacherDashboard = () => {
     )
   }
 
+  const visibleSubjects = filters.class
+    ? subjects.filter((s) =>
+        (s.class_list || []).some(
+          (c) => String(c.class_instance__id ?? c.id) === String(filters.class)
+        )
+      )
+    : subjects
+
   const handleFilterChange = (key, value) => {
     const newFilters = { ...filters, [key]: value || '' }
+    if (key === 'class') {
+      const stillVisible = visibleSubjects.some(
+        (s) => String(s.id ?? s.uuid) === String(filters.subject)
+      )
+      if (!stillVisible) newFilters.subject = ''
+    }
     dispatch(setFilters(newFilters))
     const applied = { class: newFilters.class || '', subject: newFilters.subject || '' }
     const payload = { role: role || 'teacher', filters: applied }
@@ -294,7 +308,6 @@ const TeacherDashboard = () => {
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
               style={{ color: '#00167a' }}
             >
-              <option value="">All classes</option>
               {classes.map((c) => (
                 <option key={c.id ?? c.uuid} value={c.id ?? c.uuid}>
                   {c.name ?? c}
@@ -311,8 +324,7 @@ const TeacherDashboard = () => {
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
               style={{ color: '#00167a' }}
             >
-              <option value="">All subjects</option>
-              {subjects.map((s) => (
+              {visibleSubjects.map((s) => (
                 <option key={s.id ?? s.uuid} value={s.id ?? s.uuid}>
                   {s.name ?? s}
                 </option>
@@ -422,7 +434,7 @@ const TeacherDashboard = () => {
             onClick={() => navigate('/tests')}
           >
             <span className="text-xl">📝</span>
-            <span>Generate Quiz</span>
+            <span>Create Test</span>
           </button>
         </div>
       </div>

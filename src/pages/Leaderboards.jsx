@@ -245,7 +245,7 @@ const Leaderboards = () => {
         )}
       </div>
 
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.6s'}}>
           <div className="text-center">
             <div className="text-2xl font-bold text-primary-500 mb-2 animate-count-up">
@@ -261,19 +261,6 @@ const Leaderboards = () => {
               {statistics.best_average_score ? `${Math.round(statistics.best_average_score)}%` : '0%'}
             </div>
             <div className="text-sm text-gray-600">Best Average Score</div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up" style={{animationDelay: '0.8s'}}>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600 mb-2 animate-count-up">
-              {statistics.class_active_students !== null
-                ? statistics.class_active_students
-                : statistics.active_students}
-            </div>
-            <div className="text-sm text-gray-600">
-              {filters.class_id ? 'Active Students (Class)' : 'Active Students'}
-            </div>
           </div>
         </div>
       </div>

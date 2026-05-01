@@ -97,6 +97,7 @@ const ModulesAssignments = () => {
   const [pdfError, setPdfError] = useState(null);
   const pdfInputRef = useRef(null);
   const fetchCountRef = useRef(0);
+  const shouldAutoExpandRef = useRef(true);
 
   // Excel import state
   const [showImportModal, setShowImportModal] = useState(false);
@@ -267,12 +268,14 @@ const ModulesAssignments = () => {
     }
   }, [selectedClass]);
 
-  const prevSubjectRef = useRef(selectedSubject);
-
   useEffect(() => {
     if (!selectedSubject) {
       setChapters([]);
-      prevSubjectRef.current = selectedSubject;
+      setExpandedChapters([]);
+      return;
+    }
+
+    if (loading && shouldAutoExpandRef.current) {
       return;
     }
 
@@ -286,18 +289,33 @@ const ModulesAssignments = () => {
     if (filteredModules.length === 0 && allModulesData.length > 0) {
       const firstAvailableSubjectId = allModulesData[0].subjectId?.toString();
       if (firstAvailableSubjectId && firstAvailableSubjectId !== selectedSubject.toString()) {
+        shouldAutoExpandRef.current = true;
         setSelectedSubject(firstAvailableSubjectId);
         return;
       }
     }
 
     setChapters(filteredModules);
-    const subjectChanged = prevSubjectRef.current !== selectedSubject;
-    prevSubjectRef.current = selectedSubject;
-    if (subjectChanged && filteredModules.length > 0) {
-      setExpandedChapters([filteredModules[0].id]);
+    const visibleModuleIds = filteredModules.map((module) => module.id);
+    if (shouldAutoExpandRef.current) {
+      if (filteredModules.length > 0) {
+        setExpandedChapters([filteredModules[0].id]);
+        shouldAutoExpandRef.current = false;
+        return;
+      }
+
+      if (loading || allModulesData.length === 0) {
+        setExpandedChapters([]);
+        return;
+      }
+
+      setExpandedChapters([]);
+      shouldAutoExpandRef.current = false;
+      return;
     }
-  }, [selectedSubject, allModulesData]);
+
+    setExpandedChapters((prev) => prev.filter((moduleId) => visibleModuleIds.includes(moduleId)));
+  }, [selectedSubject, selectedClass, allModulesData, loading]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -887,13 +905,29 @@ const ModulesAssignments = () => {
                   value={selectedClass}
                   onChange={(e) => {
                     const newClass = e.target.value;
+                    const availableSubjects = (newClass
+                      ? subjects.filter((subject) =>
+                          (subject.class_list || []).some(
+                            (classItem) => String(classItem.class_instance__id ?? classItem.id) === String(newClass)
+                          )
+                        )
+                      : subjects
+                    );
+                    shouldAutoExpandRef.current = true;
+                    setLoading(true);
+                    setExpandedChapters([]);
+                    setChapters([]);
+                    setAllModulesData([]);
                     setSelectedClass(newClass);
-                    if (newClass && selectedSubject) {
-                      const subj = subjects.find((s) => String(s.id) === String(selectedSubject));
-                      const still = subj && (subj.class_list || []).some(
-                        (c) => String(c.class_instance__id ?? c.id) === String(newClass)
+                    if (newClass) {
+                      const currentSubjectStillAvailable = selectedSubject && availableSubjects.some(
+                        (subject) => String(subject.id) === String(selectedSubject)
                       );
-                      if (!still) setSelectedSubject('');
+                      if (!currentSubjectStillAvailable) {
+                        setSelectedSubject(availableSubjects[0]?.id?.toString() || '');
+                      }
+                    } else if (!selectedSubject && availableSubjects.length > 0) {
+                      setSelectedSubject(availableSubjects[0].id.toString());
                     }
                   }}
                   className="w-56 px-4 py-3 pl-11 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white appearance-none cursor-pointer hover:border-gray-300"
@@ -918,7 +952,10 @@ const ModulesAssignments = () => {
               <div className="relative">
                 <select
                   value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value)}
+                  onChange={(e) => {
+                    shouldAutoExpandRef.current = true;
+                    setSelectedSubject(e.target.value);
+                  }}
                   className="w-56 px-4 py-3 pl-11 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white appearance-none cursor-pointer hover:border-gray-300"
                 >
                   <option value="">Select Subject</option>

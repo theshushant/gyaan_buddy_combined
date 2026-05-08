@@ -2072,8 +2072,8 @@ const AIGenerateModal = ({ isOpen, onClose, chapter: chapterData, onSuccess }) =
     setError(null);
 
     try {
-      const questionIdsToKeep = Array.from(selectedQuestionIds);
-      const response = await aiService.deactivateAIQuestions(questionIdsToKeep, chapterId);
+      const uncheckedIds = generatedQuestions.map(q => q.id).filter(id => !selectedQuestionIds.has(id));
+      const response = await aiService.deactivateAIQuestions(uncheckedIds, chapterId);
       const result = response.data || response;
 
       setSuccess(`Successfully saved! ${result.deactivated_count || 0} unselected questions marked as inactive.`);

@@ -166,10 +166,10 @@ class AIService {
     }
   }
 
-  async deactivateAIQuestions(questionIdsToKeep, moduleChapterId) {
+  async deactivateAIQuestions(questionIdsToDeactivate, moduleChapterId) {
     try {
       const response = await apiService.post('/ai/deactivate-questions/', {
-        question_ids: questionIdsToKeep,
+        question_ids: questionIdsToDeactivate,
         module_chapter_id: moduleChapterId
       });
       return response;

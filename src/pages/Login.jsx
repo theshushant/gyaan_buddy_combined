@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Lock, User } from 'lucide-react'
+import { ArrowRight, Eye, EyeOff, Lock, User } from 'lucide-react'
 import { loginUser } from '../features/auth/authSlice'
 
 const Login = () => {
@@ -71,7 +71,18 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#00167a' }}>
+    <div className="relative min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#00167a' }}>
+      <div className="absolute top-4 right-4">
+        <button
+          type="button"
+          onClick={() => window.location.href = 'https://gyanbuddy.ai/student/'}
+          className="flex items-center gap-2.5 px-5 py-2.5 rounded-full text-base font-medium text-white border border-white/30 transition-all duration-200 hover:border-cyan-400 hover:text-cyan-300 hover:shadow-[0_0_12px_2px_rgba(31,183,235,0.4)]"
+          style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(8px)' }}
+        >
+          Switch to Student Login
+          <ArrowRight className="h-5 w-5" />
+        </button>
+      </div>
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <div>
@@ -197,5 +208,6 @@ const Login = () => {
     </div>
   )
 }
+
 
 export default Login

@@ -56,26 +56,21 @@ const renderTopicTags = (topics, colorClass) => {
 
 const Reports = () => {
   const [loading, setLoading] = useState(true)
-  const [topicDiffLoading, setTopicDiffLoading] = useState(false)
   const [error, setError] = useState('')
   const [data, setData] = useState(EMPTY_DATA)
   const [selectedClass, setSelectedClass] = useState('')
   const [selectedSubject, setSelectedSubject] = useState('')
   const [selectedTopic, setSelectedTopic] = useState('')
-  const [diffData, setDiffData] = useState(EMPTY_DATA)
-  const [diffClass, setDiffClass] = useState('')
-  const [diffSubject, setDiffSubject] = useState('')
-  const [diffTopic, setDiffTopic] = useState('')
 
-  const fetchReportsData = async (filters = {}) => {
+  const fetchReportsData = async () => {
     setLoading(true)
     setError('')
     try {
       const response = await reportsService.getReportsAnalytics({
         period: '30',
-        class: filters.class ?? selectedClass,
-        subject: filters.subject ?? selectedSubject,
-        chapter: filters.topic ?? selectedTopic,
+        class: selectedClass,
+        subject: selectedSubject,
+        chapter: selectedTopic,
       })
 
       setData({
@@ -102,67 +97,21 @@ const Reports = () => {
 
   useEffect(() => {
     fetchReportsData()
-    fetchTopicDiffData()
-  }, [])
+  }, [selectedClass, selectedSubject, selectedTopic])
 
   const handleClassChange = (value) => {
     setSelectedClass(value)
-    fetchReportsData({ class: value })
+    setSelectedSubject('')
+    setSelectedTopic('')
   }
 
   const handleSubjectChange = (value) => {
     setSelectedSubject(value)
     setSelectedTopic('')
-    fetchReportsData({ subject: value, topic: '' })
   }
 
   const handleTopicChange = (value) => {
     setSelectedTopic(value)
-    fetchReportsData({ topic: value })
-  }
-
-  const fetchTopicDiffData = async (filters = {}) => {
-    setTopicDiffLoading(true)
-    try {
-      const response = await reportsService.getReportsAnalytics({
-        period: '30',
-        class: filters.class ?? diffClass,
-        subject: filters.subject ?? diffSubject,
-        chapter: filters.chapter ?? diffTopic,
-      })
-      setDiffData({
-        summary: response.summary || EMPTY_DATA.summary,
-        filterOptions: {
-          classes: response.filterOptions?.classes || [],
-          subjects: response.filterOptions?.subjects || [],
-          modules: response.filterOptions?.modules || [],
-          chapters: response.filterOptions?.chapters || [],
-        },
-        sectionWisePerformance: response.sectionWisePerformance || [],
-        moduleProficiencyData: response.moduleProficiencyData || [],
-        reportsData: {
-          chapterProficiency: response.reportsData?.chapterProficiency || [],
-        },
-      })
-    } finally {
-      setTopicDiffLoading(false)
-    }
-  }
-
-  const handleDiffClassChange = (value) => {
-    setDiffClass(value)
-    fetchTopicDiffData({ class: value })
-  }
-
-  const handleDiffSubjectChange = (value) => {
-    setDiffSubject(value)
-    setDiffTopic('')
-    fetchTopicDiffData({ subject: value, chapter: '' })
-  }
-
-  const handleDiffTopicChange = (value) => {
-    setDiffTopic(value)
-    fetchTopicDiffData({ chapter: value })
   }
 
   const sectionRows = useMemo(() => {
@@ -204,8 +153,28 @@ const Reports = () => {
     }
   }, [sectionRows, data.summary.totalStudents, data.summary.averageScore])
 
+  const isSelectedChapterUnattempted = useMemo(() => {
+    if (!selectedTopic || sectionRows.length === 0) return false
+    return sectionRows.every((row) => Number(row.attemptRate ?? row.completionRate ?? 0) === 0)
+  }, [sectionRows, selectedTopic])
+
+  const renderSectionWeakTopics = (row) => {
+    if (isSelectedChapterUnattempted && Number(row.attemptRate ?? row.completionRate ?? 0) === 0) {
+      return <span className="text-sm text-amber-700">Unattempted</span>
+    }
+
+    return renderTopicTags(row.strugglingTopics, 'bg-white text-red-700 border-red-200')
+  }
+
   const topicDifferenceSummary = useMemo(() => {
-    const moduleRows = Array.isArray(diffData.moduleProficiencyData) ? diffData.moduleProficiencyData : []
+    if (isSelectedChapterUnattempted) {
+      return {
+        goodTopics: [],
+        weakTopics: [],
+      }
+    }
+
+    const moduleRows = Array.isArray(data.moduleProficiencyData) ? data.moduleProficiencyData : []
     const goodSet = new Set()
     const weakSet = new Set()
 
@@ -232,7 +201,7 @@ const Reports = () => {
       goodTopics: [...goodSet],
       weakTopics: [...weakSet],
     }
-  }, [diffData.moduleProficiencyData, diffTopic])
+  }, [data.moduleProficiencyData, isSelectedChapterUnattempted])
 
   if (loading) {
     return (
@@ -364,7 +333,7 @@ const Reports = () => {
                     </td>
                     <td className="px-6 py-4 text-sm font-semibold text-gray-900">{row.attemptRate || row.completionRate || 0}%</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{row.difficulty || '-'}</td>
-                    <td className="px-6 py-4">{renderTopicTags(row.strugglingTopics, 'bg-white text-red-700 border-red-200')}</td>
+                    <td className="px-6 py-4">{renderSectionWeakTopics(row)}</td>
                   </tr>
                 ))
               ) : (
@@ -382,58 +351,14 @@ const Reports = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">Topic Analyzer</h2>
-        </div>
-
-        <div className="p-5 border-b border-gray-100">
-          <div className="flex flex-wrap gap-6 items-end">
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Class</label>
-              <select
-                value={diffClass}
-                onChange={(e) => handleDiffClassChange(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-              >
-                <option value="">All Classes</option>
-                {diffData.filterOptions.classes.map((className) => (
-                  <option key={className} value={className}>{className}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Subject</label>
-              <select
-                value={diffSubject}
-                onChange={(e) => handleDiffSubjectChange(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-              >
-                <option value="">All Subjects</option>
-                {diffData.filterOptions.subjects.map((subject) => (
-                  <option key={subject.id} value={subject.id}>{subject.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Chapter</label>
-              <select
-                value={diffTopic}
-                onChange={(e) => handleDiffTopicChange(e.target.value)}
-                disabled={!diffSubject}
-                className={`px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 ${!diffSubject ? 'text-gray-400 cursor-not-allowed' : 'text-gray-900'}`}
-              >
-                <option value="">All Chapters</option>
-                {diffData.filterOptions.chapters.map((chapter) => (
-                  <option key={chapter.id} value={chapter.id}>{chapter.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <p className="mt-1 text-sm text-gray-500">This section uses the same class, subject, and chapter filters selected above.</p>
         </div>
 
         <div className="p-6">
-          {topicDiffLoading ? (
-            <div className="text-sm text-gray-500">Loading topic differences...</div>
+          {isSelectedChapterUnattempted ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              This chapter is currently unattempted for the selected class and subject, so there are no good or weak topics to show yet.
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="rounded-xl border border-green-200 bg-green-50 p-4">

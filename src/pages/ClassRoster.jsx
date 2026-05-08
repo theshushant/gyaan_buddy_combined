@@ -58,17 +58,6 @@ const ClassRoster = () => {
     return student.rollNumber || student.roll_number || 'N/A'
   }
 
-  const getSubject = (student) => {
-    if (student.subjects && student.subjects.length > 0) {
-      return student.subjects[0].name || student.subjects[0] || 'N/A'
-    }
-    return 'N/A'
-  }
-
-  const getAttendance = (student) => {
-    return student.attendance || Math.floor(Math.random() * 15) + 85 // Placeholder: 85-99%
-  }
-
   const handleAddStudent = async (studentData) => {
     try {
       const studentDataWithClass = {
@@ -188,9 +177,6 @@ const ClassRoster = () => {
                   Roll Number
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Subject
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -210,11 +196,6 @@ const ClassRoster = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         {getRollNumber(student)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {getSubject(student)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -238,7 +219,7 @@ const ClassRoster = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
                     {searchTerm ? 'No students found matching your search.' : 'No students enrolled in this class.'}
                   </td>
                 </tr>
@@ -300,4 +281,3 @@ const ClassRoster = () => {
 }
 
 export default ClassRoster
-

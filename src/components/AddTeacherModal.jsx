@@ -9,8 +9,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
     firstName: '',
     lastName: '',
     email: '',
-    password: '',
-    confirmPassword: '',
+    phoneNumber: '',
     employeeId: '',
     isClassTeacher: false,
     assignments: []
@@ -22,7 +21,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
   const [subjects, setSubjects] = useState([])
   const [loadingClasses, setLoadingClasses] = useState(false)
   const [loadingSubjects, setLoadingSubjects] = useState(false)
-  const [passwordError, setPasswordError] = useState('')
   const [saveError, setSaveError] = useState('')
   const [saving, setSaving] = useState(false)
   const [showCreateClassSubjectModal, setShowCreateClassSubjectModal] = useState(false)
@@ -35,8 +33,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
         firstName: teacher.firstName || teacher.first_name || '',
         lastName: teacher.lastName || teacher.last_name || '',
         email: teacher.email || '',
-        password: '',
-        confirmPassword: '',
+        phoneNumber: teacher.phoneNumber || teacher.phone_number || '',
         employeeId: teacher.employeeId || teacher.employee_id || '',
         isClassTeacher: teacher.isClassTeacher || teacher.is_class_teacher || false,
         assignments: []
@@ -47,8 +44,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
         firstName: '',
         lastName: '',
         email: '',
-        password: '',
-        confirmPassword: '',
+        phoneNumber: '',
         employeeId: '',
         isClassTeacher: false,
         assignments: []
@@ -186,18 +182,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
     e.preventDefault()
     setSaveError('')
 
-    if (formData.password || formData.confirmPassword) {
-      if (formData.password !== formData.confirmPassword) {
-        setPasswordError('Passwords do not match')
-        return
-      }
-      if (formData.password && formData.password.length < 8) {
-        setPasswordError('Password must be at least 8 characters long')
-        return
-      }
-    }
-    setPasswordError('')
-
     // Collect all assignments (include pending newAssignment if filled)
     let allAssignments = [...formData.assignments]
     if (newAssignment.class && newAssignment.subjects.length > 0) {
@@ -214,13 +198,10 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
       firstName: formData.firstName,
       lastName: formData.lastName,
       email: formData.email,
+      phoneNumber: formData.phoneNumber,
       isClassTeacher: formData.isClassTeacher,
       employeeId: formData.employeeId,
       assignments: allAssignments,
-    }
-    if (formData.password) {
-      submitData.password = formData.password
-      submitData.confirmPassword = formData.confirmPassword
     }
 
     const saveHandler = onSubmit || onSave
@@ -278,7 +259,7 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                     placeholder="Last name (optional)"
                   />
                 </div>
-                <div className="md:col-span-2">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email Address <span className="text-red-500">*</span></label>
                   <input
                     type="email"
@@ -289,35 +270,16 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
                     required
                   />
                 </div>
-                {!teacher && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Password <span className="text-red-500">*</span></label>
-                      <input
-                        type="password"
-                        value={formData.password}
-                        onChange={e => { setFormData(prev => ({ ...prev, password: e.target.value })); setPasswordError('') }}
-                        className={`w-full px-3 py-2 border ${passwordError ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm`}
-                        placeholder="Min. 8 characters"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password <span className="text-red-500">*</span></label>
-                      <input
-                        type="password"
-                        value={formData.confirmPassword}
-                        onChange={e => { setFormData(prev => ({ ...prev, confirmPassword: e.target.value })); setPasswordError('') }}
-                        className={`w-full px-3 py-2 border ${passwordError ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm`}
-                        placeholder="Repeat password"
-                        required
-                      />
-                    </div>
-                    {passwordError && (
-                      <p className="md:col-span-2 text-sm text-red-600 -mt-2">{passwordError}</p>
-                    )}
-                  </>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <input
+                    type="tel"
+                    value={formData.phoneNumber}
+                    onChange={e => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                    placeholder="Phone number (optional)"
+                  />
+                </div>
               </div>
             </div>
 

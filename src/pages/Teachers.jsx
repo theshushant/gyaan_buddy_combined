@@ -253,6 +253,29 @@ const Teachers = () => {
     return [...classNames]
   }
 
+  const renderBadges = (items, emptyLabel, variant = 'blue') => {
+    if (!Array.isArray(items) || items.length === 0) {
+      return <span className="text-sm text-gray-500">{emptyLabel}</span>
+    }
+
+    const colorClasses = variant === 'indigo'
+      ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+      : 'border-sky-200 bg-sky-50 text-sky-700'
+
+    return (
+      <div className="flex flex-wrap gap-2">
+        {items.map((item) => (
+          <span
+            key={item}
+            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${colorClasses}`}
+          >
+            {item}
+          </span>
+        ))}
+      </div>
+    )
+  }
+
   const filteredTeachers = useMemo(() => {
     const searchValue = String(filters.search || '').trim().toLowerCase()
     const subjectFilter = String(filters.subject || '')
@@ -420,9 +443,7 @@ const Teachers = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {formatList(getTeacherClassNames(teacher), 'No classes assigned')}
-                      </div>
+                      {renderBadges(getTeacherClassNames(teacher), 'No classes assigned', 'indigo')}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-3">

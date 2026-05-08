@@ -136,10 +136,6 @@ const Dashboard = () => {
           : 0
       )}%`
     },
-    {
-      title: 'Weak Topic Count',
-      value: `${principalCharts?.summary?.weakTopicCount || 0}`
-    },
   ]
 
   const chartOptions = {
@@ -236,7 +232,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {metricCards.map((metric) => (
           <div
             key={metric.title}
@@ -262,14 +258,12 @@ const Dashboard = () => {
             <Bar data={attemptRateData} options={chartOptions} />
           </div>
         </div>
+      </div>
 
-        <div className="lg:col-span-2 flex justify-center">
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 w-full lg:max-w-[calc(50%-0.75rem)]">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Teacher Proficiency</h2>
-            <div className={`h-56 ${hasFewTeacherBars ? 'mx-auto w-full max-w-3xl' : ''}`}>
-              <Bar data={teacherProficiencyData} options={chartOptions} />
-            </div>
-          </div>
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Teacher Proficiency</h2>
+        <div className={`h-64 ${hasFewTeacherBars ? 'mx-auto w-full max-w-4xl' : 'w-full'}`}>
+          <Bar data={teacherProficiencyData} options={chartOptions} />
         </div>
       </div>
     </div>

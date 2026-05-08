@@ -1,16 +1,18 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Plus, Eye, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, UserPlus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { fetchClasses, setFilters, createClass, updateClass } from '../features/classes/classesSlice'
 import CreateClassModal from '../components/CreateClassModal'
 import CreateSubjectModal from '../components/CreateSubjectModal'
+import Modal from '../components/Modal'
 import subjectsService from '../services/subjectsService'
+import teachersService from '../services/teachersService'
 
 const Classes = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const { classes, loading, error, summary } = useSelector(state => state.classes)
+  const { classes, loading, error } = useSelector(state => state.classes)
   const [activeTab, setActiveTab] = useState('classes')
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
@@ -24,6 +26,11 @@ const Classes = () => {
   const [editingSubject, setEditingSubject] = useState(null)
   const [deletingSubjectId, setDeletingSubjectId] = useState(null)
   const [subjectSearch, setSubjectSearch] = useState('')
+  const [teachers, setTeachers] = useState([])
+  const [teachersLoading, setTeachersLoading] = useState(false)
+  const [assignTeacherState, setAssignTeacherState] = useState({ classItem: null, teacherId: '' })
+  const [assignTeacherLoading, setAssignTeacherLoading] = useState(false)
+  const [assignTeacherError, setAssignTeacherError] = useState('')
 
   useEffect(() => {
     if (error.classes) return
@@ -55,11 +62,31 @@ const Classes = () => {
     }
   }, [])
 
+  const fetchTeachers = useCallback(async () => {
+    setTeachersLoading(true)
+    try {
+      const response = await teachersService.getTeachers({})
+      const data = response?.data || response || []
+      setTeachers(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Failed to load teachers for class assignment:', err)
+      setTeachers([])
+    } finally {
+      setTeachersLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (activeTab === 'subjects') {
       fetchSubjects()
     }
   }, [activeTab, fetchSubjects])
+
+  useEffect(() => {
+    if (activeTab === 'classes') {
+      fetchTeachers()
+    }
+  }, [activeTab, fetchTeachers])
 
   const displayClasses = classes || []
 
@@ -93,6 +120,104 @@ const Classes = () => {
 
   const getStudentCount = (classItem) => classItem.student_count || classItem.students || classItem.studentCount || 0
 
+  const getTeacherDisplayName = (teacher) => {
+    const firstName = teacher.firstName || teacher.first_name || ''
+    const lastName = teacher.lastName || teacher.last_name || ''
+    return `${firstName} ${lastName}`.trim() || teacher.name || teacher.username || 'Unnamed Teacher'
+  }
+
+  const getTeacherAssignments = (teacher) => {
+    if (Array.isArray(teacher.assignments) && teacher.assignments.length > 0) {
+      return teacher.assignments
+    }
+
+    if (Array.isArray(teacher.class_assignment) && teacher.class_assignment.length > 0) {
+      return teacher.class_assignment
+    }
+
+    if (Array.isArray(teacher.teacher_assignments) && teacher.teacher_assignments.length > 0) {
+      return teacher.teacher_assignments
+    }
+
+    return []
+  }
+
+  const getTeacherClassNames = (teacher) => {
+    const classNames = new Set()
+
+    if (Array.isArray(teacher.class_list)) {
+      teacher.class_list.forEach((className) => {
+        if (className) classNames.add(String(className))
+      })
+    }
+
+    getTeacherAssignments(teacher).forEach((assignment) => {
+      const classItem = assignment.class || assignment.class_instance
+      const className = classItem?.name || classItem?.class_name || assignment.class_name
+      if (className) classNames.add(String(className))
+    })
+
+    return [...classNames]
+  }
+
+  const normalizeTeacherAssignments = (teacher) => {
+    let rawAssignments = []
+
+    if (Array.isArray(teacher.assignments) && teacher.assignments.length > 0) {
+      rawAssignments = teacher.assignments
+    } else if (Array.isArray(teacher.class_assignment) && teacher.class_assignment.length > 0) {
+      rawAssignments = teacher.class_assignment
+    } else if (Array.isArray(teacher.teacher_assignments) && teacher.teacher_assignments.length > 0) {
+      const classSubjectMap = {}
+
+      teacher.teacher_assignments.forEach((assignment) => {
+        const classId = assignment.class?.id || assignment.class_id || assignment.class_instance?.id || assignment.class_instance_id
+        const subjectId = assignment.subject?.id || assignment.subject_id
+
+        if (!classId || !subjectId) return
+
+        if (!classSubjectMap[classId]) {
+          classSubjectMap[classId] = { class: String(classId), subjects: [] }
+        }
+
+        if (!classSubjectMap[classId].subjects.includes(String(subjectId))) {
+          classSubjectMap[classId].subjects.push(String(subjectId))
+        }
+      })
+
+      rawAssignments = Object.values(classSubjectMap)
+    } else if (teacher.class_id && Array.isArray(teacher.subject_ids) && teacher.subject_ids.length > 0) {
+      rawAssignments = [{ class: teacher.class_id, subjects: teacher.subject_ids }]
+    }
+
+    return rawAssignments.map((assignment) => {
+      const classValue = assignment.class ?? assignment.class_id
+      const classId = typeof classValue === 'object' ? (classValue?.id || classValue?.uuid) : classValue
+      const subjectSource = assignment.subjects ?? (assignment.subject ? [assignment.subject] : [])
+      const subjectIds = subjectSource
+        .map((subject) => (typeof subject === 'object' ? (subject?.id || subject?.uuid) : subject))
+        .filter(Boolean)
+        .map(String)
+
+      return {
+        class: String(classId),
+        subjects: [...new Set(subjectIds)],
+      }
+    }).filter((assignment) => assignment.class && assignment.subjects.length > 0)
+  }
+
+  const assignableTeachers = useMemo(() => {
+    if (!assignTeacherState.classItem) return []
+
+    const targetClassName = getClassName(assignTeacherState.classItem)
+
+    return teachers.filter((teacher) => {
+      const teachesTargetClass = getTeacherClassNames(teacher).includes(targetClassName)
+      const alreadyClassTeacher = teacher.isClassTeacher || teacher.is_class_teacher
+      return teachesTargetClass && !alreadyClassTeacher
+    })
+  }, [assignTeacherState.classItem, teachers])
+
   const handleViewDetails = (classId) => navigate(`/classes/${classId}/roster`)
 
   const handleCreateClass = async (formData) => {
@@ -115,6 +240,62 @@ const Classes = () => {
       dispatch(fetchClasses({}))
     } catch (error) {
       console.error('Failed to update class:', error)
+    }
+  }
+
+  const openAssignTeacherModal = (classItem) => {
+    setAssignTeacherError('')
+    setAssignTeacherState({ classItem, teacherId: '' })
+  }
+
+  const closeAssignTeacherModal = (force = false) => {
+    if (assignTeacherLoading && !force) return
+    setAssignTeacherError('')
+    setAssignTeacherState({ classItem: null, teacherId: '' })
+  }
+
+  const handleAssignTeacher = async () => {
+    if (!assignTeacherState.classItem || !assignTeacherState.teacherId) return
+
+    setAssignTeacherLoading(true)
+    setAssignTeacherError('')
+
+    try {
+      const teacherResponse = await teachersService.getTeacherById(assignTeacherState.teacherId)
+      const teacher = teacherResponse?.data || teacherResponse || {}
+      const normalizedAssignments = normalizeTeacherAssignments(teacher)
+      const targetClassId = String(assignTeacherState.classItem.id || assignTeacherState.classItem.uuid)
+      const targetAssignment = normalizedAssignments.find((assignment) => String(assignment.class) === targetClassId)
+
+      if (!targetAssignment) {
+        setAssignTeacherError('This teacher is not linked to the selected class yet. Add the class in the teacher profile first.')
+        return
+      }
+
+      const reorderedAssignments = [
+        targetAssignment,
+        ...normalizedAssignments.filter((assignment) => String(assignment.class) !== targetClassId),
+      ]
+
+      await teachersService.updateTeacher(assignTeacherState.teacherId, {
+        firstName: teacher.firstName || teacher.first_name || '',
+        lastName: teacher.lastName || teacher.last_name || '',
+        email: teacher.email || '',
+        employeeId: teacher.employeeId || teacher.employee_id || '',
+        isClassTeacher: true,
+        assignments: reorderedAssignments,
+      })
+
+      await Promise.all([
+        dispatch(fetchClasses({})).unwrap(),
+        fetchTeachers(),
+      ])
+
+      closeAssignTeacherModal(true)
+    } catch (err) {
+      setAssignTeacherError(err.message || 'Failed to assign class teacher')
+    } finally {
+      setAssignTeacherLoading(false)
     }
   }
 
@@ -230,7 +411,17 @@ const Classes = () => {
                         <div className="text-sm font-medium text-gray-900">{getClassName(classItem)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{getTeacherName(classItem)}</div>
+                        {getTeacherName(classItem) !== 'N/A' ? (
+                          <div className="text-sm text-gray-900">{getTeacherName(classItem)}</div>
+                        ) : (
+                          <button
+                            onClick={() => openAssignTeacherModal(classItem)}
+                            className="inline-flex items-center gap-2 rounded-full border border-dashed border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition-colors hover:border-indigo-300 hover:bg-indigo-100"
+                          >
+                            <UserPlus className="h-3.5 w-3.5" />
+                            Add teacher
+                          </button>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{getStudentCount(classItem)}</div>
@@ -378,6 +569,73 @@ const Classes = () => {
         subject={editingSubject}
         title={editingSubject ? 'Edit Subject' : 'Add Subject'}
       />
+
+      <Modal
+        isOpen={Boolean(assignTeacherState.classItem)}
+        onClose={closeAssignTeacherModal}
+        title={assignTeacherState.classItem ? `Assign Teacher to ${getClassName(assignTeacherState.classItem)}` : 'Assign Teacher'}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Choose a teacher who already teaches this class. This safely fills the missing class teacher name without changing their subjects.
+          </p>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500">Teacher</label>
+            <select
+              value={assignTeacherState.teacherId}
+              onChange={(e) => setAssignTeacherState((prev) => ({ ...prev, teacherId: e.target.value }))}
+              disabled={teachersLoading || assignTeacherLoading || assignableTeachers.length === 0}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
+            >
+              <option value="">
+                {teachersLoading
+                  ? 'Loading teachers...'
+                  : assignableTeachers.length > 0
+                    ? 'Select teacher'
+                    : 'No matching teachers available'}
+              </option>
+              {assignableTeachers.map((teacher) => (
+                <option key={teacher.id} value={teacher.id}>
+                  {getTeacherDisplayName(teacher)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {assignTeacherError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {assignTeacherError}
+            </div>
+          )}
+
+          {assignableTeachers.length === 0 && !teachersLoading && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              No teacher is currently linked to this class. Add the class in the teacher profile first, then assign them here in one click.
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={closeAssignTeacherModal}
+              className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleAssignTeacher}
+              disabled={!assignTeacherState.teacherId || assignTeacherLoading}
+              className="rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              style={{ backgroundColor: '#00167a' }}
+            >
+              {assignTeacherLoading ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

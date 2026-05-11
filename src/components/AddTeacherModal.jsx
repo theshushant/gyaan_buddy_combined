@@ -51,7 +51,6 @@ const AddTeacherModal = ({ isOpen, onClose, onSave, onSubmit, teacher, title = '
       })
       setNewAssignment({ class: '', subjects: [] })
     }
-    setPasswordError('')
     setSaveError('')
   }, [isOpen, teacher])
 

@@ -8,6 +8,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
     firstName: '',
     lastName: '',
     rollNumber: '',
+    admissionNumber: '',
     dateOfBirth: '',
     gender: '',
     classId: '', // Store class ID instead of name
@@ -145,6 +146,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
         firstName: student.first_name || student.firstName || '',
         lastName: student.last_name || student.lastName || '',
         rollNumber: student.roll_number?.toString() || student.rollNumber?.toString() || '',
+        admissionNumber: student.admission_number?.toString() || student.admissionNumber?.toString() || '',
         dateOfBirth: dateOfBirth,
         gender: student.gender || '',
         classId: classId.toString() || '',
@@ -292,6 +294,8 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
         firstName: formData.firstName,
         lastName: formData.lastName,
         rollNumber: formData.rollNumber,
+        admissionNumber: formData.admissionNumber,
+        admission_number: formData.admissionNumber,
         dateOfBirth: formData.dateOfBirth,
         gender: formData.gender,
         classId: formData.classId,
@@ -311,6 +315,7 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
         firstName: '',
         lastName: '',
         rollNumber: '',
+        admissionNumber: '',
         dateOfBirth: '',
         gender: '',
         classId: '',
@@ -415,7 +420,19 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                     <p className="mt-1 text-sm text-red-600">{errors.rollNumber}</p>
                   )}
                 </div>
-                
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Admission Number</label>
+                  <input
+                    type="text"
+                    value={formData.admissionNumber}
+                    onChange={(e) => handleFieldChange('admissionNumber', e.target.value)}
+                    onBlur={() => handleFieldBlur('admissionNumber')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50"
+                    placeholder="Enter admission number (optional)"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
                   <select

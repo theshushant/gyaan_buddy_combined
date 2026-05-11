@@ -196,6 +196,12 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
           error = 'Roll number must be at least 3 digits'
         }
         break
+
+      case 'admissionNumber':
+        if (!value.trim()) {
+          error = 'Admission number is required'
+        }
+        break
         
       case 'dateOfBirth':
         if (!value) {
@@ -422,15 +428,20 @@ const AddStudentModal = ({ isOpen, onClose, onSave, loading = false, error = nul
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Admission Number</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Admission Number <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={formData.admissionNumber}
                     onChange={(e) => handleFieldChange('admissionNumber', e.target.value)}
                     onBlur={() => handleFieldBlur('admissionNumber')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50"
-                    placeholder="Enter admission number (optional)"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 ${
+                      touched.admissionNumber && errors.admissionNumber ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter admission number"
                   />
+                  {touched.admissionNumber && errors.admissionNumber && (
+                    <p className="mt-1 text-sm text-red-600">{errors.admissionNumber}</p>
+                  )}
                 </div>
 
                 <div>

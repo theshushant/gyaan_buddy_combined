@@ -228,14 +228,21 @@ const ReportsAnalytics = () => {
   ];
 
   const classesList = Array.isArray(filterOptions.classes) ? filterOptions.classes : [];
-  const subjectsList = normalizeOptions(filterOptions.subjects);
   const modulesList = normalizeOptions(filterOptions.modules);
   const chaptersList = normalizeOptions(filterOptions.chapters);
 
+  // When a class is selected, derive subjects from that class's embedded subjects list.
+  // Falls back to the top-level subjects list when no class is selected.
+  const getClassSubjects = (cls) => (typeof cls === 'object' ? cls?.subjects : null);
+  const selectedClassObj = reportClass ? classesList.find(c => (typeof c === 'object' ? c.name : c) === reportClass) : null;
+  const subjectsList = normalizeOptions(selectedClassObj ? (getClassSubjects(selectedClassObj) ?? filterOptions.subjects) : filterOptions.subjects);
+
   const studentClassesList = Array.isArray(studentFilterOptions.classes) ? studentFilterOptions.classes : [];
-  const studentSubjectsList = normalizeOptions(studentFilterOptions.subjects);
   const studentModulesList = normalizeOptions(studentFilterOptions.modules);
   const studentChaptersList = normalizeOptions(studentFilterOptions.chapters);
+
+  const selectedStudentClassObj = studentClass ? studentClassesList.find(c => (typeof c === 'object' ? c.name : c) === studentClass) : null;
+  const studentSubjectsList = normalizeOptions(selectedStudentClassObj ? (getClassSubjects(selectedStudentClassObj) ?? studentFilterOptions.subjects) : studentFilterOptions.subjects);
 
   return (
     <div className="p-6 animate-fade-in">

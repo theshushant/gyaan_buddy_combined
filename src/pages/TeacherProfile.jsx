@@ -7,6 +7,19 @@ import teachersService from '../services/teachersService'
 import AddTeacherModal from '../components/AddTeacherModal'
 import SuccessModal from '../components/SuccessModal'
 
+const isMeaningfulEmail = (value) => {
+  const normalized = String(value || '').trim().toLowerCase()
+  if (!normalized) return false
+  const looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)
+  if (!looksLikeEmail) return false
+  return !normalized.endsWith('@school.gyaanbuddy.com')
+}
+
+const resolveTeacherEmail = (...values) => {
+  const match = values.find((value) => isMeaningfulEmail(value))
+  return match ? String(match).trim() : ''
+}
+
 const TeacherProfile = () => {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -115,7 +128,14 @@ const TeacherProfile = () => {
     id: teacherData.id,
     firstName: teacherData.firstName || teacherData.first_name || '',
     lastName: teacherData.lastName || teacherData.last_name || '',
-    email: teacherData.email || '',
+    email: resolveTeacherEmail(
+      teacherData.email,
+      teacherData.user?.email,
+      teacherData.username,
+      teacherData.user?.username,
+      isOwnProfile ? user?.email : '',
+      isOwnProfile ? user?.username : '',
+    ),
     username: teacherData.username || '',
     employeeId: teacherData.employeeId || teacherData.employee_id || '',
     profilePicture: teacherData.profilePicture || teacherData.profile_picture || null,
@@ -342,10 +362,12 @@ const TeacherProfile = () => {
                     <span className="text-gray-900">{transformedData.username || 'N/A'}</span>
                   </div>
                   
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                    <span className="text-sm font-medium text-gray-500 sm:w-24 shrink-0">Email:</span>
-                    <span className="text-gray-900 break-all">{transformedData.email || 'N/A'}</span>
-                  </div>
+                  {transformedData.email && (
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <span className="text-sm font-medium text-gray-500 sm:w-24 shrink-0">Email:</span>
+                      <span className="text-gray-900 break-all">{transformedData.email}</span>
+                    </div>
+                  )}
                   
                   {transformedData.employeeId && (
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -13,6 +13,7 @@ import { fetchSubjects } from '../features/subjects/subjectsSlice';
 const MyStudents = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const initialLoadRef = useRef(false);
   const [selectedClass, setSelectedClass] = useState('All Classes');
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,15 +30,16 @@ const MyStudents = () => {
   const { subjects } = useSelector(state => state.subjects);
 
   useEffect(() => {
-    const hasError = error.students !== null || error.stats !== null
-    if (hasError) {
-      return // Don't retry if there's already an error
+    if (initialLoadRef.current) {
+      return;
     }
+
+    initialLoadRef.current = true;
 
     const fetchData = async () => {
       try {
         await Promise.all([
-          dispatch(fetchStudents({})),
+          dispatch(fetchStudents({ limit: 1000 })),
           dispatch(fetchStudentStats()),
           dispatch(fetchClasses({})),
           dispatch(fetchSubjects({}))
@@ -48,33 +50,15 @@ const MyStudents = () => {
     };
 
     fetchData();
-  }, [dispatch, error.students, error.stats]);
+  }, [dispatch]);
 
   useEffect(() => {
-    const hasError = error.students !== null
-    if (hasError) {
-      return // Don't retry if there's already an error
-    }
-
-    const filters = {};
-    if (searchTerm) {
-      filters.search = searchTerm;
-    }
-    if (selectedClass && selectedClass !== 'All Classes') {
-      filters.class = selectedClass;
-    }
-    if (selectedSubject && selectedSubject !== 'All Subjects') {
-      filters.subject = selectedSubject;
-    }
-
-    dispatch(setFilters(filters));
-
-    const timeoutId = setTimeout(() => {
-      dispatch(fetchStudents(filters));
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [dispatch, searchTerm, selectedClass, selectedSubject, error.students]);
+    dispatch(setFilters({
+      search: searchTerm.trim(),
+      class: selectedClass !== 'All Classes' ? selectedClass : '',
+      subject: selectedSubject !== 'All Subjects' ? selectedSubject : '',
+    }));
+  }, [dispatch, searchTerm, selectedClass, selectedSubject]);
 
   const transformStudent = (student) => {
     const firstName = student.first_name || student.firstName || '';
@@ -82,35 +66,92 @@ const MyStudents = () => {
     const fullName = `${firstName} ${lastName}`.trim() || student.name || 'Unknown';
     const email = student.email || '';
     const classData = student.class || student.class_name || student.class_id || 'N/A';
-    
+    const classId = String(
+      student.class_id ||
+      student.class?.id ||
+      student.class_instance?.id ||
+      student.class_instance ||
+      ''
+    );
+    const classLabel = (
+      student.class_name ||
+      student.class?.name ||
+      student.class?.class_name ||
+      student.class_instance?.name ||
+      student.class_instance_name ||
+      (typeof classData === 'string' || typeof classData === 'number' ? String(classData) : 'N/A')
+    );
+
+    const rawSubjects = Array.isArray(student.subjects)
+      ? student.subjects
+      : Array.isArray(student.subject_list)
+        ? student.subject_list
+        : (student.subject ? [student.subject] : []);
+    const subjectNames = rawSubjects
+      .map((subject) => {
+        if (typeof subject === 'string') return subject;
+        return subject?.name || subject?.subject_name || '';
+      })
+      .filter(Boolean);
+    const subjectIds = rawSubjects
+      .map((subject) => {
+        if (typeof subject === 'string') return '';
+        return String(subject?.id || subject?.subject_id || '');
+      })
+      .filter(Boolean);
+
     return {
       id: student.id,
       name: fullName,
       firstName,
       lastName,
-      class: classData,
+      class: classLabel,
+      classId,
       email,
       phone: student.phone_number || student.phone || '',
       lastActive: student.last_active || student.lastActive || 'N/A',
-      totalXP: student.total_exp || student.total_exp || student.xp || 0,
+      totalXP: student.total_exp || student.xp || 0,
       averageScore: student.average_score || student.averageScore || 0,
       completedModules: student.completed_modules || student.completedModules || 0,
       pendingAssignments: student.pending_assignments || student.pendingAssignments || 0,
       progressModule: student.progress_module_count || student.progressModule || 0,
+      subjectNames,
+      subjectIds,
     };
   };
 
   const hasActiveFilters = searchTerm || selectedClass !== 'All Classes' || selectedSubject !== 'All Subjects';
 
+  const selectedSubjectName = Array.isArray(subjects)
+    ? (subjects.find((subject) => String(subject.id) === String(selectedSubject))?.name
+      || subjects.find((subject) => String(subject.id) === String(selectedSubject))?.subject_name
+      || '')
+    : '';
+  const selectedClassName = Array.isArray(classes)
+    ? (classes.find((classItem) => String(classItem.id || classItem.uuid || '') === String(selectedClass))?.name
+      || classes.find((classItem) => String(classItem.id || classItem.uuid || '') === String(selectedClass))?.class_name
+      || '')
+    : '';
+  const normalizedSelectedSubjectName = selectedSubjectName.trim().toLowerCase();
+
   const filteredStudents = (students || []).map(transformStudent).sort((a, b) =>
     a.firstName.localeCompare(b.firstName)
   ).filter(student => {
-    const matchesSearch = !searchTerm || 
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (student.email && student.email.toLowerCase().includes(searchTerm.toLowerCase()));
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const nameParts = [student.firstName, student.lastName, student.name]
+      .filter(Boolean)
+      .flatMap((value) => value.toLowerCase().split(/\s+/).filter(Boolean));
+    const matchesSearch = !normalizedSearch ||
+      nameParts.some((value) => value.startsWith(normalizedSearch)) ||
+      (student.email && student.email.toLowerCase().startsWith(normalizedSearch));
     const matchesClass = selectedClass === 'All Classes' || 
-      (student.class && student.class.toString().includes(selectedClass));
-    return matchesSearch && matchesClass;
+      student.classId === String(selectedClass) ||
+      (selectedClassName && String(student.class || '') === String(selectedClassName)) ||
+      String(student.class || '') === String(selectedClass);
+    const matchesSubject = selectedSubject === 'All Subjects' ||
+      student.subjectIds.includes(String(selectedSubject)) ||
+      student.subjectNames.some((subjectName) => subjectName.toLowerCase() === normalizedSelectedSubjectName);
+    return matchesSearch && matchesClass && matchesSubject;
   });
 
   return (
@@ -139,8 +180,7 @@ const MyStudents = () => {
             placeholder="Search students by name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            disabled={loading.students}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
           />
         </div>
         
@@ -153,8 +193,8 @@ const MyStudents = () => {
           >
             <option>All Classes</option>
             {Array.isArray(classes) && classes.map((classItem) => {
-              const className = classItem.name || classItem.class_name || `${classItem.grade || ''}${classItem.section || ''}` || `Class ${classItem.id}`;
-              const classValue = classItem.name || classItem.class_name || classItem.id?.toString() || '';
+              const className = classItem.name || classItem.class_name || `${classItem.grade || ''}${classItem.section || ''}`.trim() || `Class ${classItem.id}`;
+              const classValue = String(classItem.id || classItem.uuid || className);
               return (
                 <option key={classItem.id || classItem.name} value={classValue}>
                   {className}

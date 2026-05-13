@@ -7,6 +7,7 @@ const CreateTopicModal = ({
   onSave,
   onUpdateLearnMode = null,
   loading = false,
+  learnModeLoading = false,
   error = null,
   chapterData = null,
   selectedModule = null
@@ -459,7 +460,7 @@ const CreateTopicModal = ({
                 type="button"
                 onClick={onClose}
                 className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                disabled={loading}
+                disabled={loading || learnModeLoading}
               >
                 Cancel
               </button>
@@ -469,16 +470,16 @@ const CreateTopicModal = ({
                   onClick={() => onUpdateLearnMode(chapterData)}
                   className="px-4 py-2 border rounded-lg transition-colors"
                   style={{ borderColor: '#00167a', color: '#00167a' }}
-                  disabled={loading}
+                  disabled={loading || learnModeLoading}
                 >
-                  Update Learn Mode
+                  {learnModeLoading ? 'Updating Learn Mode...' : 'Update Learn Mode'}
                 </button>
               )}
               <button
                 type="submit"
                 className="px-4 py-2 text-white rounded-lg transition-colors"
                 style={{ backgroundColor: '#00167a' }}
-                disabled={loading}
+                disabled={loading || learnModeLoading}
               >
                 {loading
                   ? (isEditMode ? 'Updating...' : 'Creating...')

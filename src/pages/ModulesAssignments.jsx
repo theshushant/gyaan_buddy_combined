@@ -1312,7 +1312,8 @@ const ModulesAssignments = () => {
             }}
             onSave={handleCreateChapter}
             onUpdateLearnMode={handleUpdateLearnMode}
-            loading={creatingChapter || updatingLearnMode}
+            loading={creatingChapter}
+            learnModeLoading={updatingLearnMode}
             error={createChapterError}
             selectedModule={selectedModuleForChapter}
             chapterData={editingChapter}

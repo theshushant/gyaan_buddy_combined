@@ -67,6 +67,7 @@ const ModulesAssignments = () => {
   const [successData, setSuccessData] = useState({});
   const [creatingModule, setCreatingModule] = useState(false);
   const [creatingChapter, setCreatingChapter] = useState(false);
+  const [updatingLearnMode, setUpdatingLearnMode] = useState(false);
   const [createError, setCreateError] = useState(null);
   const [createChapterError, setCreateChapterError] = useState(null);
   const [editingModule, setEditingModule] = useState(null);
@@ -455,6 +456,29 @@ const ModulesAssignments = () => {
       setCreateChapterError(errorMessage);
     } finally {
       setCreatingChapter(false);
+    }
+  };
+
+  const handleUpdateLearnMode = async (chapter) => {
+    if (!chapter?.id) return;
+    setUpdatingLearnMode(true);
+    setCreateChapterError(null);
+    try {
+      await modulesService.generateLearnMode(chapter.id);
+      setShowCreateChapterModal(false);
+      setEditingChapter(null);
+      setSelectedModuleForChapter(null);
+      setSuccessData({
+        title: 'Learn Mode Updated',
+        message: `Theory and image have been generated for "${chapter.title}".`
+      });
+      setShowSuccessModal(true);
+      await fetchAllModulesData();
+    } catch (err) {
+      console.error('Error updating learn mode:', err);
+      setCreateChapterError(err.message || 'Failed to update learn mode. Please try again.');
+    } finally {
+      setUpdatingLearnMode(false);
     }
   };
 
@@ -1287,7 +1311,8 @@ const ModulesAssignments = () => {
               setCreateChapterError(null);
             }}
             onSave={handleCreateChapter}
-            loading={creatingChapter}
+            onUpdateLearnMode={handleUpdateLearnMode}
+            loading={creatingChapter || updatingLearnMode}
             error={createChapterError}
             selectedModule={selectedModuleForChapter}
             chapterData={editingChapter}

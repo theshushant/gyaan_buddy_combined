@@ -252,6 +252,14 @@ class ModulesService {
     }
   }
 
+  async generateLearnMode(chapterId) {
+    try {
+      return await apiService.post(`/module_chapters/${chapterId}/generate_learn_mode/`, {}, { timeout: 180000 });
+    } catch (error) {
+      throw new Error(`Failed to generate learn mode: ${error.message}`);
+    }
+  }
+
   async getChapterQuestions(chapterId) {
     try {
       return await apiService.get(`/module_chapters/${chapterId}/module_questions/`, { timeout: 120000 });

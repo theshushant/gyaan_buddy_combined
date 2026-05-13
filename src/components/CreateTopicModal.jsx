@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { X, Upload } from 'lucide-react'
 
-const CreateTopicModal = ({ 
-  isOpen, 
-  onClose, 
-  onSave, 
-  loading = false, 
-  error = null, 
-  chapterData = null, 
-  selectedModule = null 
+const CreateTopicModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  onUpdateLearnMode = null,
+  loading = false,
+  error = null,
+  chapterData = null,
+  selectedModule = null
 }) => {
   const [formData, setFormData] = useState({
     title: '',
@@ -462,14 +463,25 @@ const CreateTopicModal = ({
               >
                 Cancel
               </button>
+              {isEditMode && onUpdateLearnMode && (
+                <button
+                  type="button"
+                  onClick={() => onUpdateLearnMode(chapterData)}
+                  className="px-4 py-2 border rounded-lg transition-colors"
+                  style={{ borderColor: '#00167a', color: '#00167a' }}
+                  disabled={loading}
+                >
+                  Update Learn Mode
+                </button>
+              )}
               <button
                 type="submit"
                 className="px-4 py-2 text-white rounded-lg transition-colors"
                 style={{ backgroundColor: '#00167a' }}
                 disabled={loading}
               >
-                {loading 
-                  ? (isEditMode ? 'Updating...' : 'Creating...') 
+                {loading
+                  ? (isEditMode ? 'Updating...' : 'Creating...')
                   : (isEditMode ? 'Update Topic' : 'Create Topic')}
               </button>
             </div>

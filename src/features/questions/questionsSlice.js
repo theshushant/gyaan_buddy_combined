@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import questionsService from '../../services/questionsService'
 
-// Async thunks for questions API calls
 export const fetchQuestions = createAsyncThunk(
   'questions/fetchQuestions',
   async (filters = {}, { rejectWithValue }) => {
@@ -208,7 +207,6 @@ const questionsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch questions
       .addCase(fetchQuestions.pending, (state) => {
         state.loading.questions = true
         state.error.questions = null
@@ -228,7 +226,6 @@ const questionsSlice = createSlice({
         state.error.questions = action.payload
       })
 
-      // Fetch question by ID
       .addCase(fetchQuestionById.pending, (state) => {
         state.loading.currentQuestion = true
         state.error.currentQuestion = null
@@ -242,7 +239,6 @@ const questionsSlice = createSlice({
         state.error.currentQuestion = action.payload
       })
 
-      // Create question
       .addCase(createQuestion.pending, (state) => {
         state.loading.create = true
         state.error.create = null
@@ -256,7 +252,6 @@ const questionsSlice = createSlice({
         state.error.create = action.payload
       })
 
-      // Update question
       .addCase(updateQuestion.pending, (state) => {
         state.loading.update = true
         state.error.update = null
@@ -276,7 +271,6 @@ const questionsSlice = createSlice({
         state.error.update = action.payload
       })
 
-      // Delete question
       .addCase(deleteQuestion.pending, (state) => {
         state.loading.delete = true
         state.error.delete = null
@@ -293,7 +287,6 @@ const questionsSlice = createSlice({
         state.error.delete = action.payload
       })
 
-      // Generate AI questions
       .addCase(generateAIQuestions.pending, (state) => {
         state.loading.aiGeneration = true
         state.error.aiGeneration = null
@@ -307,7 +300,6 @@ const questionsSlice = createSlice({
         state.error.aiGeneration = action.payload
       })
 
-      // Fetch AI generated questions
       .addCase(fetchAIGeneratedQuestions.pending, (state) => {
         state.loading.aiGenerated = true
         state.error.aiGenerated = null
@@ -321,14 +313,12 @@ const questionsSlice = createSlice({
         state.error.aiGenerated = action.payload
       })
 
-      // Save AI questions
       .addCase(saveAIQuestions.pending, (state) => {
         state.loading.saveAI = true
         state.error.saveAI = null
       })
       .addCase(saveAIQuestions.fulfilled, (state, action) => {
         state.loading.saveAI = false
-        // Remove saved questions from AI generated list
         const savedQuestionIds = action.payload.savedQuestionIds || action.payload
         state.aiGeneratedQuestions = state.aiGeneratedQuestions.filter(
           question => !savedQuestionIds.includes(question.id)
@@ -339,7 +329,6 @@ const questionsSlice = createSlice({
         state.error.saveAI = action.payload
       })
 
-      // Fetch question stats
       .addCase(fetchQuestionStats.pending, (state) => {
         state.loading.stats = true
         state.error.stats = null

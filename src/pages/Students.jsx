@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Search, Filter, Plus, Eye, Trash2, AlertTriangle } from 'lucide-react'
+import { Search, RefreshCw, Plus, Eye, Trash2, AlertTriangle, Upload } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import studentsService from '../services/studentsService'
 import AddStudentModal from '../components/AddStudentModal'
 import SuccessModal from '../components/SuccessModal'
 import Modal from '../components/Modal'
+import BulkImportStudentsModal from '../components/BulkImportStudentsModal'
 import {
   fetchStudents,
-  fetchStudentStats,
   fetchStudentById,
   createStudent,
   updateStudent,
@@ -24,7 +25,6 @@ const Students = () => {
   
   const {
     students,
-    studentStats,
     summary,
     loading,
     error,
@@ -40,60 +40,69 @@ const Students = () => {
   const [editingStudent, setEditingStudent] = useState(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [studentToDelete, setStudentToDelete] = useState(null)
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false)
+  const [studentAttemptRates, setStudentAttemptRates] = useState({})
+  const [attemptRateLoading, setAttemptRateLoading] = useState(false)
+  const [summaryAttemptRate, setSummaryAttemptRate] = useState(0)
+  const didInitRef = useRef(false)
 
+  const getStudentXp = (student) => {
+    const xp = Number(student?.total_exp ?? student?.total_XP ?? student?.xp ?? 0)
+    return Number.isFinite(xp) ? xp : 0
+  }
+
+  const getStudentClassName = (student) => student?.class_name || student?.className || 'N/A'
+
+  // On mount: load supporting data and unfiltered students
   useEffect(() => {
-    // Check if there's already an error - don't retry automatically
-    const hasError = error.students !== null || error.stats !== null
-    if (hasError) {
-      return // Don't retry if there's already an error
-    }
+    if (didInitRef.current) return
+    didInitRef.current = true
 
-    // Fetch all students once on mount (without filters), stats, classes, and subjects
     const fetchData = async () => {
       try {
         await Promise.all([
-          dispatch(fetchStudents({})), // Fetch all students without filters
-          dispatch(fetchStudentStats()),
           dispatch(fetchClasses({})),
-          dispatch(fetchSubjects({}))
+          dispatch(fetchStudents({}))
         ])
       } catch (err) {
         console.error('Error fetching students data:', err)
       }
     }
-
     fetchData()
-  }, [dispatch, error.students, error.stats])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch])
 
   const handleSearch = (value) => {
     dispatch(setFilters({ search: value }))
   }
 
   const handleClassFilter = (value) => {
-    dispatch(setFilters({ class: value }))
+    dispatch(setFilters({ class: value, subject: '' }))
+    dispatch(fetchSubjects(value ? { class: value } : {}))
+    dispatch(fetchStudents({ class: value, subject: '' }))
   }
 
   const handleSubjectFilter = (value) => {
     dispatch(setFilters({ subject: value }))
+    dispatch(fetchStudents({ class: filters.class, subject: value }))
+  }
+
+  const handleRefresh = () => {
+    dispatch(fetchSubjects(filters.class ? { class: filters.class } : {}))
+    dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
   }
 
   const handleAddStudent = async (studentData) => {
     try {
       await dispatch(createStudent(studentData)).unwrap()
-      // Close modal on success
       setShowAddModal(false)
-      // Refresh students list (without filters) and stats
-      await Promise.all([
-        dispatch(fetchStudents({})), // Fetch all students without filters
-        dispatch(fetchStudentStats())
-      ])
+      await dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
       setSuccessData({
         title: 'Student Added Successfully',
         message: `${studentData.firstName} ${studentData.lastName} has been added to the system.`
       })
       setShowSuccessModal(true)
     } catch (error) {
-      // Error is handled by Redux, modal will stay open
       console.error('Error adding student:', error)
     }
   }
@@ -103,11 +112,7 @@ const Students = () => {
       await dispatch(updateStudent({ studentId: editingStudent.id, studentData })).unwrap()
       setEditingStudent(null)
       setShowAddModal(false)
-      // Refresh students list (without filters) and stats
-      await Promise.all([
-        dispatch(fetchStudents({})), // Fetch all students without filters
-        dispatch(fetchStudentStats())
-      ])
+      await dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
       setSuccessData({
         title: 'Student Updated Successfully',
         message: `${studentData.first_name} ${studentData.last_name} has been updated.`
@@ -128,11 +133,7 @@ const Students = () => {
 
     try {
       await dispatch(deleteStudent(studentToDelete.id)).unwrap()
-      // Refresh students list (without filters) and stats
-      await Promise.all([
-        dispatch(fetchStudents({})), // Fetch all students without filters
-        dispatch(fetchStudentStats())
-      ])
+      await dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))
       setSuccessData({
         title: 'Student Deleted Successfully',
         message: `${studentToDelete.first_name || ''} ${studentToDelete.last_name || ''} has been removed from the system.`
@@ -142,7 +143,6 @@ const Students = () => {
       setShowSuccessModal(true)
     } catch (error) {
       console.error('Error deleting student:', error)
-      // Keep modal open on error so user can try again or cancel
     }
   }
 
@@ -157,102 +157,127 @@ const Students = () => {
 
   const handleEditStudent = async (student) => {
     try {
-      // Fetch full student details to ensure we have all fields (parent_name, date_of_birth, subjects, etc.)
       const fullStudent = await dispatch(fetchStudentById(student.id)).unwrap()
       setEditingStudent(fullStudent)
       setShowAddModal(true)
     } catch (error) {
       console.error('Error fetching student details:', error)
-      // Fallback to using the student from the list if fetch fails
       setEditingStudent(student)
       setShowAddModal(true)
     }
   }
 
-  const clearFilters = () => {
-    dispatch(setFilters({
-      search: '',
-      class: '',
-      subject: ''
-    }))
-  }
-
-  // Local filtering logic - filter students based on search, class, and subject
-  const filteredStudents = (students || []).filter(student => {
-    // Search filter - check if name matches search term
-    if (filters.search) {
+  // Class and subject filtering is done server-side; only apply local search for instant feedback
+  const filteredStudents = useMemo(() => {
+    return (students || []).filter(student => {
+      if (!filters.search) return true
       const firstName = (student.first_name || student.firstName || '').toLowerCase()
       const lastName = (student.last_name || student.lastName || '').toLowerCase()
       const fullName = `${firstName} ${lastName}`.trim()
-      const searchTerm = filters.search.toLowerCase()
-      
-      if (!fullName.includes(searchTerm)) {
-        return false
-      }
-    }
+      return fullName.includes(filters.search.toLowerCase())
+    })
+  }, [students, filters.search])
 
-    // Class filter - check if student's class matches selected class
-    if (filters.class) {
-      const studentClassId = (
-        student.class_id?.toString() || 
-        student.class_instance?.toString() || 
-        student.profile?.class_instance?.id?.toString() ||
-        ''
-      )
-      const studentClassName = (
-        student.class_name || 
-        student.class || 
-        student.profile?.class_instance?.name ||
-        ''
-      ).toString()
-      const filterClassValue = filters.class.toString()
-      
-      // Match by ID or name
-      if (studentClassId !== filterClassValue && studentClassName !== filterClassValue) {
-        return false
-      }
-    }
+  useEffect(() => {
+    let isCancelled = false
 
-    // Subject filter - check if student has the selected subject
-    if (filters.subject) {
-      const studentSubjects = student.subjects || student.subject_ids || []
-      const filterSubjectValue = filters.subject.toString()
-      
-      // Check if student has this subject (by ID or name)
-      const hasSubject = studentSubjects.some(subject => {
-        if (typeof subject === 'object') {
-          const subjectId = (subject.id || subject.uuid || '').toString()
-          const subjectName = (subject.name || subject.subject_name || '').toString().toLowerCase()
-          return subjectId === filterSubjectValue || subjectName === filterSubjectValue.toLowerCase()
-        } else {
-          // Subject might be a string or ID
-          const subjectStr = subject.toString()
-          return subjectStr === filterSubjectValue || subjectStr === filterSubjectValue.toLowerCase()
+    const loadAttemptRates = async () => {
+      const scopedStudents = Array.isArray(students) ? students : []
+
+      if (scopedStudents.length === 0) {
+        if (!isCancelled) {
+          setStudentAttemptRates({})
+          setAttemptRateLoading(false)
         }
-      })
-      
-      if (!hasSubject) {
-        return false
+        return
+      }
+
+      setAttemptRateLoading(true)
+
+      try {
+        const response = await studentsService.getAttemptRates({
+          class: filters.class || '',
+          subject: filters.subject || '',
+        })
+        const attemptRateMap = response?.students && typeof response.students === 'object'
+          ? response.students
+          : {}
+        const nextAttemptRates = scopedStudents.reduce((acc, student) => {
+          const studentId = String(student.id)
+          const attemptRate = Number(attemptRateMap[studentId] ?? 0)
+          acc[studentId] = Number.isFinite(attemptRate) ? attemptRate : 0
+          return acc
+        }, {})
+        const resolvedSummaryAttemptRate = Number(response?.overall_attempt_rate ?? 0) || 0
+
+        if (!isCancelled) {
+          setStudentAttemptRates(nextAttemptRates)
+          setSummaryAttemptRate(resolvedSummaryAttemptRate)
+        }
+      } catch (err) {
+        console.error('Error loading student attempt rates:', err)
+        if (!isCancelled) {
+          setStudentAttemptRates({})
+          setSummaryAttemptRate(0)
+        }
+      } finally {
+        if (!isCancelled) {
+          setAttemptRateLoading(false)
+        }
       }
     }
 
-    return true
-  })
+    loadAttemptRates()
 
-  // Prepare summary cards data
+    return () => {
+      isCancelled = true
+    }
+  }, [students, filters.class, filters.subject])
+
+  const studentsSummary = useMemo(() => {
+    const totalStudents = filteredStudents.length
+
+    if (totalStudents === 0) {
+      return {
+        totalStudents: 0,
+        attemptRate: 0,
+        topPerformer: 'N/A',
+        topPerformerXp: null
+      }
+    }
+
+    const topStudent = filteredStudents.reduce((best, student) => {
+      if (!best) return student
+      return getStudentXp(student) > getStudentXp(best) ? student : best
+    }, null)
+
+    const topStudentName = [topStudent?.first_name, topStudent?.last_name].filter(Boolean).join(' ').trim() || 'N/A'
+    const topStudentXp = getStudentXp(topStudent)
+    return {
+      totalStudents,
+      attemptRate: summaryAttemptRate,
+      topPerformer: topStudentName,
+      topPerformerXp: topStudent && topStudentName !== 'N/A' ? topStudentXp : null
+    }
+  }, [filteredStudents, summaryAttemptRate])
+
   const summaryCards = [
-    { label: 'Total Students', value: studentStats?.totalStudents?.toString() || '0' },
-    { label: 'Average Score', value: `${studentStats?.averageScore || 0}%` },
-    { label: 'Top Performer', value: summary?.topPerformer || 'N/A' }
+    { label: 'Total Students', value: studentsSummary.totalStudents.toString() },
+    { label: 'Attempt Rate', value: `${studentsSummary.attemptRate}%` },
+    {
+      label: 'Top Performer',
+      value: studentsSummary.topPerformer || summary?.topPerformer || 'N/A',
+      secondary: studentsSummary.topPerformerXp != null ? `${studentsSummary.topPerformerXp} XP` : null
+    }
   ]
 
-  const isLoading = loading.students || loading.stats
-  const hasError = error.students || error.stats
+  const isLoading = loading.students || attemptRateLoading
+  const hasError = error.students
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     )
   }
@@ -279,7 +304,6 @@ const Students = () => {
         <p className="text-gray-600 mt-2">Filter and view student performance data.</p>
       </div>
 
-      {/* Search and Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1">
@@ -290,7 +314,7 @@ const Students = () => {
                 placeholder="Search for a student by name..."
                 value={filters.search}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -299,9 +323,9 @@ const Students = () => {
             <select
               value={filters.class}
               onChange={(e) => handleClassFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
-              <option value="">Select Class</option>
+              <option value="">All Classes</option>
               {Array.isArray(classes) && classes.map((classItem) => {
                 const className = classItem.name || classItem.class_name || `${classItem.id}`
                 const classValue = classItem.id?.toString() || classItem.name || classItem.class_name || ''
@@ -316,9 +340,10 @@ const Students = () => {
             <select
               value={filters.subject}
               onChange={(e) => handleSubjectFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={!filters.class}
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
             >
-              <option value="">Select Subject</option>
+              <option value="">{filters.class ? 'All Subjects' : 'Subject'}</option>
               {Array.isArray(subjects) && subjects.map((subject) => {
                 const subjectName = subject.name || subject.subject_name || `${subject.id}`
                 const subjectValue = subject.id?.toString() || subject.name || subject.subject_name || ''
@@ -331,16 +356,16 @@ const Students = () => {
             </select>
             
             <button
-              onClick={clearFilters}
+              onClick={handleRefresh}
               className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition-colors"
+              title="Refresh students"
             >
-              <Filter className="h-4 w-4" />
+              <RefreshCw className="h-4 w-4" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {summaryCards.map((card, index) => (
           <div key={index} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -348,26 +373,39 @@ const Students = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">{card.label}</p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">{card.value}</p>
+                {card.secondary && (
+                  <p className="text-sm font-medium text-gray-500 mt-1">{card.secondary}</p>
+                )}
               </div>
-              <div className="h-12 w-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                <Eye className="h-6 w-6 text-blue-600" />
+              <div className="h-12 w-12 bg-primary-50 rounded-lg flex items-center justify-center">
+                <Eye className="h-6 w-6 text-primary-500" />
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Students Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-900">Students</h2>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Add Student
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowBulkImportModal(true)}
+              className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors"
+              style={{ backgroundColor: '#1fb7eb' }}
+            >
+              <Upload className="h-4 w-4" />
+              Bulk Add
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors"
+              style={{ backgroundColor: '#00167a' }}
+            >
+              <Plus className="h-4 w-4" />
+              Add Student
+            </button>
+          </div>
         </div>
         
         <div className="overflow-x-auto">
@@ -376,8 +414,8 @@ const Students = () => {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Average Score</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attempt Rate</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total EXP</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -386,8 +424,8 @@ const Students = () => {
                 <tr key={student.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-600">
+                      <div className="h-10 w-10 rounded-full bg-primary-50 flex items-center justify-center">
+                        <span className="text-sm font-medium text-primary-500">
                           {(student.first_name?.charAt(0) || '').toUpperCase()}{(student.last_name?.charAt(0) || '').toUpperCase()}
                         </span>
                       </div>
@@ -398,14 +436,16 @@ const Students = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.class_name || 'N/A'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.averageScore || 0}%</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.attendance || 0}%</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getStudentClassName(student)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {`${studentAttemptRates[String(student.id)] ?? 0}%`}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getStudentXp(student)}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleViewStudent(student.id)}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-primary-500 hover:text-primary-600"
                       >
                         <Eye className="h-4 w-4" />
                       </button>
@@ -436,7 +476,6 @@ const Students = () => {
         </div>
       </div>
 
-      {/* Modals */}
       {showAddModal && (
         <AddStudentModal
           isOpen={showAddModal}
@@ -493,7 +532,7 @@ const Students = () => {
             <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
               <button
                 onClick={handleDeleteCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
               >
                 Cancel
               </button>
@@ -524,6 +563,12 @@ const Students = () => {
           </div>
         </Modal>
       )}
+
+      <BulkImportStudentsModal
+        isOpen={showBulkImportModal}
+        onClose={() => setShowBulkImportModal(false)}
+        onSuccess={() => dispatch(fetchStudents({ class: filters.class, subject: filters.subject }))}
+      />
     </div>
   )
 }

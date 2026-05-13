@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import aiService from '../../services/aiService'
 
-// Async thunks for AI API calls
 export const fetchAISuggestions = createAsyncThunk(
   'ai/fetchAISuggestions',
   async (filters = {}, { rejectWithValue }) => {
@@ -208,7 +207,6 @@ const aiSlice = createSlice({
     },
     addToGenerationHistory: (state, action) => {
       state.generationHistory.unshift(action.payload)
-      // Keep only last 50 generations
       if (state.generationHistory.length > 50) {
         state.generationHistory = state.generationHistory.slice(0, 50)
       }
@@ -235,7 +233,6 @@ const aiSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch AI suggestions
       .addCase(fetchAISuggestions.pending, (state) => {
         state.loading.suggestions = true
         state.error.suggestions = null
@@ -255,7 +252,6 @@ const aiSlice = createSlice({
         state.error.suggestions = action.payload
       })
 
-      // Fetch AI insights
       .addCase(fetchAIInsights.pending, (state) => {
         state.loading.insights = true
         state.error.insights = null
@@ -269,7 +265,6 @@ const aiSlice = createSlice({
         state.error.insights = action.payload
       })
 
-      // Generate AI content
       .addCase(generateAIContent.pending, (state) => {
         state.loading.contentGeneration = true
         state.error.contentGeneration = null
@@ -283,7 +278,6 @@ const aiSlice = createSlice({
         state.error.contentGeneration = action.payload
       })
 
-      // Fetch AI recommendations
       .addCase(fetchAIRecommendations.pending, (state) => {
         state.loading.recommendations = true
         state.error.recommendations = null
@@ -297,7 +291,6 @@ const aiSlice = createSlice({
         state.error.recommendations = action.payload
       })
 
-      // Fetch AI heatmap
       .addCase(fetchAIHeatmap.pending, (state) => {
         state.loading.heatmap = true
         state.error.heatmap = null
@@ -311,7 +304,6 @@ const aiSlice = createSlice({
         state.error.heatmap = action.payload
       })
 
-      // Fetch remedial activities
       .addCase(fetchRemedialActivities.pending, (state) => {
         state.loading.remedialActivities = true
         state.error.remedialActivities = null
@@ -325,7 +317,6 @@ const aiSlice = createSlice({
         state.error.remedialActivities = action.payload
       })
 
-      // Analyze student performance
       .addCase(analyzeStudentPerformance.pending, (state) => {
         state.loading.analysis = true
         state.error.analysis = null
@@ -339,7 +330,6 @@ const aiSlice = createSlice({
         state.error.analysis = action.payload
       })
 
-      // Generate personalized content
       .addCase(generatePersonalizedContent.pending, (state) => {
         state.loading.personalizedContent = true
         state.error.personalizedContent = null

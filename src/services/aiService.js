@@ -1,8 +1,6 @@
-// AI Services API
 import apiService from './api';
 
 class AIService {
-  // Get AI suggestions
   async getAISuggestions(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -19,7 +17,6 @@ class AIService {
     }
   }
 
-  // Get AI insights
   async getAIInsights(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -35,7 +32,6 @@ class AIService {
     }
   }
 
-  // Generate AI content
   async generateAIContent(requestData) {
     try {
       return await apiService.get('/ai/generate', {
@@ -47,7 +43,6 @@ class AIService {
     }
   }
 
-  // Get AI generated questions
   async getAIGeneratedQuestions(requestData) {
     try {
       return await apiService.get('/ai/questions/generate', {
@@ -59,7 +54,6 @@ class AIService {
     }
   }
 
-  // Analyze student performance with AI
   async analyzeStudentPerformance(studentId, filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -74,7 +68,6 @@ class AIService {
     }
   }
 
-  // Get AI recommendations
   async getAIRecommendations(type, filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -90,7 +83,6 @@ class AIService {
     }
   }
 
-  // Get AI heatmap data
   async getAIHeatmapData(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -105,7 +97,6 @@ class AIService {
     }
   }
 
-  // Get remedial activities suggestions
   async getRemedialActivities(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -118,6 +109,72 @@ class AIService {
       return await apiService.get(endpoint);
     } catch (error) {
       throw new Error(`Failed to fetch remedial activities: ${error.message}`);
+    }
+  }
+
+  async generateAIQuestions(requestData) {
+    try {
+      const response = await apiService.post('/ai/generate-questions/', requestData, { timeout: 120000 });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to generate AI questions: ${error.message}`);
+    }
+  }
+
+  async generateAssessmentQuestions(requestData) {
+    try {
+      const response = await apiService.post('/assessment/generate/', requestData, { timeout: 120000 });
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to generate assessment questions.');
+    }
+  }
+
+  async modifyAssessmentQuestion(requestData) {
+    try {
+      const response = await apiService.post('/assessment/modify/', requestData, { timeout: 120000 });
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to modify question.');
+    }
+  }
+
+  async generateAIQuestionsGemini(requestData) {
+    try {
+      const response = await apiService.post('/ai/generate-questions-vertex/', requestData, { timeout: 120000 });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to generate AI questions with Vertex AI: ${error.message}`);
+    }
+  }
+
+  async executeMatplotlibImage(matplotlibCode) {
+    try {
+      const response = await apiService.post('/ai/execute-matplotlib-image/', { matplotlib_code: matplotlibCode }, { timeout: 60000 });
+      return response.data || response;
+    } catch (error) {
+      throw new Error(`Failed to execute matplotlib code: ${error.message}`);
+    }
+  }
+
+  async activateAIQuestions(questionIds) {
+    try {
+      const response = await apiService.post('/ai/activate-questions/', { question_ids: questionIds });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to activate AI questions: ${error.message}`);
+    }
+  }
+
+  async deactivateAIQuestions(questionIdsToDeactivate, moduleChapterId) {
+    try {
+      const response = await apiService.post('/ai/deactivate-questions/', {
+        question_ids: questionIdsToDeactivate,
+        module_chapter_id: moduleChapterId
+      });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to deactivate AI questions: ${error.message}`);
     }
   }
 }

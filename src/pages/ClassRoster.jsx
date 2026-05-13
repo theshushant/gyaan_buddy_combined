@@ -23,22 +23,18 @@ const ClassRoster = () => {
   const [successData, setSuccessData] = useState({})
   const [studentToRemove, setStudentToRemove] = useState(null)
 
-  // Fetch class details and students
   useEffect(() => {
     if (id) {
       dispatch(fetchClassById(id))
     }
   }, [id, dispatch])
 
-  // Fetch students when class is loaded
   useEffect(() => {
     if (currentClass && id) {
-      // Use class UUID instead of class name
       dispatch(fetchStudents({ class: id }))
     }
   }, [currentClass, id, dispatch])
 
-  // Filter students based on search term
   const filteredStudents = (students || []).filter(student => {
     const name = `${student.firstName || student.first_name || ''} ${student.lastName || student.last_name || ''}`.trim().toLowerCase()
     const rollNumber = String(student.rollNumber || student.roll_number || '').toLowerCase()
@@ -47,42 +43,23 @@ const ClassRoster = () => {
     return name.includes(search) || rollNumber.includes(search)
   })
 
-  // Get class name
   const getClassName = () => {
     if (!currentClass) return 'Loading...'
     return currentClass.name || currentClass.class_name || 'Unknown Class'
   }
 
-  // Get student name
   const getStudentName = (student) => {
     const firstName = student.firstName || student.first_name || ''
     const lastName = student.lastName || student.last_name || ''
     return `${firstName} ${lastName}`.trim() || 'N/A'
   }
 
-  // Get roll number
   const getRollNumber = (student) => {
     return student.rollNumber || student.roll_number || 'N/A'
   }
 
-  // Get subject (primary subject or first subject)
-  const getSubject = (student) => {
-    if (student.subjects && student.subjects.length > 0) {
-      return student.subjects[0].name || student.subjects[0] || 'N/A'
-    }
-    return 'N/A'
-  }
-
-  // Get attendance percentage
-  const getAttendance = (student) => {
-    // Calculate attendance if available, otherwise return a placeholder
-    // This would need to be calculated from actual attendance data
-    return student.attendance || Math.floor(Math.random() * 15) + 85 // Placeholder: 85-99%
-  }
-
   const handleAddStudent = async (studentData) => {
     try {
-      // Add class_id to student data
       const studentDataWithClass = {
         ...studentData,
         class_id: id
@@ -91,7 +68,6 @@ const ClassRoster = () => {
       await dispatch(createStudent(studentDataWithClass)).unwrap()
       
       setShowAddModal(false)
-      // Refresh students list
       if (id) {
         dispatch(fetchStudents({ class: id }))
       }
@@ -119,7 +95,6 @@ const ClassRoster = () => {
       const removedStudentName = getStudentName(studentToRemove)
       setShowRemoveModal(false)
       setStudentToRemove(null)
-      // Refresh students list
       if (id) {
         dispatch(fetchStudents({ class: id }))
       }
@@ -142,14 +117,13 @@ const ClassRoster = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      {/* Back Navigation */}
       <button
         onClick={() => navigate('/classes')}
         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
@@ -158,12 +132,10 @@ const ClassRoster = () => {
         <span>Back to Classes</span>
       </button>
 
-      {/* Breadcrumbs */}
       <div className="text-sm text-gray-500">
         Classes / {getClassName()} Roster
       </div>
 
-      {/* Header Section */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">{getClassName()} Roster</h1>
@@ -174,7 +146,7 @@ const ClassRoster = () => {
         <div className="flex gap-3">
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors" style={{ backgroundColor: '#00167a' }}
           >
             <Plus className="h-5 w-5" />
             Add Student
@@ -182,7 +154,6 @@ const ClassRoster = () => {
         </div>
       </div>
 
-      {/* Search Bar */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
         <input
@@ -190,11 +161,10 @@ const ClassRoster = () => {
           placeholder="Search students by name or roll number"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
         />
       </div>
 
-      {/* Student Roster Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -205,12 +175,6 @@ const ClassRoster = () => {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Roll Number
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Subject
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Attendance
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -235,20 +199,10 @@ const ClassRoster = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {getSubject(student)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {getAttendance(student)}%
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => handleViewReport(student.id || student.uuid)}
-                          className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                          className="text-sm text-primary-500 hover:text-primary-700 hover:underline transition-colors"
                         >
                           View Report
                         </button>
@@ -265,7 +219,7 @@ const ClassRoster = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
                     {searchTerm ? 'No students found matching your search.' : 'No students enrolled in this class.'}
                   </td>
                 </tr>
@@ -275,7 +229,6 @@ const ClassRoster = () => {
         </div>
       </div>
 
-      {/* Add Student Modal */}
       <AddStudentModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
@@ -285,7 +238,6 @@ const ClassRoster = () => {
         classId={id}
       />
 
-      {/* Remove Student Confirmation Modal */}
       <Modal
         isOpen={showRemoveModal && studentToRemove}
         onClose={() => {
@@ -318,7 +270,6 @@ const ClassRoster = () => {
         </div>
       </Modal>
 
-      {/* Success Modal */}
       <SuccessModal
         isOpen={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
@@ -330,4 +281,3 @@ const ClassRoster = () => {
 }
 
 export default ClassRoster
-

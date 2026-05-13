@@ -1,8 +1,5 @@
 import SoftDeleteModel from '../base/SoftDeleteModel.js';
 
-/**
- * Model for managing competitions in the educational system.
- */
 export default class Competition extends SoftDeleteModel {
   constructor(data = {}) {
     super(data);
@@ -20,28 +17,18 @@ export default class Competition extends SoftDeleteModel {
     this.participants = data.participants || []; // Array of User IDs or User objects
   }
 
-  /**
-   * Competition type choices
-   */
   static COMPETITION_TYPE_CHOICES = [
     ['subject', 'Subject Only'],
     ['subject_with_chapter', 'Subject with Chapter'],
     ['random', 'Random Questions']
   ];
 
-  /**
-   * Status choices
-   */
   static STATUS_CHOICES = [
     ['not_started', 'Not Started'],
     ['in_progress', 'In Progress'],
     ['completed', 'Completed']
   ];
 
-  /**
-   * Validate competition data
-   * @returns {Object} Validation result with isValid and errors
-   */
   validate() {
     const errors = {};
 
@@ -87,9 +74,6 @@ export default class Competition extends SoftDeleteModel {
     };
   }
 
-  /**
-   * Generate unique code if not provided
-   */
   generateCode() {
     if (!this.code) {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -101,42 +85,26 @@ export default class Competition extends SoftDeleteModel {
     }
   }
 
-  /**
-   * Start the competition
-   */
   start() {
     this.status = 'in_progress';
     this.touch();
   }
 
-  /**
-   * Complete the competition
-   */
   complete() {
     this.status = 'completed';
     this.touch();
   }
 
-  /**
-   * Activate the competition
-   */
   activate() {
     this.is_active = true;
     this.touch();
   }
 
-  /**
-   * Deactivate the competition
-   */
   deactivate() {
     this.is_active = false;
     this.touch();
   }
 
-  /**
-   * Add a question to this competition
-   * @param {string|Object} question - Question ID or Question object
-   */
   addQuestion(question) {
     const questionId = typeof question === 'object' ? question.id : question;
     if (!this.questions.includes(questionId)) {
@@ -145,20 +113,12 @@ export default class Competition extends SoftDeleteModel {
     }
   }
 
-  /**
-   * Remove a question from this competition
-   * @param {string|Object} question - Question ID or Question object
-   */
   removeQuestion(question) {
     const questionId = typeof question === 'object' ? question.id : question;
     this.questions = this.questions.filter(id => id !== questionId);
     this.touch();
   }
 
-  /**
-   * Add a participant to this competition
-   * @param {string|Object} user - User ID or User object
-   */
   addParticipant(user) {
     const userId = typeof user === 'object' ? user.id : user;
     if (!this.participants.includes(userId)) {
@@ -167,100 +127,54 @@ export default class Competition extends SoftDeleteModel {
     }
   }
 
-  /**
-   * Remove a participant from this competition
-   * @param {string|Object} user - User ID or User object
-   */
   removeParticipant(user) {
     const userId = typeof user === 'object' ? user.id : user;
     this.participants = this.participants.filter(id => id !== userId);
     this.touch();
   }
 
-  /**
-   * Check if competition has a specific question
-   * @param {string|Object} question - Question ID or Question object
-   * @returns {boolean} True if competition has the question
-   */
   hasQuestion(question) {
     const questionId = typeof question === 'object' ? question.id : question;
     return this.questions.includes(questionId);
   }
 
-  /**
-   * Check if user is a participant
-   * @param {string|Object} user - User ID or User object
-   * @returns {boolean} True if user is a participant
-   */
   hasParticipant(user) {
     const userId = typeof user === 'object' ? user.id : user;
     return this.participants.includes(userId);
   }
 
-  /**
-   * Get question count
-   * @returns {number} Number of questions
-   */
   get question_count() {
     return this.questions.length;
   }
 
-  /**
-   * Get participant count
-   * @returns {number} Number of participants
-   */
   get participant_count() {
     return this.participants.length;
   }
 
-  /**
-   * Get subject ID
-   * @returns {string|null} Subject ID
-   */
   getSubjectId() {
     return typeof this.subject === 'object' ? this.subject.id : this.subject;
   }
 
-  /**
-   * Get chapter ID
-   * @returns {string|null} Chapter ID
-   */
   getChapterId() {
     return typeof this.chapter === 'object' ? this.chapter.id : this.chapter;
   }
 
-  /**
-   * Get created by user ID
-   * @returns {string|null} User ID
-   */
   getCreatedById() {
     return typeof this.created_by === 'object' ? this.created_by.id : this.created_by;
   }
 
-  /**
-   * Get question IDs
-   * @returns {Array<string>} Array of question IDs
-   */
   getQuestionIds() {
     return this.questions.map(question => 
       typeof question === 'object' ? question.id : question
     );
   }
 
-  /**
-   * Get participant IDs
-   * @returns {Array<string>} Array of participant IDs
-   */
   getParticipantIds() {
     return this.participants.map(user => 
       typeof user === 'object' ? user.id : user
     );
   }
 
-  /**
-   * Convert to plain object
-   * @returns {Object} Plain object representation
-   */
   toJSON() {
     return {
       ...super.toJSON(),
@@ -279,10 +193,6 @@ export default class Competition extends SoftDeleteModel {
     };
   }
 
-  /**
-   * String representation
-   * @returns {string} String representation
-   */
   toString() {
     return `${this.title} (${this.code})`;
   }

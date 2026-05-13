@@ -1,37 +1,49 @@
-// Authentication API service
 import apiService from './api';
 
 class AuthService {
-  // Login user
   async login(credentials) {
     try {
       console.log('AuthService: Calling login API with credentials:', credentials);
       console.log('AuthService: About to call apiService.post...');
       
-      // Clear any existing token before attempting login
       apiService.removeAuthToken();
-      
-      const response = await apiService.post('/auth/login/', credentials);
+
+      let response
+      try {
+        response = await apiService.post('/auth/login/', credentials)
+      } catch (firstError) {
+        // Backward compatibility: some backend versions only allow mobile/dashboard types.
+        // Parent portal still uses student account auth, so retry with "mobile" type.
+        if (credentials?.type === 'parent_dashboard') {
+          console.warn('AuthService: parent_dashboard login failed, retrying with mobile type', firstError)
+          const retryPayload = { ...credentials, type: 'mobile' }
+          response = await apiService.post('/auth/login/', retryPayload)
+        } else {
+          throw firstError
+        }
+      }
       console.log('AuthService: Login API response:', response);
 
-      // Handle different response structures
-      if (response.success || response.data) {
-        const userData = response.data?.user || response.user;
+      if (response.success || response.data || response.user) {
+        const userData = response.data?.user || response.user || response;
         const tokenData = response.data?.tokens || response.tokens || response.data?.token || response.token;
+        const portalType = response.data?.portal_type || credentials?.type || null;
+        if (portalType) {
+          localStorage.setItem('gbPortalMode', portalType);
+        }
         
-        // Store the access token
         if (tokenData) {
-          const accessToken = tokenData.access || tokenData;
+          const accessToken = typeof tokenData === 'object' ? (tokenData.access || tokenData.token) : tokenData;
           if (accessToken) {
             apiService.setAuthToken(accessToken);
           }
         }
         
-        // Return the user data and tokens
         return {
           success: true,
           user: userData,
-          tokens: tokenData
+          tokens: tokenData,
+          portal_type: portalType
         };
       } else {
         throw new Error(response.message || 'Login failed');
@@ -42,7 +54,6 @@ class AuthService {
     }
   }
 
-  // Logout user
   async logout() {
     try {
       await apiService.post('/auth/logout/');
@@ -50,20 +61,17 @@ class AuthService {
       console.warn('Logout request failed:', error.message);
     } finally {
       apiService.removeAuthToken();
+      apiService.setUsedMockData(false);
+      localStorage.removeItem('gbPortalMode');
     }
   }
 
-  // Get current user profile
   async getCurrentUser() {
     try {
-      // Always use the real API endpoint
       const response = await apiService.get('/auth/me/');
       
-      // Handle different response structures
-      // Backend might return the user object directly, or wrapped in { data: { user } }
       const userData = response.data?.user || response.user || response.data || response;
       
-      // If response has user field, return it; otherwise return the whole response
       return userData;
     } catch (error) {
       console.error('AuthService: getCurrentUser error:', error);
@@ -71,7 +79,6 @@ class AuthService {
     }
   }
 
-  // Update user profile
   async updateProfile(profileData) {
     try {
       return await apiService.put('/auth/profile', profileData);
@@ -80,7 +87,6 @@ class AuthService {
     }
   }
 
-  // Change password
   async changePassword(passwordData) {
     try {
       return await apiService.post('/auth/change-password', passwordData);
@@ -89,12 +95,10 @@ class AuthService {
     }
   }
 
-  // Check if user is authenticated
   isAuthenticated() {
     return !!apiService.getAuthToken();
   }
 
-  // Get user role
   async getUserRole() {
     try {
       const user = await this.getCurrentUser();

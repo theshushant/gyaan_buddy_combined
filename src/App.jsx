@@ -6,7 +6,6 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
 import { fetchCurrentUser } from './features/auth/authSlice'
 
-// Principal pages
 import Dashboard from './pages/Dashboard'
 import Students from './pages/Students'
 import Teachers from './pages/Teachers'
@@ -18,8 +17,8 @@ import TeacherProfile from './pages/TeacherProfile'
 import AIInsights from './pages/AIInsights'
 import APILogicScreen from './pages/APILogicScreen'
 import ClassRoster from './pages/ClassRoster'
+import Subjects from './pages/Subjects'
 
-// Teacher pages
 import TeacherDashboard from './pages/TeacherDashboard'
 import MyStudents from './pages/MyStudents'
 import ModulesAssignments from './pages/ModulesAssignments'
@@ -34,12 +33,16 @@ import Leaderboards from './pages/Leaderboards'
 import DailyMissions from './pages/DailyMissions'
 import Notifications from './pages/Notifications'
 import AISuggestions from './pages/AISuggestions'
+import AIDataGenerator from './pages/AIDataGenerator'
+import ParentDashboard from './pages/ParentDashboard'
+import ParentDetailedReports from './pages/ParentDetailedReports'
+import ParentTestScores from './pages/ParentTestScores'
+import ParentTestReport from './pages/ParentTestReport'
+import ParentHelp from './pages/ParentHelp'
 
-// Role-based routing component
 const AppRoutes = () => {
   const { role } = useSelector(state => state.auth)
 
-  // Teacher routes - show TeacherDashboard
   if (role === 'teacher') {
     return (
       <Routes>
@@ -53,18 +56,32 @@ const AppRoutes = () => {
         <Route path="/tests/generate" element={<GenerateWithAI />} />
         <Route path="/tests/questions" element={<ViewQuestions />} />
         <Route path="/tests/ai-generated" element={<AIGeneratedQuestions />} />
-        <Route path="/tests/performance/:studentId" element={<StudentTestPerformance />} />
+        <Route path="/tests/performance/:missionId/:studentId" element={<StudentTestPerformance />} />
+        <Route path="/tests/performance/:missionId" element={<StudentTestPerformance />} />
         <Route path="/reports" element={<ReportsAnalytics />} />
         <Route path="/leaderboards" element={<Leaderboards />} />
         <Route path="/missions" element={<DailyMissions />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/ai-suggestions" element={<AISuggestions />} />
+        <Route path="/ai-data" element={<AIDataGenerator />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     )
   }
 
-  // Principal routes - show Dashboard (default for principal and other roles)
+  if (role === 'parent') {
+    return (
+      <Routes>
+        <Route path="/" element={<ParentDashboard />} />
+        <Route path="/reports" element={<ParentDetailedReports />} />
+        <Route path="/test-scores" element={<ParentTestScores />} />
+        <Route path="/test-scores/:testId" element={<ParentTestReport />} />
+        <Route path="/help" element={<ParentHelp />} />
+        <Route path="/settings" element={<Settings />} />
+      </Routes>
+    )
+  }
+
   return (
     <Routes>
       <Route path="/" element={<Dashboard />} />
@@ -74,6 +91,7 @@ const AppRoutes = () => {
       <Route path="/teachers/:id" element={<TeacherProfile />} />
       <Route path="/classes" element={<Classes />} />
       <Route path="/classes/:id/roster" element={<ClassRoster />} />
+      <Route path="/subjects" element={<Subjects />} />
       <Route path="/reports" element={<Reports />} />
       <Route path="/ai-insights" element={<AIInsights />} />
       <Route path="/api-logic" element={<APILogicScreen />} />
@@ -86,7 +104,6 @@ function App() {
   const dispatch = useDispatch()
   const { isAuthenticated, loading } = useSelector(state => state.auth)
 
-  // Check if user is already logged in on app start
   useEffect(() => {
     const token = localStorage.getItem('authToken')
     if (token && !isAuthenticated && !loading.fetchUser) {
@@ -94,11 +111,10 @@ function App() {
     }
   }, [dispatch, isAuthenticated, loading.fetchUser])
 
-  // Show loading state while checking authentication
   if (loading.fetchUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#00167a]"></div>
       </div>
     )
   }
@@ -106,10 +122,8 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         
-        {/* Protected Routes */}
         <Route path="/*" element={
           <ProtectedRoute>
             <Layout>

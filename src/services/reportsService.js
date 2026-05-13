@@ -1,8 +1,6 @@
-// Reports API service
 import apiService from './api';
 
 class ReportsService {
-  // Get student performance reports
   async getStudentPerformanceReports(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -14,14 +12,12 @@ class ReportsService {
 
       const endpoint = `/reports/student-performance${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response = await apiService.get(endpoint);
-      // Extract data from backend response structure {success, message, data}
       return response.data || response;
     } catch (error) {
       throw new Error(`Failed to fetch student performance reports: ${error.message}`);
     }
   }
 
-  // Get progress over time reports
   async getProgressOverTimeReports(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -32,14 +28,12 @@ class ReportsService {
 
       const endpoint = `/reports/progress-over-time${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response = await apiService.get(endpoint);
-      // Extract data from backend response structure {success, message, data}
       return response.data || response;
     } catch (error) {
       throw new Error(`Failed to fetch progress over time reports: ${error.message}`);
     }
   }
 
-  // Get quiz/assignment summaries
   async getQuizAssignmentSummaries(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -51,14 +45,12 @@ class ReportsService {
 
       const endpoint = `/reports/quiz-assignment-summaries${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response = await apiService.get(endpoint);
-      // Extract data from backend response structure {success, message, data}
       return response.data || response;
     } catch (error) {
       throw new Error(`Failed to fetch quiz/assignment summaries: ${error.message}`);
     }
   }
 
-  // Get AI insights reports
   async getAIInsightsReports(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -69,14 +61,12 @@ class ReportsService {
 
       const endpoint = `/reports/ai-insights${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response = await apiService.get(endpoint);
-      // Extract data from backend response structure {success, message, data}
       return response.data || response;
     } catch (error) {
       throw new Error(`Failed to fetch AI insights reports: ${error.message}`);
     }
   }
 
-  // Get analytics data
   async getAnalyticsData(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -88,14 +78,66 @@ class ReportsService {
 
       const endpoint = `/reports/analytics${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response = await apiService.get(endpoint);
-      // Extract data from backend response structure {success, message, data}
       return response.data || response;
     } catch (error) {
       throw new Error(`Failed to fetch analytics data: ${error.message}`);
     }
   }
 
-  // Generate custom report
+  /**
+   * Full reports & analytics payload for the Reports Analytics screen.
+   * @param {Object} filters - { period, class, subject, module, chapter }
+   * @returns {Promise<Object>} - summary, filterOptions, moduleProficiencyData, reportsData, analyticsData, studentProficiencyData
+   */
+  async getReportsAnalytics(filters = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      if (filters.period != null && filters.period !== '') queryParams.append('period', filters.period);
+      if (filters.class) queryParams.append('class', filters.class);
+      if (filters.subject) queryParams.append('subject', filters.subject);
+      if (filters.module) queryParams.append('module', filters.module);
+      if (filters.chapter) queryParams.append('chapter', filters.chapter);
+
+      const endpoint = `/reports/reports-analytics${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await apiService.get(endpoint);
+      return response.data ?? response;
+    } catch (error) {
+      throw new Error(`Failed to fetch reports analytics: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get per-student proficiency for a specific module chapter.
+   * @param {Object} filters - { chapter_id (required), period, class }
+   */
+  async getChapterStudentProficiency(filters = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      if (filters.chapter_id) queryParams.append('chapter_id', filters.chapter_id);
+      if (filters.period != null && filters.period !== '') queryParams.append('period', filters.period);
+      if (filters.class) queryParams.append('class', filters.class);
+      const endpoint = `/reports/chapter-student-proficiency${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await apiService.get(endpoint);
+      return response.data ?? response;
+    } catch (error) {
+      throw new Error(`Failed to fetch chapter student proficiency: ${error.message}`);
+    }
+  }
+
+  async getChapterStudentDetails(filters = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      if (filters.chapter_id) queryParams.append('chapter_id', filters.chapter_id);
+      if (filters.period != null && filters.period !== '') queryParams.append('period', filters.period);
+      if (filters.class) queryParams.append('class', filters.class);
+      const endpoint = `/reports/chapter-student-details${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await apiService.get(endpoint);
+      return response.data ?? response;
+    } catch (error) {
+      throw new Error(`Failed to fetch chapter student details: ${error.message}`);
+    }
+  }
+
   async generateCustomReport(reportConfig) {
     try {
       const response = await apiService.post('/reports/generate', reportConfig);
@@ -105,7 +147,6 @@ class ReportsService {
     }
   }
 
-  // Export report
   async exportReport(reportId, format = 'pdf') {
     try {
       const response = await apiService.get(`/reports/${reportId}/export?format=${format}`);
@@ -115,7 +156,6 @@ class ReportsService {
     }
   }
 
-  // Get report templates
   async getReportTemplates() {
     try {
       const response = await apiService.get('/reports/templates');
@@ -125,7 +165,6 @@ class ReportsService {
     }
   }
 
-  // Save report configuration
   async saveReportConfiguration(config) {
     try {
       const response = await apiService.post('/reports/configurations', config);

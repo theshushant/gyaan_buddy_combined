@@ -1,8 +1,6 @@
-// Questions API service
 import apiService from './api';
 
 class QuestionsService {
-  // Get all questions with optional filters
   async getQuestions(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -21,7 +19,6 @@ class QuestionsService {
     }
   }
 
-  // Get question by ID
   async getQuestionById(questionId) {
     try {
       return await apiService.get(`/questions/${questionId}`);
@@ -30,10 +27,8 @@ class QuestionsService {
     }
   }
 
-  // Create new question
   async createQuestion(questionData) {
     try {
-      // Check if questionData is FormData (for image uploads)
       const isFormData = questionData instanceof FormData;
       return await apiService.post('/questions/', questionData, { isFormData });
     } catch (error) {
@@ -41,10 +36,8 @@ class QuestionsService {
     }
   }
 
-  // Update question
   async updateQuestion(questionId, questionData) {
     try {
-      // Check if questionData is FormData (for image uploads)
       const isFormData = questionData instanceof FormData;
       return await apiService.put(`/questions/${questionId}/`, questionData, { isFormData });
     } catch (error) {
@@ -52,18 +45,14 @@ class QuestionsService {
     }
   }
 
-  // Delete question
   async deleteQuestion(questionId) {
     try {
-      return await apiService.get(`/questions/${questionId}`, {
-        method: 'DELETE',
-      });
+      return await apiService.delete(`/questions/${questionId}/`);
     } catch (error) {
       throw new Error(`Failed to delete question: ${error.message}`);
     }
   }
 
-  // Generate AI questions
   async generateAIQuestions(requestData) {
     try {
       return await apiService.get('/questions/ai/generate', {
@@ -75,7 +64,6 @@ class QuestionsService {
     }
   }
 
-  // Get AI generated questions
   async getAIGeneratedQuestions(filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -92,7 +80,6 @@ class QuestionsService {
     }
   }
 
-  // Save AI generated questions
   async saveAIGeneratedQuestions(questions) {
     try {
       return await apiService.get('/questions/ai/save', {
@@ -104,7 +91,6 @@ class QuestionsService {
     }
   }
 
-  // Get question statistics
   async getQuestionStats() {
     try {
       return await apiService.get('/questions/stats');
@@ -113,7 +99,6 @@ class QuestionsService {
     }
   }
 
-  // Get questions by subject
   async getQuestionsBySubject(subject, filters = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -129,12 +114,48 @@ class QuestionsService {
     }
   }
 
-  // Create options for a question
   async createQuestionOptions(questionId, options) {
     try {
       return await apiService.post(`/questions/${questionId}/options/`, { options });
     } catch (error) {
       throw new Error(`Failed to create question options: ${error.message}`);
+    }
+  }
+
+  async getQuestionBank(filters = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      if (filters.topic) queryParams.append('topic', filters.topic);
+      if (filters.chapter) queryParams.append('chapter', filters.chapter);
+      if (filters.level) queryParams.append('level', filters.level);
+      if (filters.page) queryParams.append('page', filters.page);
+      if (filters.page_size) queryParams.append('page_size', filters.page_size);
+      const endpoint = `/question-bank/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      return await apiService.get(endpoint);
+    } catch (error) {
+      throw new Error(`Failed to fetch question bank: ${error.message}`);
+    }
+  }
+
+  async addBankQuestionsToChapter(chapterId, questionIds) {
+    try {
+      return await apiService.post('/question-bank/add-to-chapter/', {
+        chapter_id: chapterId,
+        question_ids: questionIds,
+      });
+    } catch (error) {
+      throw new Error(`Failed to add questions to assignment: ${error.message}`);
+    }
+  }
+
+  async deactivateAIQuestions(moduleChapterId, questionIds) {
+    try {
+      return await apiService.post('/questions/ai/deactivate-questions/', {
+        module_chapter_id: moduleChapterId,
+        question_ids: questionIds,
+      });
+    } catch (error) {
+      throw new Error(`Failed to deactivate AI questions: ${error.message}`);
     }
   }
 }

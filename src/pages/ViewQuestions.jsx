@@ -66,18 +66,16 @@ const ViewQuestions = () => {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
       <div className="mb-8 flex justify-between items-center animate-slide-down">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">View Questions (Module - Visual Probability)</h1>
+          <h1 className="text-3xl font-bold text-gray-800">View Questions (Chapter - Visual Probability)</h1>
         </div>
-        <Link to="/tests" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg">
+        <Link to="/tests" className="px-4 py-2 text-white rounded-lg hover:bg-primary-600 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg" style={{ backgroundColor: '#00167a' }}>
           <span className="transform transition-transform duration-200 hover:-translate-x-1">←</span>
           <span>Back</span>
         </Link>
       </div>
 
-      {/* Filters */}
       <div className="mb-8 animate-slide-right" style={{animationDelay: '0.1s'}}>
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Filters</h2>
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transform hover:scale-105 transition-all duration-300 hover:shadow-lg">
@@ -91,7 +89,7 @@ const ViewQuestions = () => {
               <select
                 value={difficultyFilter}
                 onChange={(e) => setDifficultyFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
               >
                 <option value="All">All Difficulties</option>
                 <option value="Easy">Easy</option>
@@ -105,7 +103,7 @@ const ViewQuestions = () => {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transform transition-all duration-200 hover:scale-105"
               >
                 <option value="All">All Types</option>
                 <option value="Single choice">Single Choice</option>
@@ -117,7 +115,6 @@ const ViewQuestions = () => {
         </div>
       </div>
 
-      {/* Questions List */}
       <div className="space-y-4">
         {filteredQuestions.map((question, index) => (
           <div 
@@ -132,11 +129,14 @@ const ViewQuestions = () => {
                   <div className="flex-1">
                     <p className="text-gray-800 mb-3">{question.text}</p>
                     <div className="flex items-center space-x-4">
-                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                      <span className="px-2 py-1 text-xs font-medium bg-primary-500/20 text-primary-500 rounded-full">
                         {question.type}
                       </span>
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getDifficultyColor(question.difficulty)}`}>
                         {question.difficulty}
+                      </span>
+                      <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                        2 XP
                       </span>
                       <div className="flex items-center space-x-2">
                         <span className={`text-sm font-medium ${getSuccessRateColor(question.successRate)}`}>
@@ -161,7 +161,6 @@ const ViewQuestions = () => {
         ))}
       </div>
 
-      {/* Action Buttons */}
       <div className="mt-8 flex justify-end space-x-4">
         <button className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2">
           <span>+</span>
@@ -170,7 +169,7 @@ const ViewQuestions = () => {
         
         <Link 
           to="/tests/generate"
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          className="px-6 py-2 text-white rounded-lg hover:bg-primary-600 transition-colors flex items-center space-x-2" style={{ backgroundColor: '#00167a' }}
         >
           <span>✨</span>
           <span>Generate with AI</span>

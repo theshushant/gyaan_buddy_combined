@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Plus, 
@@ -7,52 +7,113 @@ import {
   Loader2,
   X,
   Trash2,
-  Edit
+  Pencil,
+  Sparkles,
+  BookOpen,
+  FileText,
+  Clock,
+  Users
 } from 'lucide-react';
 import classesService from '../services/classesService';
 import subjectsService from '../services/subjectsService';
 import testsService from '../services/testsService';
+import aiService from '../services/aiService';
+import questionsService from '../services/questionsService';
+
+const cleanDisplayText = (value) => String(value || '').replace(/\bCompetancy\b/gi, 'Competency');
+
+const dedupeByIdOrName = (items) => {
+  const seen = new Set();
+  return items.filter(item => {
+    const key = item.id ? `id:${item.id}` : `name:${String(item.name || item.title || '').trim().toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
 
 const TestsQuizzes = () => {
   const [activeTab, setActiveTab] = useState('tests');
   const [classes, setClasses] = useState([]);
   const [subjects, setSubjects] = useState([]);
+  const [modules, setModules] = useState([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
-  const [missions, setMissions] = useState([]);
-  const [loadingMissions, setLoadingMissions] = useState(false);
+  const [loadingModules, setLoadingModules] = useState(false);
+  const [tests, setTests] = useState([]);
+  const [loadingTests, setLoadingTests] = useState(false);
+  const [selectedClass, setSelectedClass] = useState('');
   const [selectedClasses, setSelectedClasses] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedModulesChapters, setSelectedModulesChapters] = useState([]);
+  const [chaptersLoadingFor, setChaptersLoadingFor] = useState(null);
+  const timeInputRef = useRef(null);
   const [formData, setFormData] = useState({
-    title: '',
     testDate: '',
     testTime: '',
     duration: '',
-    notification: false
   });
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
-  const [createdMissions, setCreatedMissions] = useState([]);
-  const [selectedMission, setSelectedMission] = useState(null);
-  const [showQuestionForm, setShowQuestionForm] = useState(false);
-  const [creatingQuestion, setCreatingQuestion] = useState(false);
-  const [questionError, setQuestionError] = useState(null);
-  const [missionQuestions, setMissionQuestions] = useState([]);
-  const [editingMission, setEditingMission] = useState(null);
+  const [testDateError, setTestDateError] = useState('');
+  const [snackbar, setSnackbar] = useState(null);
+
+  const setError = (msg) => {
+    if (msg) setSnackbar({ type: 'error', message: msg });
+  };
+  const setSuccess = (val, msg = '') => {
+    if (val && msg) setSnackbar({ type: 'success', message: msg });
+  };
+  const [selectedTest, setSelectedTest] = useState(null);
+  const [showQuestionGenerator, setShowQuestionGenerator] = useState(false);
+  const [generatingQuestions, setGeneratingQuestions] = useState(false);
+  const setGenerationError = (msg) => {
+    if (msg) setSnackbar({ type: 'error', message: msg });
+  };
+  const [generatedQuestions, setGeneratedQuestions] = useState([]);
+  const [selectedGeneratedQuestionIds, setSelectedGeneratedQuestionIds] = useState(new Set());
+  const [editingTest, setEditingTest] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [editTestQuestions, setEditTestQuestions] = useState([]);
+  const [loadingEditQuestions, setLoadingEditQuestions] = useState(false);
+  const [removingQuestionId, setRemovingQuestionId] = useState(null);
+  const [loadingTestForEdit, setLoadingTestForEdit] = useState(false);
+  const [questionAddMode, setQuestionAddMode] = useState('ai');
+  const [showCreateQuestionModal, setShowCreateQuestionModal] = useState(false);
+  const [manualQuestionForm, setManualQuestionForm] = useState({
+    question_text: '',
+    question_type: 'mcq_single',
+    difficulty_level: 'medium',
+    explanation: '',
+    options: [{ option_text: '', is_correct: false }, { option_text: '', is_correct: false }],
+  });
+  const [creatingQuestion, setCreatingQuestion] = useState(false);
+  const [manualQuestionError, setManualQuestionError] = useState(null);
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [bankQuestions, setBankQuestions] = useState([]);
+  const [loadingBankQuestions, setLoadingBankQuestions] = useState(false);
+  const [selectedBankQuestionIds, setSelectedBankQuestionIds] = useState(new Set());
+  const [addingBankToTest, setAddingBankToTest] = useState(false);
+  const [manualModeTestQuestions, setManualModeTestQuestions] = useState([]);
+  const [loadingManualModeQuestions, setLoadingManualModeQuestions] = useState(false);
+  const [deletingTestId, setDeletingTestId] = useState(null);
+  const [showLeaveGeneratorModal, setShowLeaveGeneratorModal] = useState(false);
+  const [pendingLeaveAction, setPendingLeaveAction] = useState(null);
+
+  const [aiFormData, setAiFormData] = useState({
+    number_of_questions: 10,
+    add_image: false,
+    use_matplot: false
+  });
 
   const fetchClasses = useCallback(async () => {
     setLoadingClasses(true);
     try {
       const response = await classesService.getClasses();
-      // Extract data array from response
       const classesData = response.data || response || [];
-      // Store full class objects (with id and name)
       const classesList = classesData.map(cls => ({
         id: cls.id || cls.uuid,
         name: cls.name || `${cls.grade || ''} ${cls.section || ''}`.trim() || cls
-      })).filter(cls => cls.id && cls.name); // Filter out invalid entries
+      })).filter(cls => cls.id && cls.name);
       setClasses(classesList);
     } catch (error) {
       console.error('Failed to fetch classes:', error);
@@ -66,13 +127,11 @@ const TestsQuizzes = () => {
     setLoadingSubjects(true);
     try {
       const response = await subjectsService.getSubjects();
-      // Extract data array from response
       const subjectsData = response.data || response || [];
-      // Store full subject objects (with id and name)
       const subjectsList = subjectsData.map(subject => ({
         id: subject.id || subject.uuid,
         name: subject.name || subject
-      })).filter(subject => subject.id && subject.name); // Filter out invalid entries
+      })).filter(subject => subject.id && subject.name);
       setSubjects(subjectsList);
     } catch (error) {
       console.error('Failed to fetch subjects:', error);
@@ -82,29 +141,79 @@ const TestsQuizzes = () => {
     }
   }, []);
 
-  const fetchMissions = useCallback(async () => {
-    setLoadingMissions(true);
+  const fetchModules = useCallback(async (subjectId) => {
+    if (!subjectId) {
+      setModules([]);
+      return;
+    }
+    setLoadingModules(true);
     try {
-      const response = await testsService.getAllMissions();
-      // Extract data array from response
-      const missionsData = response.data || response || [];
-      setMissions(missionsData);
+      const response = await subjectsService.getModules(subjectId);
+      const modulesData = response.data || response || [];
+      const modulesList = dedupeByIdOrName(modulesData.map(module => ({
+        id: module.id || module.uuid,
+        name: cleanDisplayText(module.name || module)
+      })).filter(module => module.id && module.name));
+      setModules(modulesList);
     } catch (error) {
-      console.error('Failed to fetch missions:', error);
-      setMissions([]);
+      console.error('Failed to fetch modules:', error);
+      setModules([]);
     } finally {
-      setLoadingMissions(false);
+      setLoadingModules(false);
     }
   }, []);
 
-  // Fetch missions when component loads or when tests tab is active
+  const fetchChaptersForModule = useCallback(async (moduleId) => {
+    if (!moduleId) return [];
+    try {
+      const response = await subjectsService.getChapters(moduleId);
+      const chaptersData = response.data || response || [];
+      return chaptersData.map(chapter => ({
+        id: chapter.id || chapter.uuid,
+        title: chapter.title || chapter
+      })).filter(chapter => chapter.id && chapter.title);
+    } catch (error) {
+      console.error('Failed to fetch chapters for module:', error);
+      return [];
+    }
+  }, []);
+
+  const fetchTests = useCallback(async () => {
+    setLoadingTests(true);
+    try {
+      const response = await testsService.getTests();
+      const testsData = response.data || response || [];
+      setTests(testsData);
+    } catch (error) {
+      console.error('Failed to fetch tests:', error);
+      setTests([]);
+    } finally {
+      setLoadingTests(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (activeTab === 'tests') {
-      fetchMissions();
+      fetchTests();
     }
-  }, [activeTab, fetchMissions]);
+  }, [activeTab, fetchTests]);
 
-  // Fetch classes and subjects when create tab is active or when editing
+  useEffect(() => {
+    if (!showQuestionGenerator) return;
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [showQuestionGenerator]);
+
+  useEffect(() => {
+    if (!snackbar) return;
+    const t = setTimeout(() => setSnackbar(null), 4000);
+    return () => clearTimeout(t);
+  }, [snackbar]);
+
   useEffect(() => {
     if (activeTab === 'create' || isEditMode) {
       fetchClasses();
@@ -112,64 +221,120 @@ const TestsQuizzes = () => {
     }
   }, [activeTab, isEditMode, fetchClasses, fetchSubjects]);
 
-  // Pre-fill form when editing a mission
   useEffect(() => {
-    if (editingMission && isEditMode) {
-      // Extract date from mission_date
-      const missionDate = editingMission.mission_date 
-        ? new Date(editingMission.mission_date).toISOString().split('T')[0]
+    if (selectedSubject) {
+      fetchModules(selectedSubject);
+      if (!isEditMode) setSelectedModulesChapters([]);
+    } else {
+      setModules([]);
+      if (!isEditMode) setSelectedModulesChapters([]);
+    }
+  }, [selectedSubject, fetchModules, isEditMode]);
+
+  const fetchManualModeTestQuestions = useCallback(async () => {
+    if (!selectedTest) return;
+    const testId = selectedTest.id || selectedTest.uuid;
+    setLoadingManualModeQuestions(true);
+    try {
+      const res = await testsService.getTestQuestions(testId);
+      const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+      setManualModeTestQuestions(list);
+    } catch (err) {
+      console.error('Failed to fetch test questions:', err);
+      setManualModeTestQuestions([]);
+    } finally {
+      setLoadingManualModeQuestions(false);
+    }
+  }, [selectedTest]);
+
+  useEffect(() => {
+    if (questionAddMode === 'manual' && selectedTest) {
+      fetchManualModeTestQuestions();
+    }
+  }, [questionAddMode, selectedTest, fetchManualModeTestQuestions]);
+
+  useEffect(() => {
+    if (editingTest && isEditMode) {
+      const dateValue = editingTest.test_datetime;
+      const testDate = dateValue 
+        ? new Date(dateValue).toISOString().split('T')[0]
         : '';
       
-      // Extract time from description if available, or leave empty
-      const timeMatch = editingMission.description?.match(/\d{1,2}:\d{2}/);
-      const missionTime = timeMatch ? timeMatch[0] : '';
+      let testTime = '';
+      if (editingTest.test_datetime) {
+        const dateTime = new Date(editingTest.test_datetime);
+        const hours = dateTime.getHours().toString().padStart(2, '0');
+        const minutes = dateTime.getMinutes().toString().padStart(2, '0');
+        if (hours !== '00' || minutes !== '00') {
+          testTime = `${hours}:${minutes}`;
+        }
+      }
       
       setFormData({
-        title: editingMission.title || '',
-        testDate: missionDate,
-        testTime: missionTime,
-        duration: editingMission.duration?.toString() || '',
-        notification: false // This might not be stored, defaulting to false
+        testDate,
+        testTime,
+        duration: editingTest.duration?.toString() || '',
       });
       
-      // Set selected subject and class
-      if (editingMission.subject) {
-        const subjectId = editingMission.subject?.id || editingMission.subject?.uuid || editingMission.subject;
+      if (editingTest.subject) {
+        const subjectId = editingTest.subject?.id || editingTest.subject?.uuid || editingTest.subject;
         setSelectedSubject(subjectId);
       }
       
-      if (editingMission.class_group) {
-        const classId = editingMission.class_group?.id || editingMission.class_group?.uuid || editingMission.class_group;
-        setSelectedClasses([classId]);
+      const cgs = editingTest.class_groups;
+      if (cgs && Array.isArray(cgs) && cgs.length > 0) {
+        const ids = cgs.map(c => c.id || c.uuid || c).filter(Boolean);
+        setSelectedClasses(ids);
+        setSelectedClass(ids.length === 1 ? ids[0] : '');
+      } else if (editingTest.class_group) {
+        const classId = editingTest.class_group?.id || editingTest.class_group?.uuid || editingTest.class_group;
+        setSelectedClass(classId);
+        setSelectedClasses(classId ? [classId] : []);
+      } else {
+        setSelectedClass('');
+        setSelectedClasses([]);
+      }
+
+      const mc = editingTest.module_chapters;
+      if (mc && Array.isArray(mc) && mc.length > 0) {
+        setSelectedModulesChapters(mc.map(({ module_id, module_name, chapters: chList }) => ({
+          moduleId: module_id,
+          moduleName: module_name || '',
+          chapterIds: (chList || []).map(c => c.id || c.uuid),
+          chapters: (chList || []).map(c => ({ id: c.id || c.uuid, title: c.title || '' }))
+        })));
+      } else {
+        setSelectedModulesChapters([]);
       }
     } else if (!isEditMode) {
-      // Reset form when not in edit mode
       setFormData({
-        title: '',
         testDate: '',
         testTime: '',
         duration: '',
-        notification: false
       });
-      setSelectedSubject('');
+      setSelectedClass('');
       setSelectedClasses([]);
+      setSelectedSubject('');
+      setSelectedModulesChapters([]);
     }
-  }, [editingMission, isEditMode]);
-
-  const handleClassToggle = (classId) => {
-    setSelectedClasses(prev => 
-      prev.includes(classId)
-        ? prev.filter(id => id !== classId)
-        : [...prev, classId]
-    );
-  };
+  }, [editingTest, isEditMode]);
 
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'testDate') {
+      const today = new Date().toISOString().split('T')[0];
+      setTestDateError(value && value < today ? 'Test date cannot be in the past.' : '');
+    }
+  };
+
+  const handleAIGenerationChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    let parsed = type === 'checkbox' ? checked : (type === 'number' ? parseInt(value) : value);
+    if (name === 'number_of_questions' && type === 'number') {
+      parsed = Math.min(20, Math.max(1, parsed || 1));
+    }
+    setAiFormData(prev => ({ ...prev, [name]: parsed }));
   };
 
   const handleSubmit = async (e) => {
@@ -177,21 +342,29 @@ const TestsQuizzes = () => {
     setError(null);
     setSuccess(false);
 
-    // Validation
-    if (!formData.title.trim()) {
-      setError('Test title is required');
-      return;
-    }
+    const moduleChaptersPayload = selectedModulesChapters
+      .filter(m => m.chapterIds && m.chapterIds.length > 0)
+      .map(m => ({ module: m.moduleId, chapters: m.chapterIds }));
+
     if (!selectedSubject) {
       setError('Please select a subject');
       return;
     }
-    if (selectedClasses.length === 0) {
-      setError('Please select at least one class');
+    const hasClass = selectedClass || (selectedClasses && selectedClasses.length > 0);
+    if (!hasClass) {
+      setError('Please select a class');
+      return;
+    }
+    if (!moduleChaptersPayload.length) {
+      setError('Please add at least one chapter and select at least one topic');
       return;
     }
     if (!formData.testDate) {
       setError('Test date is required');
+      return;
+    }
+    if (!formData.testTime) {
+      setError('Test time is required');
       return;
     }
     if (!formData.duration || parseInt(formData.duration) <= 0) {
@@ -202,148 +375,604 @@ const TestsQuizzes = () => {
     setSubmitting(true);
 
     try {
-      // Combine date and time into a datetime string
-      const missionDate = formData.testDate; // Just the date, backend expects date only
+      const testDateTime = formData.testTime 
+        ? `${formData.testDate}T${formData.testTime}:00`
+        : `${formData.testDate}T00:00:00`;
       
-      if (isEditMode && editingMission) {
-        // Update existing mission
-        const missionId = editingMission.id || editingMission.uuid;
-        const missionPayload = {
-          title: formData.title,
-          description: `Test scheduled for ${formData.testDate}${formData.testTime ? ` at ${formData.testTime}` : ''}`,
-          mission_date: missionDate,
+      const classIds = selectedClasses && selectedClasses.length > 0 ? selectedClasses : (selectedClass ? [selectedClass] : []);
+      if (classIds.length === 0) {
+        setError('Please select at least one class.');
+        setSubmitting(false);
+        return;
+      }
+
+      if (isEditMode && editingTest) {
+        const testId = editingTest.id || editingTest.uuid;
+        const testPayload = {
+          test_datetime: testDateTime,
           duration: parseInt(formData.duration),
           subject: selectedSubject,
-          class_group: selectedClasses[0], // In edit mode, we only update the single class
-          exp_multiplier: editingMission.exp_multiplier || '1.00',
-          base_exp: editingMission.base_exp || 10,
-          is_active: editingMission.is_active !== undefined ? editingMission.is_active : true
+          module_chapters: moduleChaptersPayload,
+          ...(classIds.length === 1 ? { class_group: classIds[0] } : {}),
+          ...(classIds.length >= 1 ? { class_groups: classIds } : {}),
         };
         
-        const updatedMission = await testsService.updateMission(missionId, missionPayload);
-        const missionData = updatedMission.data || updatedMission;
+        const updatedTest = await testsService.updateTest(testId, testPayload);
+        const testData = updatedTest.data || updatedTest;
         
-        setSuccess(true);
+        setSuccess(true, 'Test updated successfully!');
         setIsEditMode(false);
-        setEditingMission(null);
-        
-        // Reset form
+        setEditingTest(null);
         setFormData({
-          title: '',
           testDate: '',
           testTime: '',
           duration: '',
-          notification: false
         });
-        setSelectedSubject('');
+        setSelectedClass('');
         setSelectedClasses([]);
+        setSelectedSubject('');
+        setSelectedModulesChapters([]);
         
-        // Refresh missions list
-        await fetchMissions();
+        await fetchTests();
         
-        // Switch back to tests tab after a short delay
         setTimeout(() => {
           setActiveTab('tests');
         }, 1500);
       } else {
-        // Create one mission per selected class
-        const missionPromises = selectedClasses.map(classId => {
-          const missionPayload = {
-            title: formData.title,
-            description: `Test scheduled for ${formData.testDate}${formData.testTime ? ` at ${formData.testTime}` : ''}`,
-            mission_date: missionDate,
-            duration: parseInt(formData.duration),
-            subject: selectedSubject,
-            class_group: classId,
-            exp_multiplier: '1.00',
-            base_exp: 10,
-            is_active: true
-          };
-          return testsService.createMission(missionPayload);
-        });
-
-        const createdMissionsData = await Promise.all(missionPromises);
+        const testPayload = {
+          test_datetime: testDateTime,
+          duration: parseInt(formData.duration),
+          subject: selectedSubject,
+          module_chapters: moduleChaptersPayload,
+          ...(classIds.length === 1 ? { class_group: classIds[0] } : {}),
+          ...(classIds.length >= 1 ? { class_groups: classIds } : {}),
+        };
         
-        // Extract mission data from responses
-        const missions = createdMissionsData.map(res => res.data || res);
-        setCreatedMissions(missions);
+        const createdTest = await testsService.createTest(testPayload);
+        const resBody = createdTest?.data ?? createdTest;
+        const rawData = resBody?.data ?? resBody;
+        const isMultipleTests = Array.isArray(rawData) && rawData.length > 0;
+        const testData = isMultipleTests ? rawData[0] : rawData;
         
-        // If only one mission was created, automatically select it
-        if (missions.length === 1) {
-          setSelectedMission(missions[0]);
-          setShowQuestionForm(true);
+        const firstMc = moduleChaptersPayload[0];
+        const firstChapterId = firstMc?.chapters?.[0];
+        if (testData) {
+          testData._subjectId = testData.subject?.id || testData.subject?.uuid || testData.subject || selectedSubject;
+          testData._moduleId = firstMc?.module;
+          testData._chapterId = firstChapterId;
+          testData._moduleChapters = moduleChaptersPayload;
+          testData._classGroups = testData.class_groups || (testData.class_group ? [testData.class_group] : []);
+          if (isMultipleTests) {
+            testData._testIds = rawData.map((t) => t.id || t.uuid).filter(Boolean);
+            testData._isMultipleClassTest = true;
+          }
         }
         
-        setSuccess(true);
-        // Reset form
+        setSelectedTest(testData);
+        setShowQuestionGenerator(true);
+        setSuccess(true, 'Test created successfully! You can now add questions.');
+        setError(null);
+        
         setFormData({
-          title: '',
           testDate: '',
           testTime: '',
           duration: '',
-          notification: false
         });
-        setSelectedSubject('');
+        setSelectedClass('');
         setSelectedClasses([]);
-        
-        // Don't redirect, stay on create tab to add questions
       }
     } catch (error) {
       console.error(`Failed to ${isEditMode ? 'update' : 'create'} test:`, error);
-      setError(error.message || `Failed to ${isEditMode ? 'update' : 'create'} test. Please try again.`);
+      
+      let errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} test. Please try again.`;
+      
+      if (error.responseData) {
+        const apiError = error.responseData;
+        if (apiError.message) {
+          errorMessage = apiError.message;
+        } else if (apiError.errors) {
+          const errorMessages = Object.entries(apiError.errors)
+            .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+            .join('; ');
+          errorMessage = `Validation errors: ${errorMessages}`;
+        } else if (apiError.detail) {
+          errorMessage = apiError.detail;
+        } else if (typeof apiError === 'string') {
+          errorMessage = apiError;
+        }
+      } else if (error.response?.data) {
+        const apiError = error.response.data;
+        if (apiError.message) {
+          errorMessage = apiError.message;
+        } else if (apiError.detail) {
+          errorMessage = apiError.detail;
+        } else if (typeof apiError === 'string') {
+          errorMessage = apiError;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
+      setSuccess(false);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleEdit = (mission) => {
-    setEditingMission(mission);
-    setIsEditMode(true);
-    setActiveTab('create');
+  const handleGenerateQuestions = async () => {
+    if (!selectedTest) return;
+    
+    setGeneratingQuestions(true);
+    setGenerationError(null);
+    
+    try {
+      const subjectId = selectedTest._subjectId || selectedTest.subject?.id || selectedTest.subject?.uuid || selectedTest.subject || selectedSubject;
+      let subjectName = selectedTest.subject_name || selectedTest.subject?.name || '';
+      if (!subjectName && subjectId) subjectName = subjects.find(s => s.id === subjectId)?.name || '';
+      
+      const mcList = (selectedTest.module_chapters && selectedTest.module_chapters.length > 0)
+        ? selectedTest.module_chapters
+        : (selectedTest._moduleChapters || []);
+      
+      const module_chapters = [];
+      for (const mc of mcList) {
+        const moduleId = mc.module_id || mc.moduleId || mc.module;
+        const moduleName = mc.module_name || mc.moduleName || '';
+        const chapters = mc.chapters || [];
+        for (const ch of chapters) {
+          const chapterId = typeof ch === 'object' && ch !== null ? (ch.id || ch.uuid) : ch;
+          const chapterName = typeof ch === 'object' && ch !== null ? (ch.title || ch.chapter_name || '') : '';
+          if (moduleId && chapterId) {
+            module_chapters.push({
+              module_id: moduleId,
+              chapter_id: chapterId,
+              module_name: moduleName,
+              chapter_name: chapterName
+            });
+          }
+        }
+      }
+      
+      const numQ = parseInt(aiFormData.number_of_questions, 10);
+      if (isNaN(numQ) || numQ < 1 || numQ > 20) {
+        setGenerationError('Number of questions must be between 1 and 20.');
+        return;
+      }
+
+      if (!subjectId || !subjectName) {
+        setGenerationError('Missing subject information.');
+        return;
+      }
+      if (module_chapters.length === 0) {
+        setGenerationError('Test has no chapters/topics selected. Edit the test to add at least one chapter and topic.');
+        return;
+      }
+      
+      const testIds = selectedTest._testIds;
+      const singleTestId = selectedTest.id || selectedTest.uuid;
+      const useMultipleTests = Array.isArray(testIds) && testIds.length > 0;
+      if (!useMultipleTests && !singleTestId) {
+        setGenerationError('Test ID is missing. Please select the test again or create it first.');
+        return;
+      }
+
+      const classGroups = selectedTest._classGroups || selectedTest.class_groups || (selectedTest.class_group ? [selectedTest.class_group] : []);
+      const firstClass = Array.isArray(classGroups) && classGroups.length > 0 ? classGroups[0] : null;
+      let classContext = null;
+      if (firstClass) {
+        // Try to get name from class group object
+        classContext = firstClass.name || firstClass.class_name || firstClass.class_group_name;
+        // If not found, look it up from classes list
+        if (!classContext) {
+          const firstClassId = firstClass.id || firstClass.uuid || firstClass;
+          const foundClass = classes.find(c => (c.id || c.uuid) === firstClassId);
+          classContext = foundClass?.name || null;
+        }
+      }
+
+      const requestData = {
+        subject_id: subjectId,
+        subject_name: subjectName,
+        module_chapters,
+        number_of_questions: aiFormData.number_of_questions,
+        add_image: aiFormData.add_image,
+        use_matplot: aiFormData.use_matplot,
+        for_test: true,
+        ...(useMultipleTests ? { test_ids: testIds } : { test_id: singleTestId })
+      };
+      if (classContext) {
+        requestData.class_context = classContext;
+      }
+
+      const response = await aiService.generateAIQuestionsGemini(requestData);
+      const responseData = response.data || response;
+      const questions = responseData.data?.questions ?? responseData.questions;
+      
+      if (questions && questions.length > 0) {
+        setGeneratedQuestions(questions);
+        setSelectedGeneratedQuestionIds(new Set(questions.map(q => String(q.id || q.uuid)).filter(Boolean)));
+        setSuccess(true, `Successfully generated ${questions.length} questions!`);
+        
+        await fetchTests();
+      } else {
+        setGenerationError('No questions were generated. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating questions:', error);
+      let errorMessage = 'Failed to generate questions. Please try again.';
+      
+      if (error.responseData) {
+        const apiError = error.responseData;
+        if (apiError.message) {
+          errorMessage = apiError.message;
+        } else if (apiError.error) {
+          errorMessage = apiError.error;
+        } else if (typeof apiError === 'string') {
+          errorMessage = apiError;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setGenerationError(errorMessage);
+    } finally {
+      setGeneratingQuestions(false);
+    }
+  };
+
+  const handleEdit = async (test) => {
     setError(null);
     setSuccess(false);
+    setShowQuestionGenerator(false);
+    setEditTestQuestions([]);
+    const testId = test.id || test.uuid;
+    setLoadingTestForEdit(true);
+    try {
+      setLoadingEditQuestions(true);
+      const [fullTestRes, questionsRes] = await Promise.all([
+        testsService.getTestById(testId),
+        testsService.getTestQuestions(testId).catch(() => ({ data: [] })),
+      ]);
+      const testData = fullTestRes.data || fullTestRes;
+      const questionsList = Array.isArray(questionsRes?.data) ? questionsRes.data : (Array.isArray(questionsRes) ? questionsRes : []);
+      setEditingTest(testData);
+      setEditTestQuestions(questionsList);
+      setIsEditMode(true);
+      setActiveTab('create');
+    } catch (err) {
+      console.error('Failed to load test for edit:', err);
+      setError('Failed to load test details.');
+    } finally {
+      setLoadingEditQuestions(false);
+      setLoadingTestForEdit(false);
+    }
   };
 
   const handleCancelEdit = () => {
     setIsEditMode(false);
-    setEditingMission(null);
-    setFormData({
-      title: '',
-      testDate: '',
-      testTime: '',
-      duration: '',
-      notification: false
-    });
-    setSelectedSubject('');
+    setEditingTest(null);
+    setEditTestQuestions([]);
+    setLoadingTestForEdit(false);
+    setFormData({ testDate: '', testTime: '', duration: '' });
+    setSelectedClass('');
     setSelectedClasses([]);
+    setSelectedSubject('');
+    setSelectedModulesChapters([]);
     setError(null);
+    setShowQuestionGenerator(false);
+  };
+
+  const handleDeleteTest = async (test) => {
+    const testId = test.id || test.uuid;
+    const testTitle = test.title || `Test (${test.subject?.name || 'N/A'})`;
+    if (!window.confirm(`Are you sure you want to delete "${testTitle}"? This cannot be undone.`)) {
+      return;
+    }
+    setDeletingTestId(testId);
+    setError(null);
+    setSuccess(false);
+    try {
+      await testsService.deleteTest(testId);
+      setSuccess(true, 'Test deleted successfully.');
+      await fetchTests();
+    } catch (err) {
+      setError(err.message || 'Failed to delete test. Please try again.');
+    } finally {
+      setDeletingTestId(null);
+    }
+  };
+
+const openCreateQuestionModal = () => {
+    setManualQuestionForm({
+      question_text: '',
+      question_type: 'mcq_single',
+      difficulty_level: 'medium',
+      level: 1,
+      explanation: '',
+      options: [{ option_text: '', is_correct: false }, { option_text: '', is_correct: false }],
+    });
+    setManualQuestionError(null);
+    setShowCreateQuestionModal(true);
+  };
+
+  const handleCreateQuestionSubmit = async (e) => {
+    e.preventDefault();
+    setManualQuestionError(null);
+    if (!manualQuestionForm.question_text?.trim()) {
+      setManualQuestionError('Question text is required.');
+      return;
+    }
+    const needsOptions = ['mcq_single', 'mcq_multiple', 'rearrange'].includes(manualQuestionForm.question_type);
+    const isRearrange = manualQuestionForm.question_type === 'rearrange';
+    if (needsOptions) {
+      const validOptions = (manualQuestionForm.options || []).filter(o => (o.option_text || '').trim());
+      if (validOptions.length < 2) {
+        setManualQuestionError(isRearrange ? 'At least 2 items are required for rearrange.' : 'At least 2 options are required for MCQ.');
+        return;
+      }
+      if (!isRearrange) {
+        const hasCorrect = validOptions.some(o => o.is_correct);
+        if (!hasCorrect) {
+          setManualQuestionError('Please mark at least one option as correct.');
+          return;
+        }
+      }
+    }
+    const testId = selectedTest?.id || selectedTest?.uuid;
+    if (!testId) return;
+    setCreatingQuestion(true);
+    try {
+      const payload = {
+        question_text: manualQuestionForm.question_text.trim(),
+        question_type: manualQuestionForm.question_type,
+        difficulty_level: manualQuestionForm.difficulty_level,
+        level: manualQuestionForm.level || 1,
+        explanation: (manualQuestionForm.explanation || '').trim(),
+      };
+      if (needsOptions && manualQuestionForm.options?.length) {
+        payload.options = manualQuestionForm.options
+          .filter(o => (o.option_text || '').trim())
+          .map((o, i) => ({ option_text: o.option_text.trim(), is_correct: isRearrange ? true : !!o.is_correct, order: i + 1 }));
+      }
+      await testsService.createTestQuestion(testId, payload);
+      setShowCreateQuestionModal(false);
+      await fetchManualModeTestQuestions();
+      await fetchTests();
+    } catch (err) {
+      setManualQuestionError(err.message || 'Failed to create question.');
+    } finally {
+      setCreatingQuestion(false);
+    }
+  };
+
+  const addManualOption = () => {
+    setManualQuestionForm(prev => ({
+      ...prev,
+      options: [...(prev.options || []), { option_text: '', is_correct: false }],
+    }));
+  };
+
+  const removeManualOption = (index) => {
+    setManualQuestionForm(prev => ({
+      ...prev,
+      options: (prev.options || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateManualOption = (index, field, value) => {
+    setManualQuestionForm(prev => {
+      const opts = [...(prev.options || [])];
+      if (!opts[index]) return prev;
+      opts[index] = { ...opts[index], [field]: value };
+      return { ...prev, options: opts };
+    });
+  };
+
+  const openBankModal = async () => {
+    setShowBankModal(true);
+    setBankQuestions([]);
+    setSelectedBankQuestionIds(new Set());
+    const subjectId = selectedTest?._subjectId || selectedTest?.subject?.id || selectedTest?.subject?.uuid || selectedTest?.subject;
+    setLoadingBankQuestions(true);
+    try {
+      const res = await questionsService.getQuestions(subjectId ? { subject: subjectId } : {});
+      const list = res?.data ?? res ?? [];
+      setBankQuestions(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error('Failed to fetch questions:', err);
+      setBankQuestions([]);
+    } finally {
+      setLoadingBankQuestions(false);
+    }
+  };
+
+  const toggleBankQuestion = (qId) => {
+    const id = String(qId);
+    setSelectedBankQuestionIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleAddBankToTest = async () => {
+    const ids = [...selectedBankQuestionIds];
+    if (!ids.length) return;
+    const testId = selectedTest?.id || selectedTest?.uuid;
+    if (!testId) return;
+    setAddingBankToTest(true);
+    setManualQuestionError(null);
+    try {
+      await testsService.addTestQuestions(testId, ids);
+      setShowBankModal(false);
+      setSelectedBankQuestionIds(new Set());
+      await fetchManualModeTestQuestions();
+      await fetchTests();
+    } catch (err) {
+      setManualQuestionError(err.message || 'Failed to add questions to test.');
+    } finally {
+      setAddingBankToTest(false);
+    }
+  };
+
+  const toggleGeneratedQuestionSelection = (questionId) => {
+    const id = String(questionId);
+    setSelectedGeneratedQuestionIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllGeneratedQuestions = (selected) => {
+    if (selected) {
+      setSelectedGeneratedQuestionIds(new Set(generatedQuestions.map(q => String(q.id || q.uuid)).filter(Boolean)));
+    } else {
+      setSelectedGeneratedQuestionIds(new Set());
+    }
+  };
+
+  const handleRemoveEditQuestion = async (questionId) => {
+    if (!editingTest || !questionId) return;
+    const testId = editingTest.id || editingTest.uuid;
+    setRemovingQuestionId(questionId);
+    setError(null);
+    try {
+      await testsService.removeTestQuestions(testId, [questionId]);
+      setEditTestQuestions(prev => prev.filter(q => String(q.id || q.uuid) !== String(questionId)));
+      if (editingTest.question_count != null) {
+        setEditingTest(prev => prev ? { ...prev, question_count: Math.max(0, (prev.question_count ?? 0) - 1) } : null);
+      }
+    } catch (err) {
+      console.error('Failed to remove question:', err);
+      setError(err.message || 'Failed to remove question from test.');
+    } finally {
+      setRemovingQuestionId(null);
+    }
+  };
+
+  const handleDone = async () => {
+    const testId = selectedTest?.id || selectedTest?.uuid;
+    const generatedIds = (generatedQuestions || []).map(q => String(q.id || q.uuid)).filter(Boolean);
+    const selectedIds = generatedIds.filter(id => selectedGeneratedQuestionIds.has(id));
+    const deselectedIds = generatedIds.filter(id => !selectedGeneratedQuestionIds.has(id));
+
+    // Activate the questions the user kept (they were created inactive when for_test=true)
+    if (selectedIds.length > 0) {
+      try {
+        await aiService.activateAIQuestions(selectedIds);
+      } catch (err) {
+        console.error('Failed to activate selected questions:', err);
+        setGenerationError(err.message || 'Failed to activate selected questions.');
+        return;
+      }
+    }
+
+    // Remove deselected questions from the test
+    if (testId && deselectedIds.length > 0) {
+      try {
+        await testsService.removeTestQuestions(testId, deselectedIds);
+      } catch (err) {
+        console.error('Failed to remove deselected questions:', err);
+        setGenerationError(err.message || 'Failed to remove deselected questions.');
+        return;
+      }
+    }
+
+    setActiveTab('tests');
+    setShowQuestionGenerator(false);
+    setSelectedTest(null);
+    setGeneratedQuestions([]);
+    setSelectedGeneratedQuestionIds(new Set());
+    setGenerationError(null);
+    setSuccess(false);
+    setSelectedSubject('');
+    setSelectedModulesChapters([]);
+    fetchTests();
+  };
+
+  const addModule = async (moduleId) => {
+    if (!moduleId || selectedModulesChapters.some(m => m.moduleId === moduleId)) return;
+    const mod = modules.find(m => m.id === moduleId);
+    if (!mod) return;
+    setChaptersLoadingFor(moduleId);
+    const chaptersList = await fetchChaptersForModule(moduleId);
+    setChaptersLoadingFor(null);
+    setSelectedModulesChapters(prev => [...prev, {
+      moduleId: mod.id,
+      moduleName: mod.name,
+      chapterIds: [],
+      chapters: chaptersList
+    }]);
+  };
+
+  const removeModule = (moduleId) => {
+    setSelectedModulesChapters(prev => prev.filter(m => m.moduleId !== moduleId));
+  };
+
+  const toggleChapter = (moduleId, chapterId) => {
+    setSelectedModulesChapters(prev => prev.map(m => {
+      if (m.moduleId !== moduleId) return m;
+      const has = (m.chapterIds || []).includes(chapterId);
+      return {
+        ...m,
+        chapterIds: has ? (m.chapterIds || []).filter(id => id !== chapterId) : [...(m.chapterIds || []), chapterId]
+      };
+    }));
+  };
+
+  const selectAllChapters = (moduleId, select) => {
+    setSelectedModulesChapters(prev => prev.map(m => {
+      if (m.moduleId !== moduleId) return m;
+      return { ...m, chapterIds: select ? (m.chapters || []).map(c => c.id) : [] };
+    }));
   };
 
   return (
-    <div className="p-6 animate-fade-in">
-      {/* Header */}
+    <div className="p-6 animate-fade-in bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 animate-slide-down">Tests & Quizzes</h1>
+        <h1 className="text-4xl font-bold text-gray-800 animate-slide-down mb-2">Tests & Quizzes</h1>
+        <p className="text-gray-600">Create and manage tests for your students</p>
       </div>
 
-      {/* Tabs */}
       <div className="mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
+        <div className="border-b border-gray-200 bg-white rounded-t-lg shadow-sm">
+          <nav className="-mb-px flex space-x-8 px-6">
             <button
               onClick={() => {
+                if (showQuestionGenerator) {
+                  setPendingLeaveAction(() => () => {
+                    if (isEditMode) handleCancelEdit();
+                    setSuccess(false);
+                    setActiveTab('tests');
+                    setShowQuestionGenerator(false);
+                    setSelectedTest(null);
+                    setGeneratedQuestions([]);
+                    setSelectedGeneratedQuestionIds(new Set());
+                    setGenerationError(null);
+                  });
+                  setShowLeaveGeneratorModal(true);
+                  return;
+                }
                 if (isEditMode) {
                   handleCancelEdit();
                 }
+                setSuccess(false);
                 setActiveTab('tests');
               }}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-300 transform hover:scale-105 ${
-                activeTab === 'tests'
-                  ? 'border-blue-500 text-blue-600'
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
+                activeTab === 'tests' 
+                  ? 'border-primary-500 text-primary-600' 
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              All Tests
+              <div className="flex items-center space-x-2">
+                <FileText className="h-5 w-5" />
+                <span>All Tests</span>
+              </div>
             </button>
             <button
               onClick={() => {
@@ -352,13 +981,16 @@ const TestsQuizzes = () => {
                 }
                 setActiveTab('create');
               }}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-300 transform hover:scale-105 ${
-                activeTab === 'create'
-                  ? 'border-blue-500 text-blue-600'
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
+                activeTab === 'create' 
+                  ? 'border-primary-500 text-primary-600' 
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              Create New Test
+              <div className="flex items-center space-x-2">
+                <Plus className="h-5 w-5" />
+                <span>Create New Test</span>
+              </div>
             </button>
           </nav>
         </div>
@@ -366,91 +998,116 @@ const TestsQuizzes = () => {
 
       {activeTab === 'tests' && (
         <div className="space-y-6">
-          {loadingMissions ? (
-            <div className="text-center py-8">
-              <div className="text-gray-500">Loading missions...</div>
+          {loadingTests ? (
+            <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+              <Loader2 className="h-8 w-8 animate-spin text-primary-500 mx-auto mb-4" />
+              <div className="text-gray-500">Loading tests...</div>
             </div>
-          ) : missions.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-gray-500">No past missions found.</div>
+          ) : tests.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <div className="text-gray-500">No tests found. Create your first test!</div>
             </div>
           ) : (
-            missions.map((mission, index) => {
-              // Format mission date
-              const missionDate = mission.mission_date 
-                ? new Date(mission.mission_date).toLocaleDateString('en-US', { 
+            tests.map((test, index) => {
+              const dateValue = test.test_datetime;
+              const testDate = dateValue 
+                ? new Date(dateValue).toLocaleDateString('en-US', { 
                     year: 'numeric', 
                     month: 'long', 
-                    day: 'numeric' 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
                   })
                 : 'N/A';
               
-              // Get class name
-              const className = mission.class_group?.name || mission.class_group || 'N/A';
-              
-              // Get subject name
-              const subjectName = mission.subject?.name || mission.subject || 'N/A';
+              const className = test.class_group_name || test.class_group?.name || 'N/A';
+              const subjectName = test.subject_name || test.subject?.name || 'N/A';
+              const testName = test.name || `${subjectName} ${className}`.trim() || 'Test';
+              const scopeSummary = test.module_chapters_summary && Array.isArray(test.module_chapters_summary) && test.module_chapters_summary.length > 0
+                ? test.module_chapters_summary.join(' • ')
+                : (test.module_chapters && test.module_chapters.length > 0
+                  ? test.module_chapters.map(mc => `${mc.module_name}: ${(mc.chapters || []).map(c => c.title).join(', ')}`).join(' • ')
+                  : '');
+              const questionCount = test.question_count || 0;
               
               return (
             <div 
-              key={mission.id || mission.uuid || index} 
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 transform hover:scale-105 transition-all duration-300 hover:shadow-lg animate-slide-up"
-              style={{animationDelay: `${0.1 + index * 0.1}s`}}
+                  key={test.id || test.uuid || index} 
+                  className="bg-white rounded-xl shadow-md border border-gray-200 p-6 transform hover:scale-[1.01] transition-all duration-300 hover:shadow-xl"
             >
               <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800">{mission.title}</h3>
-                  <p className="text-gray-600">{className} / {subjectName} | Mission Date: {missionDate}</p>
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                        {testName}
+                      </h3>
+                      {scopeSummary ? (
+                        <p className="text-sm text-gray-500 mb-2">{scopeSummary}</p>
+                      ) : null}
+                      <div className="flex items-center space-x-4 text-gray-600 text-sm">
+                        <div className="flex items-center space-x-1">
+                          <Users className="h-4 w-4" />
+                          <span>{className}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <BookOpen className="h-4 w-4" />
+                          <span>{subjectName}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Clock className="h-4 w-4" />
+                          <span>{testDate}</span>
+                        </div>
+                      </div>
                 </div>
                 <div className="flex items-center space-x-2">
+                  {(!test.test_datetime || new Date(test.test_datetime) > new Date()) && (
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(test)}
+                      className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-all duration-300 flex items-center space-x-2"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      <span>Edit</span>
+                    </button>
+                  )}
                   <button
-                    onClick={() => handleEdit(mission)}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg"
+                    type="button"
+                    onClick={() => handleDeleteTest(test)}
+                    disabled={deletingTestId === (test.id || test.uuid)}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center space-x-2"
                   >
-                    <Edit className="h-4 w-4" />
-                    <span>Edit Test</span>
+                    {deletingTestId === (test.id || test.uuid) ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    <span>{deletingTestId === (test.id || test.uuid) ? 'Deleting...' : 'Delete'}</span>
                   </button>
-                  <Link 
-                    to="/tests/performance/priya-sharma"
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105 hover:shadow-lg"
+                  <Link
+                        to={`/tests/performance/${test.id || test.uuid}`}
+                        className="text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2 transform hover:scale-105"
+                    style={{ backgroundColor: '#00167a' }}
                   >
-                    <span className="transform transition-transform duration-200 hover:rotate-12">📊</span>
+                        <span>📊</span>
                     <span>View Results</span>
                   </Link>
                 </div>
               </div>
 
-              {/* Mission Details */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="text-center transform hover:scale-105 transition-all duration-300 animate-count-up" style={{animationDelay: '0.2s'}}>
-                  <div className="text-2xl font-bold text-blue-600">{mission.duration || 'N/A'}</div>
-                  <div className="text-sm text-gray-600">Duration (min)</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                    <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+                      <div className="text-3xl font-bold text-blue-600">{test.duration || 'N/A'}</div>
+                      <div className="text-sm text-gray-600 mt-1">Duration (min)</div>
                 </div>
-                <div className="text-center transform hover:scale-105 transition-all duration-300 animate-count-up" style={{animationDelay: '0.3s'}}>
-                  <div className="text-2xl font-bold text-green-600">{mission.base_exp || 0}</div>
-                  <div className="text-sm text-gray-600">Base EXP</div>
+                    <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
+                      <div className="text-3xl font-bold text-green-600">{questionCount}</div>
+                      <div className="text-sm text-gray-600 mt-1">Questions</div>
                 </div>
-                <div className="text-center transform hover:scale-105 transition-all duration-300 animate-count-up" style={{animationDelay: '0.4s'}}>
-                  <div className="text-2xl font-bold text-purple-600">{mission.exp_multiplier || '1.00'}</div>
-                  <div className="text-sm text-gray-600">EXP Multiplier</div>
+                    <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+                      <div className="text-3xl font-bold text-purple-600">{className}</div>
+                      <div className="text-sm text-gray-600 mt-1">Class</div>
                 </div>
-                <div className="text-center transform hover:scale-105 transition-all duration-300 animate-count-up" style={{animationDelay: '0.5s'}}>
-                  <div className="text-2xl font-bold text-gray-800">{mission.questions?.length || 0}</div>
-                  <div className="text-sm text-gray-600">Questions</div>
                 </div>
-              </div>
-
-              {/* Mission Description */}
-              {mission.description && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 transform hover:scale-105 transition-all duration-300 animate-slide-up" style={{animationDelay: '0.6s'}}>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-blue-600 transform transition-transform duration-200 hover:rotate-12">📝</span>
-                    <span className="text-sm font-medium text-blue-800">
-                      {mission.description}
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
               );
             })
@@ -458,593 +1115,883 @@ const TestsQuizzes = () => {
         </div>
       )}
 
-      {activeTab === 'create' && !showQuestionForm && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              {isEditMode ? 'Edit Test' : 'Create New Test'}
+      {activeTab === 'create' && !showQuestionGenerator && (
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="px-8 py-6 text-white" style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}>
+            <h2 className="text-3xl font-bold mb-2">
+              {isEditMode ? '✏️ Edit Test' : '➕ Create New Test'}
             </h2>
-            <p className="text-gray-600">
-              {isEditMode ? 'Update the details for this test.' : 'Enter the basic details for your new test.'}
+            <p className="text-accent-500/50">
+              {isEditMode ? 'Update the details for this test.' : 'Fill in the details below to create a new test for your students.'}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                {error}
+          <div className="p-8">
+            {loadingTestForEdit ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-4 text-gray-500">
+                <Loader2 className="h-12 w-12 animate-spin text-primary-500" />
+                <p className="text-lg font-medium">Loading test details...</p>
               </div>
-            )}
-            {success && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-                {isEditMode ? 'Test updated successfully!' : 'Test created successfully! Redirecting...'}
-              </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Test Title</label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                placeholder="e.g., 'Modern Physics - Chapter 1 Test'"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
-              <select 
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                disabled={loadingSubjects}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option value="">{loadingSubjects ? 'Loading subjects...' : 'Select Subject'}</option>
-                {subjects.map((subject) => (
-                  <option key={subject.id} value={subject.id}>
-                    {subject.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Class(es) to Assign</label>
-              <div className="border border-gray-300 rounded-lg p-4 max-h-40 overflow-y-auto">
-                {loadingClasses ? (
-                  <div className="text-center text-gray-500 py-4">Loading classes...</div>
-                ) : classes.length === 0 ? (
-                  <div className="text-center text-gray-500 py-4">No classes available</div>
-                ) : (
-                  classes.map((cls) => (
-                    <label key={cls.id} className="flex items-center space-x-2 mb-2">
-                      <input 
-                        type="checkbox" 
-                        checked={selectedClasses.includes(cls.id)}
-                        onChange={() => handleClassToggle(cls.id)}
-                        disabled={isEditMode}
-                        className="rounded" 
-                      />
-                      <span>{cls.name}</span>
+            ) : (
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                  <span className="text-primary-500">📚</span>
+                  <span>Subject & Classes</span>
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Subject <span className="text-red-500">*</span>
                     </label>
-                  ))
-                )}
+                    <select 
+                      value={selectedSubject}
+                      onChange={(e) => setSelectedSubject(e.target.value)}
+                      disabled={loadingSubjects}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    >
+                      <option value="">{loadingSubjects ? 'Loading subjects...' : 'Select Subject'}</option>
+                      {subjects.map((subject) => (
+                        <option key={subject.id} value={subject.id}>
+                          {subject.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Classes <span className="text-red-500">*</span> <span className="text-gray-500 font-normal">(select one or more)</span>
+                    </label>
+                    {loadingClasses ? (
+                      <p className="text-gray-500 text-sm">Loading classes...</p>
+                    ) : (
+                      <div className="border-2 border-gray-200 rounded-xl p-3 bg-white max-h-40 overflow-y-auto space-y-2">
+                        {classes.map((cls) => {
+                          const id = cls.id || cls.uuid;
+                          const isChecked = selectedClasses.includes(id) || (selectedClass && selectedClass === id);
+                          return (
+                            <label key={id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded-lg">
+                              <input
+                                type="checkbox"
+                                checked={!!isChecked}
+                                disabled={isEditMode}
+                                onChange={() => {
+                                  if (isEditMode) return;
+                                  const next = selectedClasses.includes(id)
+                                    ? selectedClasses.filter(c => c !== id)
+                                    : [...selectedClasses, id];
+                                  setSelectedClasses(next);
+                                  setSelectedClass(next.length === 1 ? next[0] : '');
+                                }}
+                                className="h-4 w-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                              />
+                              <span className="text-gray-800">{cls.name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {(selectedClasses.length > 0 || selectedClass) && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        {selectedClasses.length || (selectedClass ? 1 : 0)} class(es) selected
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
-              <p className="text-sm text-gray-500 mt-2">
-                {isEditMode ? 'Class cannot be changed when editing a test.' : 'Select multiple classes to assign this test.'}
-              </p>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Test Date</label>
+              {selectedSubject && (
+                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <span className="text-blue-500">📖</span>
+                    <span>Chapters & Topics</span>
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">Add one or more chapters and select topics for each. At least one topic must be selected.</p>
+                  <div className="flex flex-wrap items-end gap-3 mb-6">
+                    <div className="flex-1 min-w-[200px]">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Add chapter</label>
+                      <select
+                        id="add-module-select"
+                        disabled={loadingModules}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white disabled:bg-gray-100"
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v) addModule(v);
+                          e.target.value = '';
+                        }}
+                      >
+                        <option value="">{loadingModules ? 'Loading chapters...' : 'Select chapter to add'}</option>
+                        {modules
+                          .filter(m => !selectedModulesChapters.some(s => s.moduleId === m.id))
+                          .map(m => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                          ))}
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const sel = document.getElementById('add-module-select');
+                        if (sel?.value) addModule(sel.value);
+                        if (sel) sel.value = '';
+                      }}
+                      className="px-4 py-3 rounded-xl font-medium text-white transition-all"
+                      style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
+                    >
+                      Add chapter
+                    </button>
+                  </div>
+                  {selectedModulesChapters.length > 0 && (
+                    <div className="space-y-4">
+                      {selectedModulesChapters.map(({ moduleId, moduleName, chapterIds, chapters }) => (
+                        <div key={moduleId} className="bg-white rounded-lg border border-gray-200 p-4">
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="font-semibold text-gray-800">{moduleName}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeModule(moduleId)}
+                              className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
+                            >
+                              <X className="h-4 w-4" /> Remove
+                            </button>
+                          </div>
+                          {chaptersLoadingFor === moduleId ? (
+                            <div className="flex items-center gap-2 text-gray-500 text-sm">
+                              <Loader2 className="h-4 w-4 animate-spin" /> Loading topics...
+                            </div>
+                          ) : chapters && chapters.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={(chapterIds || []).length === (chapters || []).length}
+                                  onChange={(e) => selectAllChapters(moduleId, e.target.checked)}
+                                  className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                                />
+                                <span className="text-gray-600">Select all</span>
+                              </label>
+                              {(chapters || []).map(ch => (
+                                <label key={ch.id} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 cursor-pointer text-sm">
+                                  <input
+                                    type="checkbox"
+                                    checked={(chapterIds || []).includes(ch.id)}
+                                    onChange={() => toggleChapter(moduleId, ch.id)}
+                                    className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                                  />
+                                  <span>{ch.title}</span>
+                                </label>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500">No topics in this chapter.</p>
+                          )}
+                          {(chapterIds || []).length > 0 && (
+                            <p className="text-xs text-green-600 mt-2">{chapterIds.length} topic(s) selected</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                  <span className="text-purple-600">📅</span>
+                  <span>Schedule & Duration</span>
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Test Date <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      name="testDate"
+                      value={formData.testDate}
+                      onChange={handleInputChange}
+                      min={new Date().toISOString().split('T')[0]}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white ${testDateError ? 'border-red-500' : 'border-gray-200'}`}
+                      required
+                    />
+                    {testDateError && (
+                      <p className="mt-1 text-sm text-red-600">{testDateError}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Test Time <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      ref={timeInputRef}
+                      type="time"
+                      name="testTime"
+                      value={formData.testTime}
+                      onChange={(e) => { handleInputChange(e); timeInputRef.current?.blur(); }}
+                      required
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
+                    />
+                  </div>
+                  <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Duration (minutes) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="duration"
+                    value={formData.duration}
+                    onChange={handleInputChange}
+                    placeholder="e.g., 60"
+                    min="1"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
+                    required
+                  />
+                </div>
+                </div>
+              </div>
+
+              {isEditMode && editingTest && (
+                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <span className="text-green-600">📝</span>
+                    <span>Questions in this test</span>
+                    {(editingTest.question_count ?? editTestQuestions.length) > 0 && (
+                      <span className="text-sm font-normal text-gray-500">
+                        ({(editingTest.question_count ?? editTestQuestions.length)})
+                      </span>
+                    )}
+                  </h3>
+                  {loadingEditQuestions ? (
+                    <div className="flex items-center justify-center py-8 gap-2 text-gray-500">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <span>Loading questions...</span>
+                    </div>
+                  ) : editTestQuestions.length === 0 ? (
+                    <p className="text-sm text-gray-500 py-4">No questions yet. Use &quot;Generate more questions&quot; below to add questions with AI.</p>
+                  ) : (
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {editTestQuestions.map((q, index) => {
+                        const qId = q.id || q.uuid;
+                        const isRemoving = removingQuestionId === qId;
+                        return (
+                          <div key={qId || index} className="bg-white rounded-lg border border-gray-200 p-3 flex items-start gap-3">
+                            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-sm font-semibold">
+                              {index + 1}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm text-gray-800 line-clamp-2">{q.question_text}</p>
+                              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                                  {q.question_type?.replace('_', ' ') || 'MCQ'}
+                                </span>
+                                {q.difficulty_level && (
+                                  <span className="text-xs px-2 py-0.5 rounded bg-amber-50 text-amber-700">
+                                    {q.difficulty_level}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveEditQuestion(qId)}
+                              disabled={isRemoving}
+                              className="flex-shrink-0 p-2 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              title="Remove question from test"
+                            >
+                              {isRemoving ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-5 w-5" />
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {isEditMode && editingTest && !loadingEditQuestions && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const testData = editingTest;
+                        testData._subjectId = testData.subject?.id || testData.subject?.uuid || testData.subject;
+                        testData._moduleChapters = testData.module_chapters;
+                        setSelectedTest(testData);
+                        setShowQuestionGenerator(true);
+                      }}
+                      className="mt-4 px-4 py-2 rounded-lg font-medium text-white flex items-center gap-2"
+                      style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      Generate more questions
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  disabled={submitting}
+                  className="px-8 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting || !!testDateError}
+                  className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>{isEditMode ? 'Updating...' : 'Creating...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{isEditMode ? 'Update Test' : 'Create Test'}</span>
+                      <span className="text-xl">→</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'create' && showQuestionGenerator && selectedTest && (
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="px-8 py-6 text-white" style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}>
+            <div className="flex items-center justify-between">
+          <div>
+                <h2 className="text-3xl font-bold mb-2 flex items-center space-x-2">
+                  <Sparkles className="h-8 w-8" />
+                  <span>{questionAddMode === 'ai' ? 'Generate Questions with AI' : 'Add Questions Manually'}</span>
+                </h2>
+                <p className="text-accent-500/50">
+                  {questionAddMode === 'ai'
+                    ? 'Use Vertex AI to automatically generate questions for your test'
+                    : 'Create new questions or add existing ones from the question bank'}
+            </p>
+          </div>
+        </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                type="button"
+                onClick={() => setQuestionAddMode('ai')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${questionAddMode === 'ai' ? 'bg-white/20 text-white' : 'bg-white/10 text-white/80 hover:bg-white/15'}`}
+              >
+                <Sparkles className="h-4 w-4 inline mr-2" />
+                Generate with AI
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuestionAddMode('manual')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${questionAddMode === 'manual' ? 'bg-white/20 text-white' : 'bg-white/10 text-white/80 hover:bg-white/15'}`}
+              >
+                <FileText className="h-4 w-4 inline mr-2" />
+                Add manually
+              </button>
+            </div>
+          </div>
+
+          <div className="p-8">
+            {questionAddMode === 'manual' && manualQuestionError && (
+              <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-start space-x-3 mb-6">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700">{manualQuestionError}</p>
+              </div>
+            )}
+            {questionAddMode === 'ai' && (
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200 mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                <Sparkles className="h-5 w-5 text-blue-600" />
+                <span>AI Generation Settings</span>
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Questions will be generated with a <strong>mix of question types</strong> (MCQ single/multiple, rearrange) and a <strong>mix of difficulty levels</strong> (1–5) across all selected chapters and topics.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Number of Questions <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="number_of_questions"
+                    value={aiFormData.number_of_questions}
+                    onChange={handleAIGenerationChange}
+                    min="1"
+                    max="20"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white"
+                  />
+                </div>
+                <div className="flex items-center space-x-3 pt-8">
                 <input
-                  type="date"
-                  name="testDate"
-                  value={formData.testDate}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  type="checkbox"
+                    id="add_image"
+                    name="add_image"
+                    checked={aiFormData.add_image}
+                    onChange={handleAIGenerationChange}
+                  className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                  <label htmlFor="add_image" className="text-sm font-medium text-gray-700">
+                    Generate images for questions
+                </label>
+              </div>
+                <div className="flex items-center space-x-3 pt-2">
+                <input
+                  type="checkbox"
+                  id="use_matplot"
+                  name="use_matplot"
+                  checked={aiFormData.use_matplot}
+                  onChange={handleAIGenerationChange}
+                  disabled={!aiFormData.add_image}
+                  className="h-5 w-5 text-primary-500 focus:ring-primary-500 border-gray-300 rounded disabled:opacity-50"
+                />
+                  <label htmlFor="use_matplot" className="text-sm font-medium text-gray-700">
+                    Use matplotlib (Vertex Gemini code)
+                  </label>
+              </div>
+            </div>
+          </div>
+            )}
+
+            {questionAddMode === 'manual' && (
+              <div className="space-y-6 mb-6">
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={openCreateQuestionModal}
+                    className="px-4 py-2 rounded-lg font-medium text-white flex items-center gap-2"
+                    style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' }}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create new question
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openBankModal}
+                    className="px-4 py-2 rounded-lg font-medium border-2 border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    style={{ display: 'none' }}
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    Add from question bank
+                  </button>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Questions in this test</h3>
+                  {loadingManualModeQuestions ? (
+                    <div className="flex items-center gap-2 text-gray-500 py-4">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Loading...
+                    </div>
+                  ) : manualModeTestQuestions.length === 0 ? (
+                    <p className="text-sm text-gray-500 py-4">No questions yet. Create one or add from the question bank.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {manualModeTestQuestions.map((q, index) => (
+                        <div key={q.id || q.uuid || index} className="bg-white rounded-lg border border-gray-200 p-3 flex items-start gap-3">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-sm font-semibold">
+                            {index + 1}
+                          </span>
+                          <p className="text-sm text-gray-800 line-clamp-2 flex-1">{q.question_text}</p>
+                          <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                            {q.question_type?.replace('_', ' ') || 'MCQ'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {questionAddMode === 'ai' && generatedQuestions.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                  <h3 className="text-lg font-semibold text-gray-800">Generated Questions — select which to keep</h3>
+                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedGeneratedQuestionIds.size === generatedQuestions.length}
+                      onChange={(e) => selectAllGeneratedQuestions(e.target.checked)}
+                      className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                    />
+                    <span>Select all</span>
+                  </label>
+                </div>
+                <p className="text-sm text-gray-500 mb-3">
+                  Deselected questions will be removed from the test and marked inactive (they will not be given to students).
+                </p>
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {generatedQuestions.map((question, index) => {
+                    const qId = String(question.id || question.uuid || '');
+                    const isSelected = qId && selectedGeneratedQuestionIds.has(qId);
+                    return (
+                      <div
+                        key={question.id || index}
+                        className={`rounded-lg p-4 border-2 transition-colors ${isSelected ? 'bg-gray-50 border-gray-200' : 'bg-gray-100 border-gray-300 opacity-75'}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <label className="flex-shrink-0 mt-0.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleGeneratedQuestionSelection(question.id || question.uuid)}
+                              className="h-5 w-5 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                            />
+                          </label>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between mb-2 flex-wrap gap-2">
+                              <span className="text-sm font-semibold text-gray-600">Question {index + 1}</span>
+                              <div className="flex items-center gap-2">
+                                {question.level != null && (
+                                  <span className="text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded">
+                                    Level {question.level}
+                                  </span>
+                                )}
+                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                                  {question.question_type?.replace('_', ' ') || 'MCQ'}
+                                </span>
+                                <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
+                                  2 XP
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-gray-800 mb-2">{question.question_text}</p>
+                            {question.image && (
+                              <div className="mb-2">
+                                <img
+                                  src={question.image.startsWith('http') ? question.image : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${question.image}`}
+                                  alt="Question illustration"
+                                  className="max-w-full max-h-48 rounded-lg border border-gray-200 object-contain"
+                                  onError={(e) => { e.target.style.display = 'none' }}
+                                />
+                              </div>
+                            )}
+                            {question.options && question.options.length > 0 && (
+                              <div className="ml-0 space-y-1">
+                                {question.options.map((option, optIndex) => (
+                                  <div key={optIndex} className={`text-sm ${option.is_correct ? 'text-green-700 font-semibold' : 'text-gray-600'}`}>
+                                    {option.is_correct && '✓ '}
+                                    {option.option_text}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {question.hint && (
+                              <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded-lg overflow-hidden">
+                                <p className="text-xs font-semibold text-amber-700 mb-0.5">Hint</p>
+                                <p className="text-xs text-amber-800 break-words whitespace-pre-wrap">{question.hint}</p>
+                              </div>
+                            )}
+                            {question.explanation && (
+                              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg overflow-hidden">
+                                <p className="text-xs font-semibold text-blue-700 mb-0.5">Explanation</p>
+                                <p className="text-xs text-blue-800 break-words whitespace-pre-wrap">{question.explanation}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  {selectedGeneratedQuestionIds.size} of {generatedQuestions.length} selected to keep in test.
+                </p>
+              </div>
+            )}
+
+          <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+            {questionAddMode === 'manual' ? (
+              <button
+                type="button"
+                onClick={handleDone}
+                className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2"
+                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
+              >
+                <CheckCircle2 className="h-5 w-5" />
+                <span>Done</span>
+              </button>
+            ) : generatedQuestions.length > 0 ? (
+              <button
+                type="button"
+                onClick={handleDone}
+                className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2"
+                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
+              >
+                <CheckCircle2 className="h-5 w-5" />
+                <span>Done</span>
+              </button>
+            ) : (
+              <>
+<button
+                  onClick={handleGenerateQuestions}
+                  disabled={generatingQuestions || !selectedTest}
+                  className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
+                >
+                  {generatingQuestions ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5" />
+                      <span>Generate Questions</span>
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+          </div>
+      </div>
+        </div>
+      )}
+
+      {showCreateQuestionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => !creatingQuestion && setShowCreateQuestionModal(false)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-800">Create new question</h3>
+              <button type="button" onClick={() => !creatingQuestion && setShowCreateQuestionModal(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateQuestionSubmit} className="p-6 space-y-4">
+              {manualQuestionError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">{manualQuestionError}</div>
+              )}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Question text <span className="text-red-500">*</span></label>
+                <textarea
+                  value={manualQuestionForm.question_text}
+                  onChange={e => setManualQuestionForm(prev => ({ ...prev, question_text: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Enter the question..."
                   required
                 />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Type</label>
+                  <select
+                    value={manualQuestionForm.question_type}
+                    onChange={e => setManualQuestionForm(prev => ({ ...prev, question_type: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="mcq_single">MCQ (Single)</option>
+                    <option value="mcq_multiple">MCQ (Multiple)</option>
+                    <option value="rearrange">Rearrange</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Level</label>
+                  <select
+                    value={manualQuestionForm.level}
+                    onChange={e => setManualQuestionForm(prev => ({ ...prev, level: parseInt(e.target.value) }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value={1}>Level 1</option>
+                    <option value={2}>Level 2</option>
+                    <option value={3}>Level 3</option>
+                    <option value={4}>Level 4</option>
+                    <option value={5}>Level 5</option>
+                  </select>
+                </div>
+              </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Test Time</label>
-                <input
-                  type="time"
-                  name="testTime"
-                  value={formData.testTime}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Difficulty</label>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'easy', label: 'Easy', active: 'bg-green-500 text-white border-green-500', inactive: 'bg-white text-green-700 border-green-300 hover:bg-green-50' },
+                    { value: 'medium', label: 'Medium', active: 'bg-yellow-500 text-white border-yellow-500', inactive: 'bg-white text-yellow-700 border-yellow-300 hover:bg-yellow-50' },
+                    { value: 'hard', label: 'Hard', active: 'bg-red-500 text-white border-red-500', inactive: 'bg-white text-red-700 border-red-300 hover:bg-red-50' },
+                  ].map(({ value, label, active, inactive }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setManualQuestionForm(prev => ({ ...prev, difficulty_level: value }))}
+                      className={`flex-1 py-2 px-3 rounded-lg border-2 text-sm font-semibold transition-all duration-200 ${manualQuestionForm.difficulty_level === value ? active : inactive}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Explanation (optional)</label>
+                <textarea
+                  value={manualQuestionForm.explanation}
+                  onChange={e => setManualQuestionForm(prev => ({ ...prev, explanation: e.target.value }))}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="Explanation for the correct answer"
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Duration (in minutes)</label>
-              <input
-                type="number"
-                name="duration"
-                value={formData.duration}
-                onChange={handleInputChange}
-                placeholder="e.g., 60"
-                min="1"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input 
-                type="checkbox" 
-                id="notification" 
-                name="notification"
-                checked={formData.notification}
-                onChange={handleInputChange}
-                className="rounded" 
-              />
-              <label htmlFor="notification" className="text-sm text-gray-700">
-                30-minute prior auto-notification to students
-              </label>
-            </div>
-
-            <div className="flex justify-end space-x-4">
-              <button
-                type="button"
-                onClick={() => {
-                  if (isEditMode) {
-                    handleCancelEdit();
-                  } else {
-                    setFormData({
-                      title: '',
-                      testDate: '',
-                      testTime: '',
-                      duration: '',
-                      notification: false
-                    });
-                    setSelectedSubject('');
-                    setSelectedClasses([]);
-                    setError(null);
-                  }
-                }}
-                disabled={submitting}
-                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting ? (
-                  <>
-                    <span>{isEditMode ? 'Updating...' : 'Creating...'}</span>
-                    <span className="animate-spin">⏳</span>
-                  </>
-                ) : (
-                  <>
-                    <span>{isEditMode ? 'Update Test' : 'Create Test'}</span>
-                    <span>→</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {activeTab === 'create' && showQuestionForm && selectedMission && (
-        <TestView 
-          mission={selectedMission}
-          createdMissions={createdMissions}
-          onBack={() => {
-            setShowQuestionForm(false);
-            setSelectedMission(null);
-            setCreatedMissions([]);
-            setMissionQuestions([]);
-            setQuestionError(null);
-          }}
-          onMissionSelect={(mission) => {
-            setSelectedMission(mission);
-            setQuestionError(null);
-          }}
-          onCreateQuestion={async (questionData) => {
-            setCreatingQuestion(true);
-            setQuestionError(null);
-            try {
-              const missionId = selectedMission.id || selectedMission.uuid;
-              const response = await testsService.createMissionQuestion(missionId, questionData);
-              
-              // Add the question to the list
-              const newQuestion = response.data?.question || response.question;
-              setMissionQuestions(prev => [...prev, newQuestion]);
-              
-              // Reset form will be handled by CreateQuestionForm
-              return true;
-            } catch (error) {
-              console.error('Error creating question:', error);
-              setQuestionError(error.message || 'Failed to create question. Please try again.');
-              return false;
-            } finally {
-              setCreatingQuestion(false);
-            }
-          }}
-          creatingQuestion={creatingQuestion}
-          questionError={questionError}
-          missionQuestions={missionQuestions}
-        />
-      )}
-    </div>
-  );
-};
-
-// Test View Component for adding questions
-const TestView = ({ 
-  mission, 
-  createdMissions, 
-  onBack, 
-  onMissionSelect, 
-  onCreateQuestion,
-  creatingQuestion,
-  questionError,
-  missionQuestions
-}) => {
-  const [formData, setFormData] = useState({
-    question_text: '',
-    question_type: 'mcq_single',
-    difficulty_level: 'medium',
-    exp_points: 10,
-    explanation: '',
-    is_active: true,
-    options: [
-      { option_text: '', is_correct: false, order: 1 },
-      { option_text: '', is_correct: false, order: 2 },
-      { option_text: '', is_correct: false, order: 3 },
-      { option_text: '', is_correct: false, order: 4 },
-    ],
-  });
-
-  const handleFieldChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleOptionChange = (index, field, value) => {
-    setFormData(prev => {
-      const newOptions = [...prev.options];
-      newOptions[index] = { ...newOptions[index], [field]: value };
-      return { ...prev, options: newOptions };
-    });
-  };
-
-  const addOption = () => {
-    setFormData(prev => ({
-      ...prev,
-      options: [...prev.options, { option_text: '', is_correct: false, order: prev.options.length + 1 }]
-    }));
-  };
-
-  const removeOption = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      options: prev.options.filter((_, i) => i !== index).map((opt, idx) => ({ ...opt, order: idx + 1 }))
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const validOptions = formData.options.filter(opt => opt.option_text.trim() !== '');
-    const questionData = { ...formData, options: validOptions };
-    
-    const success = await onCreateQuestion(questionData);
-    if (success) {
-      // Reset form
-      setFormData({
-        question_text: '',
-        question_type: 'mcq_single',
-        difficulty_level: 'medium',
-        exp_points: 10,
-        explanation: '',
-        is_active: true,
-        options: [
-          { option_text: '', is_correct: false, order: 1 },
-          { option_text: '', is_correct: false, order: 2 },
-          { option_text: '', is_correct: false, order: 3 },
-          { option_text: '', is_correct: false, order: 4 },
-        ],
-      });
-    }
-  };
-
-  const missionDate = mission.mission_date 
-    ? new Date(mission.mission_date).toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      })
-    : 'N/A';
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">{mission.title}</h2>
-            <p className="text-gray-600 mt-1">
-              {mission.class_group?.name || 'N/A'} / {mission.subject?.name || 'N/A'} | {missionDate}
-            </p>
-          </div>
-          <button
-            onClick={onBack}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2"
-          >
-            <X className="h-4 w-4" />
-            <span>Back</span>
-          </button>
-        </div>
-
-        {/* Mission selector if multiple missions */}
-        {createdMissions.length > 1 && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Mission</label>
-            <select
-              value={mission.id || mission.uuid}
-              onChange={(e) => {
-                const selected = createdMissions.find(m => (m.id || m.uuid) === e.target.value);
-                if (selected) onMissionSelect(selected);
-              }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              {createdMissions.map((m) => (
-                <option key={m.id || m.uuid} value={m.id || m.uuid}>
-                  {m.title} - {m.class_group?.name || 'N/A'}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{mission.duration || 'N/A'}</div>
-            <div className="text-sm text-gray-600">Duration (min)</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{missionQuestions.length}</div>
-            <div className="text-sm text-gray-600">Questions Added</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{mission.base_exp || 10}</div>
-            <div className="text-sm text-gray-600">Base EXP</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Question Form */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="mb-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-2">Add Question</h3>
-          <p className="text-gray-600">Create a new question for this test.</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {questionError && (
-            <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-start space-x-3">
-              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-red-800">Error</p>
-                <p className="text-sm text-red-700 mt-1">{questionError}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="bg-white rounded-xl p-6 border border-gray-200">
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Question Text <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={formData.question_text}
-              onChange={(e) => handleFieldChange('question_text', e.target.value)}
-              required
-              rows={4}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
-              placeholder="Enter the question text..."
-              disabled={creatingQuestion}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Question Type <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.question_type}
-                onChange={(e) => handleFieldChange('question_type', e.target.value)}
-                required
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                disabled={creatingQuestion}
-              >
-                <option value="mcq_single">MCQ - Single Correct Answer</option>
-                <option value="mcq_multiple">MCQ - Multiple Correct Answers</option>
-                <option value="short_answer">Short Answer Question</option>
-              </select>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Difficulty Level <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.difficulty_level}
-                onChange={(e) => handleFieldChange('difficulty_level', e.target.value)}
-                required
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                disabled={creatingQuestion}
-              >
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Experience Points
-              </label>
-              <input
-                type="number"
-                value={formData.exp_points}
-                onChange={(e) => handleFieldChange('exp_points', parseInt(e.target.value) || 10)}
-                min="1"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                disabled={creatingQuestion}
-              />
-            </div>
-
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Status
-              </label>
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  checked={formData.is_active}
-                  onChange={(e) => handleFieldChange('is_active', e.target.checked)}
-                  className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  disabled={creatingQuestion}
-                />
-                <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
-                  Active
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 border border-gray-200">
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Explanation
-            </label>
-            <textarea
-              value={formData.explanation}
-              onChange={(e) => handleFieldChange('explanation', e.target.value)}
-              rows={3}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
-              placeholder="Enter explanation for the correct answer..."
-              disabled={creatingQuestion}
-            />
-          </div>
-
-          {/* Options Section */}
-          {(formData.question_type === 'mcq_single' || formData.question_type === 'mcq_multiple') && (
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <label className="block text-sm font-semibold text-gray-700">
-                  Options <span className="text-red-500">*</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={addOption}
-                  className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                  disabled={creatingQuestion}
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Add Option</span>
-                </button>
-              </div>
-              <div className="space-y-3">
-                {formData.options.map((option, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        value={option.option_text}
-                        onChange={(e) => handleOptionChange(index, 'option_text', e.target.value)}
-                        placeholder={`Option ${index + 1}`}
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
-                        disabled={creatingQuestion}
-                      />
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer">
+              {['mcq_single', 'mcq_multiple', 'rearrange'].includes(manualQuestionForm.question_type) && (
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      {manualQuestionForm.question_type === 'rearrange' ? 'Items (in correct order)' : 'Options'} <span className="text-red-500">*</span>
+                    </label>
+                    <button type="button" onClick={addManualOption} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                      {manualQuestionForm.question_type === 'rearrange' ? '+ Add item' : '+ Add option'}
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {(manualQuestionForm.options || []).map((opt, index) => (
+                      <div key={index} className="flex gap-2 items-center">
                         <input
-                          type={formData.question_type === 'mcq_single' ? 'radio' : 'checkbox'}
-                          name="correct_answer"
-                          checked={option.is_correct}
-                          onChange={(e) => {
-                            if (formData.question_type === 'mcq_single') {
-                              setFormData(prev => ({
-                                ...prev,
-                                options: prev.options.map((opt, idx) => ({
-                                  ...opt,
-                                  is_correct: idx === index
-                                }))
-                              }));
-                            } else {
-                              handleOptionChange(index, 'is_correct', e.target.checked);
-                            }
-                          }}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                          disabled={creatingQuestion}
+                          type="text"
+                          value={opt.option_text}
+                          onChange={e => updateManualOption(index, 'option_text', e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                          placeholder={manualQuestionForm.question_type === 'rearrange' ? `Item ${index + 1}` : `Option ${index + 1}`}
                         />
-                        <span>Correct</span>
-                      </label>
-                      {formData.options.length > 2 && (
-                        <button
-                          type="button"
-                          onClick={() => removeOption(index)}
-                          className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                          disabled={creatingQuestion}
-                        >
+                        {manualQuestionForm.question_type !== 'rearrange' && (
+                          <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={!!opt.is_correct}
+                              onChange={e => updateManualOption(index, 'is_correct', e.target.checked)}
+                              className="rounded border-gray-300 text-primary-500"
+                            />
+                            Correct
+                          </label>
+                        )}
+                        <button type="button" onClick={() => removeManualOption(index)} disabled={(manualQuestionForm.options || []).length <= 2} className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50">
                           <Trash2 className="h-4 w-4" />
                         </button>
-                      )}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <p className="text-xs text-gray-500 mt-3">
-                {formData.question_type === 'mcq_single' 
-                  ? 'Select exactly one correct answer'
-                  : 'Select one or more correct answers'}
-              </p>
-            </div>
-          )}
-
-          <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onBack}
-              className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={creatingQuestion}
-            >
-              Done
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-              disabled={creatingQuestion}
-            >
-              {creatingQuestion ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Creating...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-5 w-5" />
-                  <span>Add Question</span>
-                </>
+                  {manualQuestionForm.question_type === 'rearrange' && (
+                    <p className="mt-1 text-xs text-gray-500">Enter items in the correct order. They will be shuffled for students.</p>
+                  )}
+                </div>
               )}
-            </button>
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                <button type="button" onClick={() => !creatingQuestion && setShowCreateQuestionModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="submit" disabled={creatingQuestion} className="px-4 py-2 rounded-lg text-white font-medium disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' }}>
+                  {creatingQuestion ? <><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Creating...</> : 'Add to test'}
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
-      </div>
+        </div>
+      )}
+
+      {showBankModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => !addingBankToTest && setShowBankModal(false)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-800">Add from question bank</h3>
+              <button type="button" onClick={() => !addingBankToTest && setShowBankModal(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1">
+              {loadingBankQuestions ? (
+                <div className="flex items-center justify-center py-12 gap-2 text-gray-500">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  Loading questions...
+                </div>
+              ) : bankQuestions.length === 0 ? (
+                <p className="text-gray-500 py-8 text-center">No questions found. Create questions first or try another subject.</p>
+              ) : (
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {bankQuestions.map((q, index) => {
+                    const qId = String(q.id || q.uuid || '');
+                    const isSelected = selectedBankQuestionIds.has(qId);
+                    return (
+                      <div
+                        key={qId || index}
+                        className={`rounded-lg p-3 border-2 cursor-pointer transition-colors ${isSelected ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'}`}
+                        onClick={() => toggleBankQuestion(qId)}
+                      >
+                        <div className="flex items-start gap-2">
+                          <input type="checkbox" checked={isSelected} onChange={() => toggleBankQuestion(qId)} className="mt-1 rounded border-gray-300 text-primary-500" />
+                          <p className="text-sm text-gray-800 line-clamp-2 flex-1">{q.question_text}</p>
+                          <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 flex-shrink-0">{q.question_type?.replace('_', ' ') || 'MCQ'}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-200 flex justify-between items-center">
+              <span className="text-sm text-gray-600">{selectedBankQuestionIds.size} selected</span>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => !addingBankToTest && setShowBankModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleAddBankToTest} disabled={addingBankToTest || selectedBankQuestionIds.size === 0} className="px-4 py-2 rounded-lg text-white font-medium disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}>
+                  {addingBankToTest ? <><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Adding...</> : 'Add selected to test'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {snackbar && (
+        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl text-white max-w-sm transition-all duration-300 ${snackbar.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
+          {snackbar.type === 'success'
+            ? <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+            : <AlertCircle className="h-5 w-5 flex-shrink-0" />}
+          <p className="text-sm font-medium flex-1">{snackbar.message}</p>
+          <button onClick={() => setSnackbar(null)} className="opacity-70 hover:opacity-100 transition-opacity ml-1">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {showLeaveGeneratorModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800">Leave without adding questions?</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              An empty test without questions will be created. You can add questions later from the test list.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowLeaveGeneratorModal(false)}
+                className="px-5 py-2 border-2 border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-all"
+              >
+                Stay
+              </button>
+              <button
+                onClick={() => {
+                  setShowLeaveGeneratorModal(false);
+                  if (pendingLeaveAction) pendingLeaveAction();
+                  setPendingLeaveAction(null);
+                }}
+                className="px-5 py-2 text-white font-medium rounded-xl transition-all"
+                style={{ background: 'linear-gradient(135deg, #00167a 0%, #1e3a8a 100%)' }}
+              >
+                Leave anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

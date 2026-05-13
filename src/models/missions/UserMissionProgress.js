@@ -1,8 +1,5 @@
 import TimeStampUUID from '../base/TimeStampUUID.js';
 
-/**
- * Model for tracking individual user progress on missions.
- */
 export default class UserMissionProgress extends TimeStampUUID {
   constructor(data = {}) {
     super(data);
@@ -15,19 +12,12 @@ export default class UserMissionProgress extends TimeStampUUID {
     this.current_question = data.current_question || null; // Question ID or Question object
   }
 
-  /**
-   * Status choices
-   */
   static STATUS_CHOICES = [
     ['not_started', 'Not Started'],
     ['in_progress', 'In Progress'],
     ['completed', 'Completed']
   ];
 
-  /**
-   * Validate progress data
-   * @returns {Object} Validation result with isValid and errors
-   */
   validate() {
     const errors = {};
 
@@ -55,19 +45,12 @@ export default class UserMissionProgress extends TimeStampUUID {
     };
   }
 
-  /**
-   * Start the mission
-   */
   start() {
     this.status = 'in_progress';
     this.started_at = new Date();
     this.touch();
   }
 
-  /**
-   * Complete the mission
-   * @param {number} expEarned - Experience points earned
-   */
   complete(expEarned = 0) {
     this.status = 'completed';
     this.completed_at = new Date();
@@ -75,10 +58,6 @@ export default class UserMissionProgress extends TimeStampUUID {
     this.touch();
   }
 
-  /**
-   * Add experience earned
-   * @param {number} exp - Experience points to add
-   */
   addExpEarned(exp) {
     if (exp > 0) {
       this.exp_earned += exp;
@@ -86,43 +65,23 @@ export default class UserMissionProgress extends TimeStampUUID {
     }
   }
 
-  /**
-   * Set current question
-   * @param {string|Object} question - Question ID or Question object
-   */
   setCurrentQuestion(question) {
     this.current_question = question;
     this.touch();
   }
 
-  /**
-   * Get user ID
-   * @returns {string|null} User ID
-   */
   getUserId() {
     return typeof this.user === 'object' ? this.user.id : this.user;
   }
 
-  /**
-   * Get mission ID
-   * @returns {string|null} Mission ID
-   */
   getMissionId() {
     return typeof this.mission === 'object' ? this.mission.id : this.mission;
   }
 
-  /**
-   * Get current question ID
-   * @returns {string|null} Question ID
-   */
   getCurrentQuestionId() {
     return typeof this.current_question === 'object' ? this.current_question.id : this.current_question;
   }
 
-  /**
-   * Convert to plain object
-   * @returns {Object} Plain object representation
-   */
   toJSON() {
     return {
       ...super.toJSON(),
@@ -136,10 +95,6 @@ export default class UserMissionProgress extends TimeStampUUID {
     };
   }
 
-  /**
-   * String representation
-   * @returns {string} String representation
-   */
   toString() {
     const username = typeof this.user === 'object' ? this.user.username : 'Unknown User';
     const missionTitle = typeof this.mission === 'object' ? this.mission.title : 'Unknown Mission';

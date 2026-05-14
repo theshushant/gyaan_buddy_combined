@@ -152,32 +152,9 @@ const TeacherDashboard = () => {
     fetchClassesAndSubjects()
   }, [fetchClassesAndSubjects])
 
-  // Set default subject when subjects load and none is selected; then fetch with that subject
-  useEffect(() => {
-    if (subjects.length > 0 && !filters.subject) {
-      const firstId = subjects[0].id ?? subjects[0].uuid ?? ''
-      if (firstId) {
-        dispatch(setFilters({ subject: firstId }))
-        // Fetch immediately with default subject so API gets the filter (state update is async)
-        const applied = { class: filters.class || '', subject: String(firstId) }
-        const payload = { role: role || 'teacher', filters: applied }
-        dispatch(fetchDashboardMetrics(payload))
-        dispatch(fetchQuickSummary(payload))
-        dispatch(fetchProgressTrends(applied))
-        dispatch(fetchSubjectPerformance(applied))
-        dispatch(fetchClassDistribution())
-        dispatch(fetchDashboardAlerts())
-      }
-    }
-  }, [subjects, filters.subject, dispatch, role, filters.class])
-
   useEffect(() => {
     const hasError = Object.values(error).some(err => err !== null)
     if (hasError) {
-      return
-    }
-    // When we have subjects but no subject filter, skip (default-subject effect will fetch)
-    if (subjects.length > 0 && !dashboardFilters.subject) {
       return
     }
 
@@ -198,7 +175,7 @@ const TeacherDashboard = () => {
     }
 
     fetchDashboardData()
-  }, [dispatch, role, error, dashboardFilters.subject, dashboardFilters.class, subjects.length])
+  }, [dispatch, role, error, dashboardFilters.subject, dashboardFilters.class])
 
   const hasError = Object.values(error).some(err => err !== null)
   const isLoading = Object.values(loading).some(load => load === true)
@@ -260,15 +237,12 @@ const TeacherDashboard = () => {
           (c) => String(c.class_instance__id ?? c.id) === String(filters.class)
         )
       )
-    : subjects
+    : []
 
   const handleFilterChange = (key, value) => {
     const newFilters = { ...filters, [key]: value || '' }
     if (key === 'class') {
-      const stillVisible = visibleSubjects.some(
-        (s) => String(s.id ?? s.uuid) === String(filters.subject)
-      )
-      if (!stillVisible) newFilters.subject = ''
+      newFilters.subject = ''
     }
     dispatch(setFilters(newFilters))
     const applied = { class: newFilters.class || '', subject: newFilters.subject || '' }
@@ -308,6 +282,7 @@ const TeacherDashboard = () => {
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
               style={{ color: '#00167a' }}
             >
+              <option value="">All Classes</option>
               {classes.map((c) => (
                 <option key={c.id ?? c.uuid} value={c.id ?? c.uuid}>
                   {c.name ?? c}
@@ -324,6 +299,7 @@ const TeacherDashboard = () => {
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
               style={{ color: '#00167a' }}
             >
+              <option value="">All Subjects</option>
               {visibleSubjects.map((s) => (
                 <option key={s.id ?? s.uuid} value={s.id ?? s.uuid}>
                   {s.name ?? s}

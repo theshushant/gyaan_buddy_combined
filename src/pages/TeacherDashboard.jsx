@@ -96,6 +96,7 @@ const TeacherDashboard = () => {
     subjectPerformance,
     classDistribution,
     classWiseChart,
+    subjectWise,
     alerts,
     weakTopicCount,
     quickSummary,
@@ -415,7 +416,7 @@ const TeacherDashboard = () => {
         </div>
       </div>
 
-      {Array.isArray(classWiseChart) && classWiseChart.length > 0 && (
+      {filters.subject && Array.isArray(classWiseChart) && classWiseChart.length > 0 && (
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-gray-700 mb-4 animate-slide-right">Class-wise Attempt Rate &amp; Performance</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -469,6 +470,78 @@ const TeacherDashboard = () => {
                   },
                   scales: {
                     y: { beginAtZero: true, max: 100, ticks: { callback: (v) => `${v}%` } },
+                  },
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!filters.subject && Array.isArray(subjectWise) && subjectWise.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4 animate-slide-right">Subject-wise Attempt Rate &amp; Performance</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-600 mb-4">Attempt Rate %</h3>
+              <Bar
+                data={{
+                  labels: subjectWise.map(s => s.subjectName),
+                  datasets: [{
+                    label: 'Attempt Rate %',
+                    data: subjectWise.map(s => s.attemptRate),
+                    backgroundColor: 'rgba(31, 183, 235, 0.7)',
+                    borderColor: 'rgba(31, 183, 235, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    maxBarThickness: 60,
+                  }],
+                }}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.y}%` } },
+                  },
+                  scales: {
+                    y: { beginAtZero: true, max: 100, ticks: { callback: (v) => `${v}%` } },
+                  },
+                }}
+              />
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-600 mb-4">Chapters Covered</h3>
+              <Bar
+                data={{
+                  labels: subjectWise.map(s => s.subjectName),
+                  datasets: [
+                    {
+                      label: 'Chapters with Due',
+                      data: subjectWise.map(s => s.chaptersWithDue),
+                      backgroundColor: 'rgba(0, 22, 122, 0.7)',
+                      borderColor: 'rgba(0, 22, 122, 1)',
+                      borderWidth: 1,
+                      borderRadius: 4,
+                      maxBarThickness: 60,
+                    },
+                    {
+                      label: 'Total Chapters',
+                      data: subjectWise.map(s => s.totalChapters),
+                      backgroundColor: 'rgba(31, 183, 235, 0.3)',
+                      borderColor: 'rgba(31, 183, 235, 1)',
+                      borderWidth: 1,
+                      borderRadius: 4,
+                      maxBarThickness: 60,
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: { display: true, position: 'top' },
+                  },
+                  scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } },
                   },
                 }}
               />

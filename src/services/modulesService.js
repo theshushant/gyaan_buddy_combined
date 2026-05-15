@@ -260,6 +260,14 @@ class ModulesService {
     }
   }
 
+  async getChapterById(chapterId) {
+    try {
+      return await apiService.get(`/module_chapters/${chapterId}/`);
+    } catch (error) {
+      throw new Error(`Failed to fetch chapter: ${error.message}`);
+    }
+  }
+
   async getChapterQuestions(chapterId) {
     try {
       return await apiService.get(`/module_chapters/${chapterId}/module_questions/`, { timeout: 120000 });

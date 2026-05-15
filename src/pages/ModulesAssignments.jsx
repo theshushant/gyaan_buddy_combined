@@ -98,6 +98,7 @@ const ModulesAssignments = () => {
   const [pdfError, setPdfError] = useState(null);
   const pdfInputRef = useRef(null);
   const fetchCountRef = useRef(0);
+  const mountedRef = useRef(false);
 
   // Excel import state
   const [showImportModal, setShowImportModal] = useState(false);
@@ -145,7 +146,10 @@ const ModulesAssignments = () => {
     if (!file || !pdfModalChapter) return;
     e.target.value = '';
     const currentPdfs = chapterPdfs[pdfModalChapter.id] || [];
-    if (currentPdfs.length >= 2) return;
+    if (currentPdfs.length >= 2) {
+      setPdfError('Maximum 2 PDFs allowed. Delete one before uploading a new file.');
+      return;
+    }
     if (file.size > 10 * 1024 * 1024) {
       setPdfError('PDF size must be less than 10MB');
       return;
@@ -243,7 +247,7 @@ const ModulesAssignments = () => {
         id: module.id,
         subjectId: module.subject || module.subject_id || module.subject?.id,
         title: cleanDisplayText(module.name || `Chapter ${module.order}`),
-        completionRate: module.total_chapter_count > 0
+        dueRate: module.total_chapter_count > 0
           ? Math.round((module.due_chapter_count / module.total_chapter_count) * 100)
           : 0,
         isDue: module.is_due === true || module.status === 'due',
@@ -286,15 +290,6 @@ const ModulesAssignments = () => {
       return moduleSubjectId === selectedSubjectId;
     });
 
-    // If the current subject has no modules but other subjects do, auto-select the first available
-    if (filteredModules.length === 0 && allModulesData.length > 0) {
-      const firstAvailableSubjectId = allModulesData[0].subjectId?.toString();
-      if (firstAvailableSubjectId && firstAvailableSubjectId !== selectedSubject.toString()) {
-        setSelectedSubject(firstAvailableSubjectId);
-        return;
-      }
-    }
-
     setChapters(filteredModules);
     const subjectChanged = prevSubjectRef.current !== selectedSubject;
     prevSubjectRef.current = selectedSubject;
@@ -330,7 +325,14 @@ const ModulesAssignments = () => {
     fetchInitialData();
   }, []);
 
+  // Skip the initial mount call (selectedClass = '' / no class yet).
+  // fetchInitialData sets the first class, which creates a new fetchAllModulesData
+  // reference (via useCallback) and that triggers this effect with the correct class.
   useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      return;
+    }
     fetchAllModulesData();
   }, [fetchAllModulesData]);
 
@@ -389,12 +391,15 @@ const ModulesAssignments = () => {
     if (!window.confirm(`Delete assignment "${assignment.title}"?`)) return;
     try {
       await modulesService.deleteChapter(assignment.id);
+      // Optimistically remove the chapter so the UI responds immediately,
+      // then refresh to get accurate counts on the parent module card.
       setAllModulesData(prev => prev.map(m => {
         if (m.id !== parentModule.id || !Array.isArray(m.modules)) return m;
         return { ...m, modules: m.modules.filter(ch => ch.id !== assignment.id) };
       }));
       setSuccessData({ title: 'Assignment deleted', message: 'Assignment has been deleted successfully.' });
       setShowSuccessModal(true);
+      await fetchAllModulesData();
     } catch (err) {
       console.error('Error deleting assignment:', err);
       setCreateChapterError(err.message || 'Failed to delete assignment.');
@@ -627,18 +632,14 @@ const ModulesAssignments = () => {
 
   const handleEditChapter = async (chapter, module) => {
     try {
-      const response = await modulesService.getModuleChapters(module.id);
-      const chaptersData = response.data || response;
-      const chaptersList = Array.isArray(chaptersData) ? chaptersData : [];
-      const fullChapterData = chaptersList.find(ch => ch.id === chapter.id);
-      
-      if (fullChapterData) {
+      const response = await modulesService.getChapterById(chapter.id);
+      const fullChapterData = response.data || response;
+      if (fullChapterData && fullChapterData.id) {
         setEditingChapter(fullChapterData);
         setSelectedModuleForChapter(module);
         setShowCreateChapterModal(true);
         setCreateChapterError(null);
       } else {
-        console.error('Assignment not found');
         setCreateChapterError('Assignment data not found. Please try again.');
       }
     } catch (err) {
@@ -923,7 +924,7 @@ const ModulesAssignments = () => {
                     if (newClass && selectedSubject) {
                       const subj = subjects.find((s) => String(s.id) === String(selectedSubject));
                       const still = subj && (subj.class_list || []).some(
-                        (c) => String(c.class_instance__id ?? c.id) === String(newClass)
+                        (c) => String(c.class_instance__id) === String(newClass)
                       );
                       if (!still) setSelectedSubject('');
                     }
@@ -957,7 +958,7 @@ const ModulesAssignments = () => {
                   {(selectedClass
                     ? subjects.filter((s) =>
                         (s.class_list || []).some(
-                          (c) => String(c.class_instance__id ?? c.id) === String(selectedClass)
+                          (c) => String(c.class_instance__id) === String(selectedClass)
                         )
                       )
                     : subjects
@@ -1096,10 +1097,13 @@ const ModulesAssignments = () => {
                           <div className="flex items-center space-x-3">
                             <h3 className="text-xl font-bold text-gray-900">{chapter.title}</h3>
                             <div className="flex items-center space-x-2">
-                              <div className="flex items-center space-x-1 px-3 py-1 bg-primary-50 rounded-full">
+                              <div
+                                className="flex items-center space-x-1 px-3 py-1 bg-primary-50 rounded-full"
+                                title="Percentage of assignments marked as due"
+                              >
                                 <TrendingUp className="h-4 w-4 text-primary-500" />
                                 <span className="text-sm font-semibold text-primary-500">
-                                  {chapter.completionRate}%
+                                  {chapter.dueRate}% due
                                 </span>
                               </div>
                             </div>
@@ -1765,6 +1769,7 @@ const ModulesAssignments = () => {
                   <X className="h-5 w-5 text-gray-500" />
                 </button>
               </div>
+
 
               <div className="px-6 py-5 space-y-4">
                 <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 text-sm text-amber-800 flex items-start gap-2">

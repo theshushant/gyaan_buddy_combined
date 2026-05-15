@@ -118,6 +118,14 @@ const BulkImportStudentsModal = ({ isOpen, onClose, onSuccess }) => {
             {/* Step: Upload */}
             {step === 'upload' && (
               <>
+                <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 text-sm text-amber-800 flex items-start gap-2">
+                  <span className="text-base leading-none mt-0.5">⚠️</span>
+                  <div>
+                    <span className="font-semibold">For best experience, upload one class at a time with up to 60 entries per sheet.</span>
+                    {' '}Larger files are processed in the background — this may take a few seconds after import starts.
+                  </div>
+                </div>
+
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
                   <p className="font-medium mb-1">Excel format — one sheet per class</p>
                   <p>Expected columns: <span className="font-mono">Reg No, Student Name, Class Name, D.O.B, Father's Name, Mother Name, Father Mobile, Mother Mobile</span></p>

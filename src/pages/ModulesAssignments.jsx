@@ -101,11 +101,14 @@ const ModulesAssignments = () => {
 
   // Excel import state
   const [showImportModal, setShowImportModal] = useState(false);
+  const [importMode, setImportMode] = useState('file'); // 'file' | 'url'
+  const [importExcelFile, setImportExcelFile] = useState(null);
   const [importExcelUrl, setImportExcelUrl] = useState('');
   const [importDryRun, setImportDryRun] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
   const [importError, setImportError] = useState(null);
+  const importFileInputRef = useRef(null);
 
   const toggleChapter = (chapterId) => {
     setExpandedChapters(prev => 
@@ -487,13 +490,18 @@ const ModulesAssignments = () => {
       setImportError('Please select a class before importing.');
       return;
     }
+    if (importMode === 'file' && !importExcelFile) {
+      setImportError('Please select an Excel file to upload.');
+      return;
+    }
     setImporting(true);
     setImportError(null);
     setImportResult(null);
     try {
       const res = await subjectsService.importFromExcel({
         classId: selectedClass,
-        excelUrl: importExcelUrl.trim() || undefined,
+        excelUrl: importMode === 'url' ? (importExcelUrl.trim() || undefined) : undefined,
+        file: importMode === 'file' ? importExcelFile : undefined,
         dryRun: importDryRun,
       });
       setImportResult(res.data || res);
@@ -1751,7 +1759,7 @@ const ModulesAssignments = () => {
                   <h2 className="text-xl font-bold text-gray-900">Import from Excel</h2>
                 </div>
                 <button
-                  onClick={() => { setShowImportModal(false); setImportResult(null); setImportError(null); }}
+                  onClick={() => { setShowImportModal(false); setImportResult(null); setImportError(null); setImportExcelFile(null); }}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <X className="h-5 w-5 text-gray-500" />
@@ -1759,6 +1767,14 @@ const ModulesAssignments = () => {
               </div>
 
               <div className="px-6 py-5 space-y-4">
+                <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 text-sm text-amber-800 flex items-start gap-2">
+                  <span className="text-base leading-none mt-0.5">⚠️</span>
+                  <div>
+                    <span className="font-semibold">For best experience, keep each sheet to 60 entries or fewer.</span>
+                    {' '}Larger files are processed in the background — this may take a few seconds after import starts.
+                  </div>
+                </div>
+
                 <p className="text-sm text-gray-600">
                   Imports subjects, modules, and chapters from a 3-column Excel file
                   (Column A: Subject, Column B: Module, Column C: Chapter) into the selected class.
@@ -1776,18 +1792,71 @@ const ModulesAssignments = () => {
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Excel URL <span className="text-gray-400 font-normal">(optional — leave blank to use default)</span>
-                  </label>
-                  <input
-                    type="url"
-                    value={importExcelUrl}
-                    onChange={e => setImportExcelUrl(e.target.value)}
-                    placeholder="https://storage.googleapis.com/gyaanbuddy-media/Chapters.xlsx"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
+                {/* Source toggle */}
+                <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm font-medium">
+                  <button
+                    type="button"
+                    onClick={() => { setImportMode('file'); setImportResult(null); setImportError(null); }}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 transition-colors ${importMode === 'file' ? 'bg-green-700 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    <Upload className="h-4 w-4" /> Upload File
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setImportMode('url'); setImportResult(null); setImportError(null); }}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 transition-colors ${importMode === 'url' ? 'bg-green-700 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    <FileSpreadsheet className="h-4 w-4" /> Use URL
+                  </button>
                 </div>
+
+                {importMode === 'file' ? (
+                  <div>
+                    <div
+                      onClick={() => importFileInputRef.current?.click()}
+                      onDragOver={e => e.preventDefault()}
+                      onDrop={e => {
+                        e.preventDefault();
+                        const f = e.dataTransfer.files?.[0];
+                        if (f) { setImportExcelFile(f); setImportResult(null); setImportError(null); }
+                      }}
+                      className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-green-500 hover:bg-green-50 transition-colors"
+                    >
+                      <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      {importExcelFile ? (
+                        <p className="text-sm font-medium text-green-700">{importExcelFile.name}</p>
+                      ) : (
+                        <>
+                          <p className="text-sm font-medium text-gray-700">Drag & drop your Excel file here</p>
+                          <p className="text-xs text-gray-500 mt-1">or click to browse — .xlsx / .xls</p>
+                        </>
+                      )}
+                    </div>
+                    <input
+                      ref={importFileInputRef}
+                      type="file"
+                      accept=".xlsx,.xls"
+                      className="hidden"
+                      onChange={e => {
+                        const f = e.target.files?.[0];
+                        if (f) { setImportExcelFile(f); setImportResult(null); setImportError(null); }
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Excel URL <span className="text-gray-400 font-normal">(optional — leave blank to use default)</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={importExcelUrl}
+                      onChange={e => setImportExcelUrl(e.target.value)}
+                      placeholder="https://storage.googleapis.com/gyaanbuddy-media/Chapters.xlsx"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
+                )}
 
                 <label className="flex items-center space-x-3 cursor-pointer select-none">
                   <input
@@ -1847,7 +1916,7 @@ const ModulesAssignments = () => {
 
               <div className="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-100">
                 <button
-                  onClick={() => { setShowImportModal(false); setImportResult(null); setImportError(null); }}
+                  onClick={() => { setShowImportModal(false); setImportResult(null); setImportError(null); setImportExcelFile(null); }}
                   className="px-5 py-2.5 text-gray-700 font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors"
                 >
                   Close

@@ -133,6 +133,14 @@ const BulkImportTeachersModal = ({ isOpen, onClose, onSuccess }) => {
             {/* Step: Upload */}
             {step === 'upload' && (
               <>
+                <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 text-sm text-amber-800 flex items-start gap-2">
+                  <span className="text-base leading-none mt-0.5">⚠️</span>
+                  <div>
+                    <span className="font-semibold">For best experience, keep each sheet to 60 entries or fewer.</span>
+                    {' '}Larger files are processed in the background — this may take a few seconds after import starts.
+                  </div>
+                </div>
+
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
                   <p className="font-medium mb-1">Excel format required</p>
                   <p>Your file must include these columns: <span className="font-mono">{TEMPLATE_COLUMNS.join(', ')}</span></p>

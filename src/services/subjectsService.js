@@ -151,8 +151,15 @@ class SubjectsService {
     }
   }
 
-  async importFromExcel({ classId, excelUrl, dryRun = false }) {
+  async importFromExcel({ classId, excelUrl, file, dryRun = false }) {
     try {
+      if (file) {
+        const form = new FormData();
+        form.append('class_id', classId);
+        form.append('dry_run', dryRun ? 'true' : 'false');
+        form.append('excel_file', file);
+        return await apiService.post('/subjects/import_from_excel/', form);
+      }
       const payload = { class_id: classId, dry_run: dryRun };
       if (excelUrl) payload.excel_url = excelUrl;
       return await apiService.post('/subjects/import_from_excel/', payload);

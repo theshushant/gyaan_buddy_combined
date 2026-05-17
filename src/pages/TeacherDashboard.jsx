@@ -510,25 +510,18 @@ const TeacherDashboard = () => {
               />
             </div>
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-600 mb-4">Chapters Covered</h3>
+              <h3 className="text-sm font-semibold text-gray-600 mb-4">Chapter Progress %</h3>
               <Bar
                 data={{
                   labels: subjectWise.map(s => s.subjectName),
                   datasets: [
                     {
-                      label: 'Chapters with Due',
-                      data: subjectWise.map(s => s.chaptersWithDue),
+                      label: 'Chapter Progress %',
+                      data: subjectWise.map(s =>
+                        s.totalChapters > 0 ? Math.round((s.chaptersWithDue / s.totalChapters) * 100) : 0
+                      ),
                       backgroundColor: 'rgba(0, 22, 122, 0.7)',
                       borderColor: 'rgba(0, 22, 122, 1)',
-                      borderWidth: 1,
-                      borderRadius: 4,
-                      maxBarThickness: 60,
-                    },
-                    {
-                      label: 'Total Chapters',
-                      data: subjectWise.map(s => s.totalChapters),
-                      backgroundColor: 'rgba(31, 183, 235, 0.3)',
-                      borderColor: 'rgba(31, 183, 235, 1)',
                       borderWidth: 1,
                       borderRadius: 4,
                       maxBarThickness: 60,
@@ -538,10 +531,11 @@ const TeacherDashboard = () => {
                 options={{
                   responsive: true,
                   plugins: {
-                    legend: { display: true, position: 'top' },
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.y}%` } },
                   },
                   scales: {
-                    y: { beginAtZero: true, ticks: { precision: 0 } },
+                    y: { beginAtZero: true, max: 100, ticks: { callback: (v) => `${v}%` } },
                   },
                 }}
               />

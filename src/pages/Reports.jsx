@@ -22,11 +22,11 @@ const EMPTY_DATA = {
 }
 
 const EXCLUDED_TOPIC_LABELS = new Set([
-  'previous knowledge testing',
-  'competency based questions',
-  'competancy based questions',
-  'competency-based questions',
-  'summary',
+  // 'previous knowledge testing',
+  // 'competency based questions',
+  // 'competancy based questions',
+  // 'competency-based questions',
+  // 'summary',
 ])
 
 const normalizeTopicLabel = (topic) => String(topic || '').trim().replace(/\s+/g, ' ')
@@ -244,8 +244,8 @@ const Reports = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
             >
               <option value="">All Classes</option>
-              {data.filterOptions.classes.map((className) => (
-                <option key={className} value={className}>{className}</option>
+              {data.filterOptions.classes.map((cls) => (
+                <option key={cls.id} value={cls.id}>{cls.name}</option>
               ))}
             </select>
           </div>
